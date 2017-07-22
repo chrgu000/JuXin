@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+  <data>
+    <act_window id="action_detection_task"
+      name="检测项目"
+      res_model="detection.task"
+      view_mode="tree,form"
+      limit="80" />
+
+    <menuitem id="menu_detection_task"
+      name="检测"
+      parent="Office.menu_punch_task"
+      sequence="2"
+      action="action_detection_task" />
+
+    <record id="view_form_detection_task" model="ir.ui.view">
+      <field name="name">Detection Task Form</field>
+      <field name="model">detection.task</field>
+      <field name="arch" type="xml">
+	<form > <!-- <form string="My Form" edit="false"> -->
+ 
+            <group name="group_top">
+                <!--<label for="name" string="确认收样"/>-->
+                <group name="group_left">
+                    <h2><em>确认收样  </em><field name="Active" groups="Detection.group_analyst" /></h2>
+                </group>
+                <group name="group_right">
+                    <!--<field name="Applicant" />-->
+                    <group name="group_left">
+                        <field name="create_uid"  string="请验人:" readonly="1"/>
+                    </group>
+                    <group name="group_right">
+                        <field name="create_date"  string="请验日期:" readonly="1"/>
+                    </group>
+
+                    <group name="group_left">
+                        <field name="Receiver" readonly="1"/>
+                    </group>
+                    <group name="group_right">
+                        <field name="Date_receive" readonly="1"/>
+                    </group>
+                </group>
+            </group>
+            <group name="group_top">
+                <field name="id" invisible="1"/>
+		<field name="NO"  attrs="{'readonly':[('id', '!=', False)]}"/>
+		<field name="Lot" attrs="{'readonly':[('id', '!=', False)]}"/>
+                <field name="pro" groups="Detection.group_researchers"/>
+                <field name="h2o" groups="Detection.group_researchers"/>
+                <field name="cpc" groups="Detection.group_researchers"/>
+                <field name="metal" groups="Detection.group_researchers"/>
+                <!-- <field name="Pro" attrs="{'invisible':[('show_read', '=', False)]}"/> -->
+		<field name="Pro" groups="Detection.group_analyst" attrs="{'invisible':[('pro', '=', False)]}"/> 
+                <field name="Pro_copy" groups="Detection.group_researchers" attrs="{'invisible':[('pro', '=', False)]}"/> 
+		<field name="H2O" groups="Detection.group_analyst" attrs="{'invisible':[('h2o', '=', False)]}"/>
+                <field name="H2O_copy" groups="Detection.group_researchers" attrs="{'invisible':[('h2o', '=', False)]}"/>
+		<field name="CPC" groups="Detection.group_analyst" attrs="{'invisible':[('cpc', '=', False)]}"/>
+                <field name="CPC_copy" groups="Detection.group_researchers" attrs="{'invisible':[('cpc', '=', False)]}"/>
+		<field name="Metal" groups="Detection.group_analyst" attrs="{'invisible':[('metal', '=', False)]}"/>
+                <field name="Metal_copy" groups="Detection.group_researchers" attrs="{'invisible':[('metal', '=', False)]}"/>
+	    </group>
+
+	</form>
+      </field>
+    </record>
+
+    <record id="view_tree_detection_task" model="ir.ui.view">
+      <field name="name">Detection Task Tree</field>
+      <field name="model">detection.task</field>
+      <field name="arch" type="xml">
+        <tree colors="green:Active==False">        
+          <field name="Active" invisible='True'/> 
+          <field name="NO" />
+          <field name="Lot"/>
+          <field name="Pro"/>
+	  <field name="H2O"/>
+          <field name="CPC"/>
+	  <field name="Metal"/>
+        </tree>
+      </field>
+    </record>
+
+  </data>
+</openerp>
+
+
+

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+  <data>
+
+    <record id="detection_task_user_rule" model="ir.rule">
+        <field name="name">Detection Tasks only for owner</field>
+        <field name="model_id" ref="model_detection_task"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/> <!--eval="[(4, ref('Detection.group_analyst'))]"-->
+        <field name="domain_force">
+           [(1,'=',1)] <!--[('user_id','in',[user.id,False])]-->
+        </field>
+    </record>
+
+    <record id="group_researchers" model="res.groups">
+      <field name="name">研发</field>
+      <field name="category_id" ref="base.module_category_detection"/>
+      <field name="implied_ids" eval="[(4,ref('base.group_user'))]"/>
+    </record>
+    <record id='group_analyst' model='res.groups'>
+      <field name="name">检测</field>
+      <field name="category_id" ref="base.module_category_detection"/>
+      <field name="implied_ids" eval="[(4,ref('base.group_user'))]"/>
+    </record>
+
+    <record id="detection_task_researchers_rule" model="ir.rule">
+        <field name="name">Detection Tasks only for researchers</field>
+        <field name="model_id" ref="model_detection_task"/>
+        <field name="groups" eval="[(4, ref('Detection.group_researchers'))]"/>
+        <field name="domain_force">
+           [('NO','=like',"D%")] <!--['|',('NO','=like',"DP%"),('NO','=like','DQ%')]-->
+        </field>
+    </record>
+
+  </data>
+</openerp>

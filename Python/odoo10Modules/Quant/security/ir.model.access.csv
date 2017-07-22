@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_quant_task_group_user,quant.task.user,model_quant_task,base.group_user,1,1,1,0
+access_plot_task_group_user,plot.task.user,model_plot_task,base.group_user,1,1,1,0
+access_color_task_group_user,color.task.user,model_color_task,base.group_user,1,1,1,0
+access_monthhedge_group_user,monthhedge.user,model_monthhedge,base.group_user,1,1,0,0
+access_hedgech_group_user,hedgech.user,model_hedgech,base.group_user,0,0,0,0
+access_hedgeznm_group_user,hedgeznm.user,model_hedgeznm,base.group_user,0,0,0,0

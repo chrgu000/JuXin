@@ -1,0 +1,300 @@
+<?xml version="1.0"?>
+<odoo>
+    <act_window id="action_quant_data"
+                name="数据获取"
+                res_model="quant.task"
+                view_mode="tree,form"/>
+    <act_window id="action_quant_plot"
+                name="统计图"
+                res_model="plot.task"
+                view_mode="tree,form"/>
+    <act_window id="action_color_task"
+                name="图片红色度"
+                res_model="color.task"
+                view_mode="tree,form" />
+    <act_window id="action_monthhedge"
+                name="月交易策略"
+                res_model="monthhedge"
+                view_mode="tree,form"/>
+    <act_window id="action_hedgeCH"
+                name="股指期货CH交易策略"
+                res_model="hedgech"
+                view_mode="tree,form"/>
+    <act_window id="action_hedgeZnM"
+                name="交易主力期货"
+                res_model="hedgeznm"
+                view_mode="tree,form"/>
+    <menuitem id="menu_quant_task"
+              name="数据处理及分析"
+              parent=""
+              sequence="0"/>
+    <menuitem id="menu_quant_data"
+              name="数据获取"
+              parent="menu_quant_task"
+              sequence="10"
+              action="action_quant_data"/>
+    <menuitem id="menu_quant_plot"
+              name="统计图"
+              parent="menu_quant_task"
+              sequence="11"
+              action="action_quant_plot"/>
+    <!--<menuitem id="menu_color"
+              name="图片色度量化值"
+              parent="menu_quant_task"
+              sequence="11"
+              action="action_color_task" />-->
+     <menuitem id="hedgehs300"
+               name="月交易(对冲)实时模拟测试"
+               parent="menu_quant_task"
+               sequence="1"
+               action="action_monthhedge"
+    />
+    <menuitem id="hedgeCH"
+               name="股指期货CH实时模拟测试"
+               parent="menu_quant_task"
+               sequence="2"
+               action="action_hedgeCH"
+    />
+    <menuitem id="hedgeZnM"
+               name="交易主力期货"
+               parent="menu_quant_task"
+               sequence="3"
+               action="action_hedgeZnM"
+    />
+
+    <record id="view_tree_quant_data" model="ir.ui.view">
+        <field name="name">Quant Data Tree</field>
+        <field name="model">quant.task</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="create_uid"/>
+                <field name="create_date"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_form_quant_data" model="ir.ui.view">
+        <field name="name">Quant Data Form</field>
+        <field name="model">quant.task</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="getData" type="object" string="获取数据" class="oe_highlight"/>
+                    <!--<img src="/Quant/static/src/img/xx.png" style="width: 100%; height: auto;max-width: 100%; display: block; "/>-->
+                </header>
+                <sheet>
+                    <group>
+                        <group col="4" colspan="2">
+                            <field name="startTime" />
+                            <field name="endTime" />
+                        </group>
+                        <group col="2" colspan="2">
+                            <field name="indexButton" />
+                            <field name="selectStocks"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="data" readonly="1" />
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_tree_quant_plot" model="ir.ui.view">
+        <field name="name">Quant Plot Tree</field>
+        <field name="model">plot.task</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="create_uid"/>
+                <field name="create_date"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_form_quant_plot" model="ir.ui.view">
+        <field name="name">Quant Plot Form</field>
+        <field name="model">plot.task</field>
+        <field name="act_window_id" ref="action_quant_plot"/>
+        <field name="arch" type="xml">
+            <form>
+                <!--<header>-->
+                    <!--<button name="figplot" type="object" string="统计作图" class="oe_highlight"/>-->
+                    <!--<img src="/Quant/static/src/img/xx.png" style="width: 100%; height: auto;max-width: 100%; display: block; "/>-->
+                <!--</header>-->
+                <sheet>
+                    <group>
+                        <group name="group_left">
+                            <group>
+                                <button name="figplot" type="object" string="统计作图" class="oe_highlight"/>
+                            </group>
+                            <group col="2" colspan="2">
+                                <field name="stock" />
+                                <field name="notes" readonly="1" style="color:red"/>
+                            </group>
+                        </group>
+                        <group name="group_right">
+                            <group>
+                                <field name="wd" />
+                                <field name="md" />
+                                <field name="m" />
+                                <field name="lmd" />
+                                <field name="lm" />
+                                <field name="s" />
+                            </group>
+                            <group>
+                                <button name="selectAll" type="object" string="选择全部" />
+                            </group>
+                        </group>
+                    </group>
+                </sheet>
+                <sheet>
+                    <field name="wdP" widget="image" readonly="1" />
+                    <field name="mdP" widget="image" readonly="1" />
+                    <field name="mP"  widget="image" readonly="1" />
+                    <field name="lmdP" widget="image" readonly="1" />
+                    <field name="lmP" widget="image" readonly="1" />
+                    <field name="sP" widget="image" readonly="1" />
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_tree_color_task" model="ir.ui.view">
+      <field name="name">Color Task Tree</field>
+      <field name="model">color.task</field>
+      <field name="arch" type="xml">
+        <tree>
+          <field name="create_uid"/>
+          <field name="create_date"/>
+        </tree>
+      </field>
+    </record>
+    <record id="view_form_color_task" model="ir.ui.view">
+      <field name="name">Color Task Form</field>
+      <field name="model">color.task</field>
+      <field name="arch" type="xml">
+          <form >
+              <group>
+                  <group name="group_left">
+                      <field name="datafile" />
+                  </group>
+                  <group name="group_right">
+                      <button name="colorread" type="object" string="计算量化色价值" class="oe_highlight"/>
+                  </group>
+              </group>
+              <group>
+                  <field name="redvalue" readonly="1"/>
+              </group>
+          </form>
+      </field>
+    </record>
+
+    <record id="view_form_monthhedge" model="ir.ui.view">
+        <field name="name">Month Hedge Form</field>
+        <field name="model">monthhedge</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="getResult" type="object" string="更新测试结果" class="oe_highlight"/>
+                </header>
+                <h2><em><font color="red">实时模拟测试</font></em></h2>
+                <field name="picture" widget="image" readonly="1" />
+                <!--<group>-->
+                    <!--<field name="stocksHold"  readonly="1" />-->
+                    <!--<field name="currentMonth"  readonly="1" />-->
+                <!--</group>-->
+                <h2><em>历史回测曲线如下</em></h2>
+                <group>
+                    <img src="/Quant/static/src/img/20170331.png" style="width: 100%; height: auto;max-width: 100%; display: block; "/>
+                </group>
+                <sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids" widget="mail_followers" />
+                        <field name="message_ids" widget="mail_thread" />
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_tree_hedgehs300" model="ir.ui.view">
+        <field name="name">Month Hedge Tree</field>
+        <field name="model">monthhedge</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="create_date"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_form_hedgech" model="ir.ui.view">
+        <field name="name">Hedge CH Form</field>
+        <field name="model">hedgech</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="getResult" type="object" string="更新测试结果" class="oe_highlight"/>
+                </header>
+                <h2><em><font color="red">实时模拟测试</font></em></h2>
+                <field name="picture" widget="image" readonly="1" />
+                <!--<group>-->
+                    <!--<field name="stocksHold"  readonly="1" />-->
+                    <!--<field name="currentMonth"  readonly="1" />-->
+                <!--</group>-->
+                <!--<h2><em>历史回测曲线如下</em></h2>
+                <group>
+                    <img src="/Quant/static/src/img/20170331.png" style="width: 100%; height: auto;max-width: 100%; display: block; "/>
+                </group>
+                <sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids" widget="mail_followers" />
+                        <field name="message_ids" widget="mail_thread" />
+                    </div>
+                </sheet>-->
+            </form>
+        </field>
+    </record>
+    <record id="view_tree_hedgech" model="ir.ui.view">
+        <field name="name">Hedge CH Tree</field>
+        <field name="model">hedgech</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="create_date"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_form_hedgeznm" model="ir.ui.view">
+        <field name="name">Hedge ZnM Form</field>
+        <field name="model">hedgeznm</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="getResult" type="object" string="更新测试结果" class="oe_highlight"/>
+                </header>
+                <h2><em><font color="red">实时模拟测试</font></em></h2>
+                <h3><em><font color="red">锌主力连续</font></em></h3>
+                <field name="pictureZn" widget="image" readonly="1" />
+                <h3><em><font color="red">橡胶主力连续</font></em></h3>
+                <field name="pictureRu" widget="image" readonly="1" />
+                <h3><em><font color="red">强麦主力连续</font></em></h3>
+                <field name="pictureWh" widget="image" readonly="1" />
+                <h3><em><font color="red">豆粕主力连续</font></em></h3>
+                <field name="pictureM" widget="image" readonly="1" />
+            </form>
+        </field>
+    </record>
+    <record id="view_tree_hedgeznm" model="ir.ui.view">
+        <field name="name">Hedge ZnM Tree</field>
+        <field name="model">hedgeznm</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="create_date"/>
+            </tree>
+        </field>
+    </record>
+
+</odoo>
+
+

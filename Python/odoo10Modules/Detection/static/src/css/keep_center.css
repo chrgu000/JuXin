@@ -1,0 +1,10 @@
+.openerp .oe_list_content td , .openerp .oe_list_content th {
+    /*background-color: #99ccff;*/
+    text-align: right;
+}
+
+/*
+.openerp .oe_list_content td , .openerp .oe_list_content th {
+    background-color: #99ccff;
+}
+*/

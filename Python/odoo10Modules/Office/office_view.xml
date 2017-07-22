@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<odoo>
+
+    <act_window id="action_punch_task"
+                name="打卡考勤"
+                res_model="punch.task"
+                view_mode="tree,form" />
+    <act_window id="action_plot_task"
+                name="根据xlsx数据作图"
+                res_model="plotpoints.task"
+                view_mode="tree,form" />
+    <menuitem id="menu_punch_task"
+              name="办公应用"
+              parent=""
+              sequence="30"/>
+    <menuitem id="menu_punch"
+              name="打卡"
+              parent="menu_punch_task"
+              sequence="9"
+              action="action_punch_task" />
+    <menuitem id="menu_plot"
+              name="作图"
+              parent="menu_punch_task"
+              sequence="10"
+              action="action_plot_task" />
+
+    <record id="view_tree_punch" model="ir.ui.view">
+        <field name="name">Punch Task Tree</field>
+        <field name="model">punch.task</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="create_uid"/>
+                <field name="create_date"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_form_punch" model="ir.ui.view">
+        <field name="name">Punch Task Form</field>
+        <field name="model">punch.task</field>
+        <field name="arch" type="xml">
+            <form >
+                <group>
+                    <group name="group_left">
+                        <field name="datafile" />
+                    </group>
+                    <group name="group_right">
+                        <button name="select_odd" type="object" string="查找异常考勤记录" class="oe_highlight"/>
+                    </group>
+                </group>
+                <group name="group_top">
+                    <group name="group_left">
+                        <field name="duty_on" readonly="1"/>
+                    </group>
+                    <group name="group_right">
+                        <field name="duty_off" readonly="1"/>
+                    </group>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_tree_plot" model="ir.ui.view">
+        <field name="name">Plot Points Task Tree</field>
+        <field name="model">plotpoints.task</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="create_uid"/>
+                <field name="create_date"/>
+            </tree>
+        </field>
+    </record>
+ <record id="view_form_plot" model="ir.ui.view">
+        <field name="name">Plot Points Task Form</field>
+        <field name="model">plotpoints.task</field>
+        <field name="arch" type="xml">
+            <form >
+                <group>
+                    <group name="group_left">
+                        <field name="datafile" />
+                    </group>
+                    <group name="group_right">
+                        <button name="plotfig" type="object" string="做图" class="oe_highlight"/>
+                        <img src="/Office/static/src/img/xx.png" style="width: 100%; height: auto;max-width: 100%; display: block; "/>
+                    </group>
+                </group>
+                <group>
+                    <field name="picture" widget="image" readonly="1" class="my_image"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+</odoo>
+
+

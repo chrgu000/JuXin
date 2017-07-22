@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+  <data>
+
+    <!-- Action to open To-Do Task list -->
+    <act_window id="action_meeting_task"
+      name="会议安排"
+      res_model="meeting.task"
+      view_mode="tree,form" />
+
+    <!-- Menu Item to open To-Do Task list -->
+    <menuitem id="menu_meeting_task"
+      name="会议"
+      parent="Office.menu_punch_task"
+      sequence="1"
+      action="action_meeting_task" />
+
+    <!-- To-Do Task Form view -->
+    <record id="view_form_meeting_task" model="ir.ui.view">
+      <field name="name">Meeting Task Form</field>
+      <field name="model">meeting.task</field>
+      <field name="arch" type="xml">
+        <form>
+          <header>
+            <button name="register" type="object" string="参加" class="oe_highlight" Confirm="确定要参加吗？"/>
+          </header>
+          <sheet>
+            <group name="group_top">
+              <group name="group_left">
+                <field name="Theme"/>
+                <field name="Lecturer"/>
+                <field name="Time"/>
+                <field name="Place"/>
+                <field name="user_id"/>
+                <field name="date_deadline"/>
+                <field name="Ppt"/>
+                <field name="Docs"/>
+              </group>
+              <group name="group_right">
+                <field name="user_count"/>
+                <field name="user_ids" widget="many2many_tags" readonly="1"/>
+              </group>
+            </group>
+          </sheet>
+                  
+          <!-- Open Chatter widgets -->
+          <sheet position="after">
+              <div class="oe_chatter">
+                  <field name="message_follower_ids" widget="mail_followers" />
+                  <field name="message_ids" widget="mail_thread" />
+              </div>
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+    <!-- To-Do Task List view -->
+    <record id="view_tree_meeting_task" model="ir.ui.view">
+      <field name="name">Meeting Task Tree</field>
+      <field name="model">meeting.task</field>
+      <field name="arch" type="xml">
+        <tree colors="red:Theme!=True">
+          <field name="Theme"/>
+          <field name="Time"/>
+          <field name="Place"/>
+        </tree>
+      </field>
+    </record>
+
+  </data>
+</openerp>

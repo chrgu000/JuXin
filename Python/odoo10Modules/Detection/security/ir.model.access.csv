@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_detection_task_group_user,detection.task.user,model_detection_task,base.group_user,1,0,0,0
+access_detection_task_group_researchers,detection.task.researchers,model_detection_task,Detection.group_researchers,1,1,1,0
+access_detection_task_group_analyst,detection.task.analyst,model_detection_task,Detection.group_analyst,1,1,0,0
