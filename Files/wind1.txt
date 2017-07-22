@@ -1,0 +1,19 @@
+w = windmatlab;
+[w_wset_data,w_wset_codes,w_wset_fields,w_wset_times,w_wset_errorid,w_wset_reqid]=w.wset('SectorConstituent','date=20160801;sectorId=a001010100000000');
+x_stock = w_wset_data(:,2);
+[w_wsi_data,w_wsi_codes,w_wsi_fields,w_wsi_times,w_wsi_errorid,w_wsi_reqid]=w.wsi(x_stock{1},'close','2016-08-01 09:00:00','2016-11-06 09:00:00');
+y_time = w_wsi_times;
+data = w_wsi_data;
+
+a = 2;
+while(a <= length(x_stock))
+    [w_wsi_data,w_wsi_codes,w_wsi_fields,w_wsi_times,w_wsi_errorid,w_wsi_reqid]=w.wsi(x_stock{a},'close','2016-08-01 09:00:00','2016-11-06 09:00:00');
+    data(:,a) = w_wsi_data;
+    a = a + 1;
+end
+
+result = {x_stock, y_time, data};
+
+
+W0046909013
+ÃÜÂë46313592
