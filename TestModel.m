@@ -1,7 +1,10 @@
 function TestModel
 tic;
 sw1=0;%get data from model;
-sw2=1;%sort for results according to data analysis and different days;
+sw2=1;randArray=0; %sort for results according to data analysis and different days;
+
+transferM_M='E:\Trade\R_Matrix';     % transfer between matlab;
+transferM_P='E:\Trade\Matlab_Python'; % transfer between matlab and python;
 %% get data from model;
 if sw1
     global high low close open vol;
@@ -157,26 +160,64 @@ if sw1
     Rall=Rall(1:iRall,:);
     dateAll=dateAll(1:iRall);
     Matrix=Matrix(1:iRall,:);
-    save('E:\Trading\R_Matrix','Rall','dateAll','Matrix');
+    save(transferM_M,'Rall','dateAll','Matrix');
 %     dlmwrite('D:\Trading\hmmMatlabIn.txt',MatrixSpring,'delimiter',',','precision','%.5f','newline','pc');
 %     msgbox('Needed data is prepared now,please run ''D:\Trading\Python\machinelearning\hmmSpring.py'' to train model and select good type CTA!');
 %     figure;
 %     statisticTrading(RTem);
 %% show results according to different days;
 elseif sw2
-    tem=load('E:\Trading\R_Matrix');
+    tem=load(transferM_M);
     Rall=tem.Rall;
     dateAll=tem.dateAll;
     Matrix=tem.Matrix;
-    tem=randperm(length(dateAll));
-    Rall=Rall(tem,:);
-    dateAll=dateAll(tem);
-    Matrix=Matrix(tem,:);
-%     dlmwrite('E:\Trading\Matlab_Python.txt',Matrix,'delimiter',',','precision','%.5f','newline','pc');
-%     system('python D:\Trading\Python\machinelearning\TestModel.py E:\Trading\Matlab_Python.txt');
-%     op=importdata('E:\Trading\Matlab_Python.txt');
-    save('E:\Trading\Matlab_Python','Matrix');
-    system('python D:\Trading\Python\machinelearning\TestModel.py');
+    if randArray
+        tem=randperm(length(dateAll));
+        Rall=Rall(tem,:);
+        dateAll=dateAll(tem);
+        Matrix=Matrix(tem,:);
+    end
+    Nsort=6;Nfit=100;
+    Lt=size(Matrix,2);
+    
+    Rall=Rall(1:200,1);%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    Matrix=Matrix(1:200,:);
+    
+    for i=1:2%Lt
+        i
+        Matx=Matrix(:,i);
+        save(transferM_P,'Matx');
+        system(['python D:\Trade\Python\machinelearning\TestModel.py ',num2str(Nsort),' ',num2str(Nfit)]);
+        flag=load(transferM_P);
+        flag=flag.flag;
+        item=mod(i,3);
+        if item==1
+            figure;
+            set(gcf,'position',[20,50,1300,600]);
+        elseif item==0
+            item=3;
+        end
+        subplot(1,3,item);
+        hold on;
+        flagUnique=unique(flag);
+        Lt2=length(flagUnique);
+        Lines=[];
+        Leges={};      
+        for i2=1:Lt2
+            tem=flag==flagUnique(i2);
+            RallTem=Rall(tem,1);
+            [Line,Lege]=statisticTrading(RallTem);
+            Lines=[Lines,Line];
+            Leges=[Leges,Lege];
+        end
+        legend(Lines,Leges,'location','northoutside','orientation','vertical');
+        hold off;
+        toc;
+    end
+    toc;
+    return;
+    
+    
     
 
     figure;
@@ -264,14 +305,14 @@ end
 toc;
 end
 
-function statisticTrading(R)
+function [Line,Lege]=statisticTrading(R)
 Lt=length(R);
 IR=mean(R)/std(R);
 winRatio=sum(R>0)/Lt;
 ratioWL=-mean(R(R>0))/mean(R(R<0));
 R=cumsum(R);
 maxDraw=0;
-indDraw=0;
+indDraw=1;
 pointDraw=0;
 for i=2:Lt
     drawTem=max(R(1:i))-R(i);
@@ -281,14 +322,12 @@ for i=2:Lt
         pointDraw=R(i);
     end
 end
-plot(R);
+Line=plot(R);
 try
-    hold on;
     plot(indDraw,pointDraw,'r*');
 end
-strTitle=sprintf('Orders:%d; IR:%.4f; winRatio(ratioWL):%.2f%%(%.2f);\nmaxDraw:%.2f%%; profitP: %.4f%%'...
+Lege=sprintf('Orders:%d; IR:%.4f; winRatio(ratioWL):%.2f%%(%.2f);\nmaxDraw:%.2f%%; profitP: %.4f%%'...
     ,Lt,IR,winRatio*100,ratioWL,maxDraw*100,R(end)*100/length(R));
-title(strTitle);
 grid on;
 end
 
