@@ -184,7 +184,6 @@ elseif sw2
     Matrix=Matrix(1:200,:);
     
     for i=1:2%Lt
-        i
         Matx=Matrix(:,i);
         save(transferM_P,'Matx');
         system(['python D:\Trade\Python\machinelearning\TestModel.py ',num2str(Nsort),' ',num2str(Nfit)]);

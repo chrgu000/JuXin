@@ -9,7 +9,7 @@ import numpy as np
 import pickle,datetime,joblib
 
 
-tradeFlag=raw_input('Please confirm trading or not [y/n]?')
+tradeFlag=input('Please confirm trading or not [y/n]?')
 tradeFlag=tradeFlag.lower()=='y'    
 w.start()
 Tem=w.tlogon('0000', '0', 'W115294100301', '*********', 'SHSZ')
@@ -37,14 +37,14 @@ try:
         try:
             daysi=holdDays[holdStocks[i]]
             if (today-dateStart[holdStocks[i]]).days>=daysi:
-                print 'Close %s: %d shares;'%(holdStocks[i],holdShares[i]),
+                print('Close %s: %d shares;'%(holdStocks[i],holdShares[i]),)
                 if tradeFlag:
                     w.torder(holdStocks[i], 'Sell', '0', holdShares[i], 'OrderType=B5TC;'+'LogonID='+str(logId))
-                    print 'send trade command!'
+                    print( 'send trade command!')
                 else:
-                    print 'not realy trade!'            
+                    print ('not realy trade!')       
         except:
-            print 'stocks %s was trade by hand, please close this order by hands too.'%holdStocks[i]      
+            print ('stocks %s was trade by hand, please close this order by hands too.'%holdStocks[i])
     dataTem=w.tdays('ED-1TD',today)
     daysTem=dataTem.Data[0]
     if daysTem[1].date()==today:
@@ -107,7 +107,7 @@ for i in range(Lstocks):
         continue
     
     # model 1: spring, model number 1
-    hmmSpring=joblib.load('D:\Trading\Python\machinelearning\HMMTem')
+    hmmSpring=joblib.load('D:\Trade\Python\machinelearning\modelTestSpringHMM')
     if Close[-2]<Low[-2]+(High[-2]-Low[-2])*0.25 and High[-1]>Low[-1]*1.000001 and 0.025<=Close[-1]/Close[-2]-1<0.055 and Low[-1]/Low[-2]-1>=0.01: 
         flagi=hmmSpring.predict([ np.std([Close[-1],Open[-1],Low[-1],High[-1]])/np.std([Close[-2],Open[-2],Low[-2],High[-2]])-1,\
                                  np.mean(Close[-4:])/np.mean(Close[-11:])-1,High[-1]/High[-2]-1,Close[-1]/Low[-2]-1,Close[-1]/High[-2]-1])
@@ -147,12 +147,12 @@ if Tem>0:
 
 Ltrade=len(profiti)
 for i in range(Ltrade):
-    print 'Buy %s: %d shares;use capital:%.f Yuan;profitPerOrder:%.2f,ModelNumber:%d;' %(stocksi[i],handsi[i],moneyi[i],profiti[i],moneyi[i]),
+    print ('Buy %s: %d shares;use capital:%.f Yuan;profitPerOrder:%.2f,ModelNumber:%d;' %(stocksi[i],handsi[i],moneyi[i],profiti[i],moneyi[i]),)
     if tradeFlag:
         w.torder(stocksi[i], 'Buy', '0', handsi[i], 'OrderType=B5TC;'+'LogonID='+str(logId))
-        print 'send trade command!'
+        print('send trade command!')
     else:
-        print 'not really trade!'
+        print ('not really trade!')
 w.tlogout(str(logId))
 
 holdDaysTem={}

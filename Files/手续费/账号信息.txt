@@ -4,3 +4,5 @@
 海通证券：0460632305 密码：900220
 个人高管信息注册信息：
 账户号----370282198302205112；密码----yJxJSdSL
+
+MySQL: port Number 3306 Name: MySQL56 code:cf*t***0(root),user:caofa(caofa)
