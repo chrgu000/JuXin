@@ -1,7 +1,10 @@
-function TestModelSpring
+function TestModel
 tic;
-sw1=1;%get data from model;
-sw2=1;%show results according to different days;
+sw1=0;fig=1;figNum=20;figNumi=0;%get data from model;
+sw2=1;randArray=0; %sort for results according to data analysis and different days;
+
+transferM_M='E:\Trade\R_Matrix';     % transfer between matlab;
+transferM_P='E:\Trade\Matlab_Python'; % transfer between matlab and python;
 %% get data from model;
 if sw1
     global high low close open vol;
@@ -75,10 +78,9 @@ if sw1
         save allStocks3 vols turns;
     end
     Lstocks=size(opens,2);
-    Rall=zeros(500000,1);
-    dateAll=cell(500000,1);
-    Matrix=zeros(500000,5);
-    MatrixSpring=zeros(500000,13);%col-1:return from one trading day ago;col-2:return from 5 trading days ago;col-3:return between high and low of current trading day;col-4:return between  next trading day and current trading day
+    Rall=zeros(2000000,5);
+    dateAll=cell(2000000,1);
+    Matrix=zeros(2000000,21); % for indicators
     iRall=0;
     Radd=[];
     DaysAdd=0;
@@ -88,12 +90,6 @@ if sw1
     % iStart=100; % draw picture;
     % iEnd=500;
     keyTest=0;
-
-    if iEnd-iStart<50
-        fig=1;
-    else
-        fig=0;
-    end
     listCorr=[];
     for i=iStart:iEnd
     % for i=1:1
@@ -139,73 +135,96 @@ if sw1
             ma10(ii)=mean(close(ii-10:ii));        
         end
 
-        for ii=20:L-2
-            switch keyTest
-                case  0
-                    lowTest=low(ii)/low(ii-1)-1;
-                    if close(ii-1)<low(ii-1)+(high(ii-1)-low(ii-1))*0.25 &&close(ii)/close(ii-1)-1<0.095&&high(ii)>low(ii)...%&&close(ii)>low(ii)+(high(ii)-low(ii))*0.1
-                            &&close(ii)/close(ii-1)-1>=0.025&&close(ii)/close(ii-1)-1<0.055...
-                            && lowTest>=0.01%&&lowTest<-0.01 % 
-                            %&&close(ii)>maN(ii)%&&close(ii)<high(ii-1) %&&high(ii-1)<high(ii-2)&&low(ii)>low(ii-1)&& close(ii)>low(ii-1)+(high(ii-1)-low(ii-1))*0.5%                    
-                        daysHold=1;
-                        RTem=close(ii+daysHold)/close(ii);
-                        indTarget=[indTarget,[ii;ii+daysHold]];
-                        Target=[Target,[close(ii);close(ii+daysHold)]]; 
-                        iRall=iRall+1;
-                        Rall(iRall)=RTem;
-                        Matrix(iRall,:)=[close(ii),close(ii-1),close(ii-5),high(ii),low(ii)];
-                        MatrixSpring(iRall,:)=[close(ii+2)/close(ii)-0.003,close(ii+3)/close(ii+1)-0.003,(close(ii)-low(ii))/(high(ii)-low(ii)),std([close(ii);open(ii);low(ii);high(ii)])/std([close(ii-1);open(ii-1);low(ii-1);high(ii-1)]),maN(ii)/ma10(ii),close(ii)/close(ii-4),high(ii)/high(ii-1),low(ii)/low(ii-1),close(ii)/close(ii-2),close(ii)/low(ii-1),close(ii)/high(ii-1),close(ii)/mean([low(ii-1),high(ii-1)]),close(ii+2)/open(ii+1)-0.003]-1;
-                        dateAll(iRall)=datei(ii);   
-                    end
-            end
-        end
-
-        if fig
-            numberFig=size(indTarget,2);
-            for i2=1:numberFig
-                figure;
-                ax1=subplot(3,1,1:2);
-                figStart=indTarget(1,i2)-10;
-                candle(high(figStart:figStart+20),low(figStart:figStart+20),close(figStart:figStart+20),open(figStart:figStart+20));
-                try
-                    listCorrStr=sprintf('%.3f ',listCorr(i2,:));
-                catch
-                    listCorrStr='no calculation';
-                end           
-                title(strcat(stocks(i),';listCorr: ',listCorrStr));
-                grid on;
-                hold on;
-                lowTem=low(figStart:figStart+20);
-                indTem=[11;11+indTarget(2,i2)-indTarget(1,i2)];
-                line(indTem,Target(:,i2),'color','r');
-                plot(indTem(1,:),lowTem(indTem(1,:)),'r*');
-                plot(indTem(2,:),lowTem(indTem(2,:)),'k*');
-                try
-                    indAddTem=indAdd{i2}+11;
-                    AddTem=Add{i2};                
-                    line(indAddTem,AddTem,'color','b');
-                    plot(indAddTem(1,:),lowTem(indAddTem(1,:)),'b*');
+        for ii=15:L-5
+            if close(ii-1)<low(ii-1)+(high(ii-1)-low(ii-1))*0.25 &&close(ii)/close(ii-1)<1.095&&high(ii)>low(ii)...%&&close(ii)>low(ii)+(high(ii)-low(ii))*0.1
+                    &&close(ii)>low(ii)+(high(ii)-low(ii))*0.5                   
+                iRall=iRall+1;
+                Rall(iRall,:)=[close(ii+1)/close(ii),close(ii+2)/close(ii),close(ii+3)/close(ii),close(ii+2)/close(ii+1),close(ii+3)/close(ii+1)]-1;
+                dateAll(iRall)=datei(ii);   
+                Matrix(iRall,:)=[ high(ii)/high(ii-1),high(ii)/open(ii-1),high(ii)/low(ii-1),high(ii)/close(ii-1),...
+                               low(ii)/high(ii-1),low(ii)/open(ii-1),low(ii)/low(ii-1),low(ii)/close(ii-1),...
+                               open(ii)/high(ii-1),open(ii)/open(ii-1),open(ii)/low(ii-1),open(ii)/close(ii-1),...
+                               close(ii)/high(ii-1),close(ii)/open(ii-1),close(ii)/low(ii-1),close(ii)/close(ii-1),...
+                               mean(close(ii-4:ii+1))/mean(close(ii-9:ii+1)),mean(high(ii-4:ii+1))/mean(high(ii-9:ii+1)),...
+                               std(close(ii-4:ii+1))/std(close(ii-9:ii+1)),std(high(ii-4:ii+1))/std(high(ii-9:ii+1)),...
+                               std([ close(ii),open(ii),high(ii),low(ii) ])/std([close(ii-1),open(ii-1),high(ii-1),low(ii-1)]) ];  
+                if fig && figNumi<figNum
+                    figNumi=figNumi+1;
+                    figure;
+                    a1=subplot(3,1,[1,2]);
+                    candle(high(ii-10:ii+2),low(ii-10:ii+2),close(ii-10:ii+2),open(ii-10:ii+2));
+                    grid on;
+                    a2=subplot(313);
+                    bar(vol(ii-10:ii+2));
+                    grid on;
+                    linkaxes([a1,a2],'x');
+                    %linkprop([a1,a2],'xlim');%ylim
                 end
-                ax2=subplot(3,1,3);
-                bar(vol(figStart:figStart+20));
-                grid on;
-                linkaxes([ax1,ax2],'x');   
             end
         end
     end
-    
-    MatrixSpring=[MatrixSpring(1:iRall,:),datenum(dateAll(1:iRall))];
-    dlmwrite('D:\Trading\hmmMatlabIn.txt',MatrixSpring,'delimiter',',','precision','%.5f','newline','pc');
-    msgbox('Needed data is prepared now,please run ''D:\Trading\Python\machinelearning\hmmSpring.py'' to train model and select good type CTA!');
-    RTem=MatrixSpring(:,1);
-    figure;
-    statisticTrading(RTem);
+    Rall=Rall(1:iRall,:);
+    dateAll=dateAll(1:iRall);
+    Matrix=Matrix(1:iRall,:);
+    save(transferM_M,'Rall','dateAll','Matrix');
+%     dlmwrite('D:\Trading\hmmMatlabIn.txt',MatrixSpring,'delimiter',',','precision','%.5f','newline','pc');
+%     msgbox('Needed data is prepared now,please run ''D:\Trading\Python\machinelearning\hmmSpring.py'' to train model and select good type CTA!');
+%     figure;
+%     statisticTrading(RTem);
 %% show results according to different days;
 elseif sw2
-    dataTem=importdata('D:\Trading\hmmMatlabOut.txt');
-    Rall=dataTem(:,1);
-    R2all=dataTem(:,2);
-    dateAll=dataTem(:,3);
+    tem=load(transferM_M);
+    Rall=tem.Rall;
+    dateAll=tem.dateAll;
+    Matrix=tem.Matrix;
+    if randArray
+        tem=randperm(length(dateAll));
+        Rall=Rall(tem,:);
+        dateAll=dateAll(tem);
+        Matrix=Matrix(tem,:);
+    end
+    Nsort=6;Nfit=100;
+    Lt=size(Matrix,2);
+    
+    Rall=Rall(1:200,1);%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    Matrix=Matrix(1:200,:);
+    
+    for i=1:2%Lt
+        Matx=Matrix(:,i);
+        save(transferM_P,'Matx');
+        system(['python D:\Trade\Python\machinelearning\TestModel.py ',num2str(Nsort),' ',num2str(Nfit)]);
+        flag=load(transferM_P);
+        flag=flag.flag;
+        item=mod(i,3);
+        if item==1
+            figure;
+            set(gcf,'position',[20,50,1300,600]);
+        elseif item==0
+            item=3;
+        end
+        subplot(1,3,item);
+        hold on;
+        flagUnique=unique(flag);
+        Lt2=length(flagUnique);
+        Lines=[];
+        Leges={};      
+        for i2=1:Lt2
+            tem=flag==flagUnique(i2);
+            RallTem=Rall(tem,1);
+            [Line,Lege]=statisticTrading(RallTem);
+            Lines=[Lines,Line];
+            Leges=[Leges,Lege];
+        end
+        legend(Lines,Leges,'location','northoutside','orientation','vertical');
+        hold off;
+        toc;
+    end
+    toc;
+    return;
+    
+    
+    
+
     figure;
     set(gcf,'position',[50,100,1800,900]);
     weekDays=weekday(dateAll);
@@ -291,14 +310,14 @@ end
 toc;
 end
 
-function statisticTrading(R)
+function [Line,Lege]=statisticTrading(R)
 Lt=length(R);
 IR=mean(R)/std(R);
 winRatio=sum(R>0)/Lt;
 ratioWL=-mean(R(R>0))/mean(R(R<0));
 R=cumsum(R);
 maxDraw=0;
-indDraw=0;
+indDraw=1;
 pointDraw=0;
 for i=2:Lt
     drawTem=max(R(1:i))-R(i);
@@ -308,14 +327,12 @@ for i=2:Lt
         pointDraw=R(i);
     end
 end
-plot(R);
+Line=plot(R);
 try
-    hold on;
     plot(indDraw,pointDraw,'r*');
 end
-strTitle=sprintf('Orders:%d; IR:%.4f; winRatio(ratioWL):%.2f%%(%.2f);\nmaxDraw:%.2f%%; profitP: %.4f%%'...
+Lege=sprintf('Orders:%d; IR:%.4f; winRatio(ratioWL):%.2f%%(%.2f);\nmaxDraw:%.2f%%; profitP: %.4f%%'...
     ,Lt,IR,winRatio*100,ratioWL,maxDraw*100,R(end)*100/length(R));
-title(strTitle);
 grid on;
 end
 

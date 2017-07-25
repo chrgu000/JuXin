@@ -1,6 +1,6 @@
 function TestModel
 tic;
-sw1=0;%get data from model;
+sw1=1;fig=1;figNum=20;figNumi=0;%get data from model;
 sw2=1;randArray=0; %sort for results according to data analysis and different days;
 
 transferM_M='E:\Trade\R_Matrix';     % transfer between matlab;
@@ -90,12 +90,6 @@ if sw1
     % iStart=100; % draw picture;
     % iEnd=500;
     keyTest=0;
-
-    if iEnd-iStart<50
-        fig=1;
-    else
-        fig=0;
-    end
     listCorr=[];
     for i=iStart:iEnd
     % for i=1:1
@@ -142,18 +136,33 @@ if sw1
         end
 
         for ii=15:L-5
-            if close(ii-1)<low(ii-1)+(high(ii-1)-low(ii-1))*0.25 &&close(ii)/close(ii-1)<1.095&&high(ii)>low(ii)...%&&close(ii)>low(ii)+(high(ii)-low(ii))*0.1
-                    &&close(ii)>low(ii)+(high(ii)-low(ii))*0.5                   
+            if low(ii-3)<=min(low(ii-5:ii))&&high(ii-2)>high(ii-3)&&high(ii-1)>high(ii)&&low(ii-1)>low(ii)&&...
+                    min(vol(ii-2:ii-1))>max(vol([ii,ii-3])) && high(ii-3)>low(ii-3)&&high(ii-2)>low(ii-2)&&high(ii-1)>low(ii-1)&&high(ii)>low(ii)
                 iRall=iRall+1;
                 Rall(iRall,:)=[close(ii+1)/close(ii),close(ii+2)/close(ii),close(ii+3)/close(ii),close(ii+2)/close(ii+1),close(ii+3)/close(ii+1)]-1;
                 dateAll(iRall)=datei(ii);   
-                Matrix(iRall,:)=[ high(ii)/high(ii-1),high(ii)/open(ii-1),high(ii)/low(ii-1),high(ii)/close(ii-1),...
-                               low(ii)/high(ii-1),low(ii)/open(ii-1),low(ii)/low(ii-1),low(ii)/close(ii-1),...
+                Matrix(iRall,:)=[ corr2([low(ii-3),open(ii-3),close(ii-3),high(ii-3)],[low(ii),close(ii),open(ii),high(ii)]),...
+                               corr2([low(ii-2),open(ii-2),close(ii-2),high(ii-2)],[low(ii-1),close(ii-1),open(ii-1),high(ii-1)]),...
+                               corr2([low(ii-3),open(ii-3),close(ii-3),high(ii-3),low(ii-2),open(ii-2),close(ii-2),high(ii-2)],[low(ii),close(ii),open(ii),high(ii),low(ii-1),close(ii-1),open(ii-1),high(ii-1)]),...
+                               vol(ii-1)/vol(ii-2),...
+                               vol(ii)/vol(ii-2),vol(ii)/vol(ii-1),low(ii)/low(ii-1),low(ii)/close(ii-1),...
                                open(ii)/high(ii-1),open(ii)/open(ii-1),open(ii)/low(ii-1),open(ii)/close(ii-1),...
                                close(ii)/high(ii-1),close(ii)/open(ii-1),close(ii)/low(ii-1),close(ii)/close(ii-1),...
                                mean(close(ii-4:ii+1))/mean(close(ii-9:ii+1)),mean(high(ii-4:ii+1))/mean(high(ii-9:ii+1)),...
                                std(close(ii-4:ii+1))/std(close(ii-9:ii+1)),std(high(ii-4:ii+1))/std(high(ii-9:ii+1)),...
                                std([ close(ii),open(ii),high(ii),low(ii) ])/std([close(ii-1),open(ii-1),high(ii-1),low(ii-1)]) ];  
+                if fig && figNumi<figNum
+                    figNumi=figNumi+1;
+                    figure;
+                    a1=subplot(3,1,[1,2]);
+                    candle(high(ii-10:ii+2),low(ii-10:ii+2),close(ii-10:ii+2),open(ii-10:ii+2));
+                    grid on;
+                    a2=subplot(313);
+                    bar(vol(ii-10:ii+2));
+                    grid on;
+                    linkaxes([a1,a2],'x');
+                    %linkprop([a1,a2],'xlim');%ylim
+                end
             end
         end
     end
@@ -161,6 +170,7 @@ if sw1
     dateAll=dateAll(1:iRall);
     Matrix=Matrix(1:iRall,:);
     save(transferM_M,'Rall','dateAll','Matrix');
+    fprintf('get %d records in all.',iRall);
 %     dlmwrite('D:\Trading\hmmMatlabIn.txt',MatrixSpring,'delimiter',',','precision','%.5f','newline','pc');
 %     msgbox('Needed data is prepared now,please run ''D:\Trading\Python\machinelearning\hmmSpring.py'' to train model and select good type CTA!');
 %     figure;
