@@ -25,7 +25,13 @@ try:
     Highs=dataTem['Highs']
     Lows=dataTem['Lows']
     Vols=dataTem['Vols']
+    Date.append(today)
     stocks=dataTem['stocks']
+    Opens=np.column_stack([np.row_stack(Opens),w.wsq(stocks,'rt_open').Data[0]])
+    Closes=np.column_stack([np.row_stack(Closes),w.wsq(stocks,'rt_latest').Data[0]])
+    Highs=np.column_stack([np.row_stack(Highs),w.wsq(stocks,'rt_high').Data[0]])
+    Lows=np.column_stack([np.row_stack(Lows),w.wsq(stocks,'rt_low').Data[0]])
+    Vols=np.column_stack([np.row_stack(Vols),w.wsq(stocks,'rt_vol').Data[0]])
     lastTradeDay=dataTem['lastTradeDay']
     assets=dataTem['assets']
     holdDays=dataTem['holdDays']   
@@ -36,7 +42,9 @@ try:
     for i in range(len(holdStocks)):
         try:
             daysi=holdDays[holdStocks[i]]
-            if (today-dateStart[holdStocks[i]]).days>=daysi:
+            closeTem=Closes[stocks.index(holdStocks[i])]
+            tem=len(w.tdays(dateStart[holdStocks[i]],today).Data[0])
+            if tem>=daysi+1 or (tem==2 and closeTem[-1]<closeTem[-2]):
                 print('Close %s: %d shares;'%(holdStocks[i],holdShares[i]),)
                 if tradeFlag:
                     w.torder(holdStocks[i], 'Sell', '0', holdShares[i], 'OrderType=B5TC;'+'LogonID='+str(logId))
@@ -51,7 +59,7 @@ try:
         lastTradeDay=daysTem[0]
     else:
         lastTradeDay=daysTem[1]
-    if Date[-1]<lastTradeDay:
+    if Date[-1]<lastTradeDay[-1]:
         pickle[-1]# go to except
 except:
     dataTem=w.wset('SectorConstituent')
@@ -71,16 +79,15 @@ except:
         Lows=w.wsd(stocks,'low','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
         Vols=w.wsd(stocks,'volume','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
         if np.all([len(Opens)-1,len(Closes)-1,len(Highs)-1,len(Lows)-1,len(Vols)-1]):
-            dataPKL={'Date':Date,'Opens':Opens,'Closes':Closes,'Highs':Highs,'Lows':Lows,'Vols':Vols}
+            dataPKL={'Date':Date,'Opens':Opens,'Closes':Closes,'Highs':Highs,'Lows':Lows,'Vols':Vols,'stocks':stocks}
+            Date.append(today)
+            Opens=np.column_stack([np.row_stack(Opens),w.wsq(stocks,'rt_open').Data[0]])
+            Closes=np.column_stack([np.row_stack(Closes),w.wsq(stocks,'rt_latest').Data[0]])
+            Highs=np.column_stack([np.row_stack(Highs),w.wsq(stocks,'rt_high').Data[0]])
+            Lows=np.column_stack([np.row_stack(Lows),w.wsq(stocks,'rt_low').Data[0]])
+            Vols=np.column_stack([np.row_stack(Vols),w.wsq(stocks,'rt_vol').Data[0]])
             break
-
-Date.append(today)
-Opens.append(w.wsq(stocks,'rt_open').Data[0])
-Closes.append(w.wsq(stocks,'rt_latest').Data[0])
-Highs.append(w.wsq(stocks,'rt_high').Data[0])
-Lows.append(w.wsq(stocks,'rt_low').Data[0])
-Vols.append(w.wsq(stocks,'rt_vol').Data[0])
-
+        
 Lstocks=len(stocks)
 stocksi=[] # name of stocks;
 handsi=[]  # hands of trading this time;
@@ -107,22 +114,22 @@ for i in range(Lstocks):
         continue
     
     # model 1: spring, model number 1
-    hmmSpring=joblib.load('D:\Trade\Python\machinelearning\modelTestSpringHMM')
+    hmmSpring=joblib.load('D:\Trade\Python\machinelearning\modelTestSpringHMM') 
     if Close[-2]<Low[-2]+(High[-2]-Low[-2])*0.25 and High[-1]>Low[-1]*1.000001 and 0.025<=Close[-1]/Close[-2]-1<0.055 and Low[-1]/Low[-2]-1>=0.01: 
-        flagi=hmmSpring.predict([ np.std([Close[-1],Open[-1],Low[-1],High[-1]])/np.std([Close[-2],Open[-2],Low[-2],High[-2]])-1,\
-                                 np.mean(Close[-4:])/np.mean(Close[-11:])-1,High[-1]/High[-2]-1,Close[-1]/Low[-2]-1,Close[-1]/High[-2]-1])
+        flagi=hmmSpring.predict([ np.std([Close[-1],Open[-1],Low[-1],High[-1]])/np.std([Close[-2],Open[-2],Low[-2],High[-2]]),\
+                                 np.mean(Close[-4:])/np.mean(Close[-11:]),High[-1]/High[-2],Close[-1]/Low[-2],Close[-1]/High[-2]  ])
         if flagi==0:
-            profiti.append(1.34)
-        elif flagi==1:
-            profiti.append(3.41)
-        elif flagi==3:
-            profiti.append(1.44)
+            profiti.append(1.7)
+        elif flagi==2:
+            profiti.append(3.7)
+        elif flagi==4:
+            profiti.append(1.6)
         else:
             continue
         stocksi.append(stocks[i])
         handsi.append(np.ceil(100/Close[-1])*100)
         modeli.append(1)   # model number:1;
-        holdi.append(2)    # hold 2 days;
+        holdi.append(2)    # hold 2 days unless close[today]<close[yesterday]
         moneyi.append(handsi[-1]*Close[-1])
     
 indTem=np.argsort(-np.array(profiti))

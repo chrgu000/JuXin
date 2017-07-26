@@ -13,20 +13,21 @@ import numpy as np
 import scipy.io as sio
 import pickle,joblib
 
-sw1=1 # load data from .mat file,calculate model data adn save it;
-sw2=1 # load model data and test hmm model
-fileSave='modelTestSpring'
+sw1=0 # load data from .mat file,calculate model data adn save it;
+sw2=0 # train hmm model
+sw3=1 # test hmm model
+fileSave='D:\Trade\Python\machinelearning\modelTestSpring'
 
 if sw1:
-    Tem=sio.loadmat('d:\\Trading\\allStocks1.mat')
+    Tem=sio.loadmat('d:\\Trade\\allStocks1.mat')
     stocks=Tem['stocks']
     Date=Tem['Date']
     Opens=Tem['opens']
     Closes=Tem['closes']
-    Tem=sio.loadmat('d:\\Trading\\allStocks2.mat')
+    Tem=sio.loadmat('d:\\Trade\\allStocks2.mat')
     Highs=Tem['highs']
     Lows=Tem['lows']
-    Tem=sio.loadmat('d:\\Trading\\allStocks3.mat')
+    Tem=sio.loadmat('d:\\Trade\\allStocks3.mat')
     Vols=Tem['vols']
     Turns=Tem['turns']
     
@@ -40,7 +41,7 @@ if sw1:
         for i2 in range(10,Li-5):
             if Close[i2-1]<Low[i2-1]+(High[i2-1]-Low[i2-1])*0.25 and Close[i2]/Close[i2-1]<1.095 and High[i2]>Low[i2] \
             and 1.025 <=Close[i2]/Close[i2-1]<1.055 and Low[i2]/Low[i2-1]>=1.01:
-                Rall.append(Close[i2+1]/Close[i2]-1)
+                Rall.append(Close[i2+2]/Close[i2]-1)
                 dateAll.extend(date[i2][0].tolist())
                 Matrix.append([ np.std([Close[i2],Open[i2],Low[i2],High[i2]])/np.std([Close[i2-1],Open[i2-1],Low[i2-1],High[i2-1]]),\
                                      np.mean(Close[i2-3:i2+1])/np.mean(Close[i2-10:i2+1]),High[i2]/High[i2-1],Close[i2]/Low[i2-1],Close[i2]/High[i2-1] ])
@@ -49,7 +50,17 @@ if sw1:
     pickle.dump(tem,Tem)
     Tem.close()
 
-def hmmTestAll(X,Re,Mark):
+Tem=open(fileSave,'rb')
+tem=pickle.load(Tem)
+Tem.close()
+Rall=tem['Rall'];dateAll=tem['dateAll'];Matrix=tem['Matrix']
+X = np.row_stack(Matrix)
+X,X0,Re,y0=train_test_split(X,np.array(Rall),test_size=0.0)
+Lindicators=X.shape[1]
+#    for i in range(Lindicators):
+#        Mark='indicator:'+str(i+1)
+#        hmmTestAll(np.row_stack(X[:,i]),Re,Mark)   
+if sw2:    
     hmm=GaussianHMM(n_components=5,covariance_type='diag',n_iter=10000).fit(X) #spherical,diag,full,tied 
     joblib.dump(hmm,fileSave+'HMM')
     
@@ -81,14 +92,14 @@ def hmmTestAll(X,Re,Mark):
         plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
                  %(i,LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))  
     plt.plot(xi,yi,'r*')
-    plt.xlabel(Mark,fontsize=16)
-    plt.legend(loc='upper left',bbox_to_anchor=(1.0,1.0),ncol=1,fancybox=True,shadow=True)
+    plt.xlabel('All Sorts',fontsize=16)
+    plt.legend(loc='upper left')
     plt.grid(1)    
-
-def hmmTestSelected(X,Re):
+      
+elif sw3:       
     hmm=joblib.load(fileSave+'HMM')
     flag=hmm.predict(X) 
-    buy=(flag==3)+(flag==1)+(flag==0)+(flag==15)
+    buy=(flag==0)+(flag==2)+(flag==4)+(flag==15)
     sell=(flag==0)+(flag==3)+(flag==4)+(flag==5)
     plt.figure(figsize = (15,8))
     ReT=Re[buy]
@@ -109,24 +120,8 @@ def hmmTestSelected(X,Re):
     plt.plot(range(LT),ReTcs,label='latent_state %s;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
              %('Selected',LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))
     plt.plot(xi,yi,'r*')
-    plt.legend(loc='upper left',bbox_to_anchor=(1.0,1.0),ncol=1,fancybox=True,shadow=True)
+    plt.legend(loc='upper left')
     plt.grid(1) 
-    
-if sw2:
-    Tem=open(fileSave,'rb')
-    tem=pickle.load(Tem)
-    Tem.close()
-    Rall=tem['Rall'];dateAll=tem['dateAll'];Matrix=tem['Matrix']
-    X = np.row_stack(Matrix)
-    X,X0,Re,y0=train_test_split(X,np.array(Rall),test_size=0.0)
-    Lindicators=X.shape[1]
-#    for i in range(Lindicators):
-#        Mark='indicator:'+str(i+1)
-#        hmmTestAll(np.row_stack(X[:,i]),Re,Mark)   
-        
-    Mark='all indicators'
-    hmmTestAll(X,Re,Mark)                
-    hmmTestSelected(X,Re)
     
     
     
