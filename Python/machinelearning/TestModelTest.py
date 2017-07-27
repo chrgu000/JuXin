@@ -7,21 +7,32 @@ Created on Mon Jul 24 11:10:55 2017
 
 
 from hmmlearn.hmm import GaussianHMM
+from seqlearn.perceptron import StructuredPerceptron
 from sklearn.cross_validation import train_test_split
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io as sio
 import joblib, warnings
-warnings.filterwarnings("ignore")
 
-fileSave='testHMM'
+sw1=1 # test all for the first time
+sw2=0 # show figure after delete some bad type (should be done by hand)
+sw3=0 # test all for the second time after delete some bad type
+sw4=0 # train by seq
+
+warnings.filterwarnings("ignore")
+fileSave='D:\\Trade\\Python\\machinelearning\\testHMM'
 def hmmTestAll(Xraw,Reraw):
     Xshape=Xraw.shape
     Xrow=Xshape[0]
     Xcol=Xshape[1]
 #    Xraw,X0,Re,y0=train_test_split(Xraw,np.array(Re),test_size=0.0)
-    for lp in range(Xcol):
-        X=Xraw[:,lp]
+    for lp in range(Xcol+1):
+        if lp<Xcol:
+            X=Xraw[:,lp]
+            figTitle=str(lp)
+        else:
+            X=Xraw
+            figTitle='All'
         trainSample=50000
         if Xrow<trainSample:
             Xtrain=X[:Xrow//2]
@@ -35,7 +46,7 @@ def hmmTestAll(Xraw,Reraw):
             Retest=Reraw[trainSample:]
             
         hmm=GaussianHMM(n_components=5,covariance_type='diag',n_iter=10000).fit(np.row_stack(Xtrain)) #spherical,diag,full,tied 
-        joblib.dump(hmm,fileSave+str(lp))
+        joblib.dump(hmm,fileSave+figTitle)
         
 #        for i in range(2):
         for i in range(1):
@@ -76,47 +87,30 @@ def hmmTestAll(Xraw,Reraw):
                 plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
                          %(i2,LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))  
             plt.plot(xi,yi,'r*')
-            plt.title(str(lp),fontsize=16)
+            plt.title(figTitle,fontsize=16)
     #        plt.legend(loc='upper',bbox_to_anchor=(0.0,1.0),ncol=1,fancybox=True,shadow=True)
             plt.legend(loc='upper left')
             plt.grid(1)    
-        
-def hmmTestCertain(X,Re):
-    hmm=joblib.load(fileSave+'1')
-    flag1=hmm.predict(np.row_stack(X[:,3]))
-    flag1=(flag1!=1)#*(flag1!=4)
-    hmm=joblib.load(fileSave+'2')
-    flag2=hmm.predict(np.row_stack(X[:,4]))
-    flag2=flag2!=3
-    hmm=joblib.load(fileSave+'3')
-    flag3=hmm.predict(np.row_stack(X[:,7]))
-    flag3=flag3!=2
-    hmm=joblib.load(fileSave+'4')
-    flag4=hmm.predict(np.row_stack(X[:,8]))
-    flag4=flag4!=4
-    hmm=joblib.load(fileSave+'5')
-    flag5=hmm.predict(np.row_stack(X[:,9:11]))
-    flag5=(flag5!=2)*(flag5!=4)
-    hmm=joblib.load(fileSave+'6')
-    flag6=hmm.predict(np.row_stack(X[:,12]))
-    flag6=flag6!=1
-    hmm=joblib.load(fileSave+'7')
-    flag7=hmm.predict(np.row_stack(X[:,13]))
-    flag7=flag7!=2
-    hmm=joblib.load(fileSave+'8')
-    flag8=hmm.predict(np.row_stack(X[:,15]))
-    flag8=flag8!=3
-    hmm=joblib.load(fileSave+'9')
-    flag9=hmm.predict(np.row_stack(X[:,16]))
-    flag9=flag9!=3
-    hmm=joblib.load(fileSave+'10')
-    flag10=hmm.predict(np.row_stack(X[:,17]))
-    flag10=flag10!=0
-    hmm=joblib.load(fileSave+'11')
-    flag11=hmm.predict(np.row_stack(X[:,18]))
-    flag11=flag11!=4
-    flag=flag1*flag2*flag3*flag4*flag5*flag6*flag7*flag8*flag9*flag10*flag11
+       
+
+def hmmTestCertain(Matrix,Re,flagSelected):
+    X=np.row_stack(Matrix)  
+    def hmmTCi(paraList): #Nind -- which indicator; flaNot -- not which flag for this indicator;
+        Nind=[]
+        flagNot=[]
+        for i in range(len(paraList)):
+            Nind.append(paraList[i][0])
+            flagNot.append(paraList[i][1])            
+        flag=np.ones(len(X))>0
+        for i2 in range(len(Nind)):    
+            hmm=joblib.load(fileSave+str(Nind[i2]))
+            flagTem=hmm.predict(np.row_stack(X[:,Nind[i2]]))
+            for i in range(len(flagNot[i2])):
+                    flag=flag*(flagTem!=flagNot[i2][i])       
+        return flag
     
+    flag=hmmTCi(flagSelected)
+
     ReT=Re[flag]
     ReTcs=ReT.cumsum()
     LT=len(ReT)
@@ -133,22 +127,33 @@ def hmmTestCertain(X,Re):
             maxDrawi=i2
             maxDrawValue=ReTcs[i2]
     plt.figure(figsize=(15,8))
-    plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
-             %(100,LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))  
+    plt.plot(range(LT),ReTcs,label='latent_state: %s;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
+             %('Selected',LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))  
     plt.plot(maxDrawi,maxDrawValue,'r*')
     plt.legend(loc='upper left')
     plt.grid(1) 
+    return flag
                
+if sw1:
+    fileName='E:\Trade\R_Matrix'
+    tem=sio.loadmat(fileName)
+    Matrix=tem['Matrix'] 
+    Rall=tem['Rall']
+    tem=[]
+    Re=Rall[:,1] #0:return1; 1:return2 
+    hmmTestAll(Matrix,Re)    
+if sw2:
+    flagSelected=[ [2,[0]],[3,[3]],[4,[2]],[6,[3,4]],[7,[1,3]],[8,[3]],[9,[3]],\
+                  [10,[0,3]],[11,[2]],[13,[1]],[14,[2]],[15,[4]],[16,[0,2]],[21,[2]],[24,[0]] ]
+    flag=hmmTestCertain(Matrix,Re,flagSelected) 
+if sw3:
+    Matrix=Matrix[flag,:] 
+    Re=Re[flag]
+    hmmTestAll(Matrix[:,[0,1,3,9,10,11,14,15,17,23,24,25]],Re)
+    #hmmTestAll(Matrix,Re)
+if sw4:
+    
 
-fileName='E:\Trade\R_Matrix'
-tem=sio.loadmat(fileName)
-Matrix=tem['Matrix'] 
-Rall=tem['Rall']
-tem=[]
-Re=Rall[:,1] #0:return1; 1:return2 
-hmmTestAll(Matrix,Re)             #nice sort1: 3,4,
-#X=np.row_stack(Matrix)
-#hmmTestCertain(X,Re)
 
 
 

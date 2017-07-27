@@ -58,7 +58,7 @@ seq=StructuredPerceptron()
 seq.fit(X_train,y_trainLabel,[len(y_train),])
 #joblib.dump(hmm,'HMMTest')
 y_pred=seq.predict(X_test,[len(y_test)])
-print 'accuracy:%.3f%%' %( (y_testLabel==y_pred).sum()*100/float(len(y_test)) )
+print ('accuracy:%.3f%%' %( (y_testLabel==y_pred).sum()*100/float(len(y_test)) ))
 
 yU=np.unique(y_pred)
 plt.figure(figsize=(15,8))

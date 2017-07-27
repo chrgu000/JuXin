@@ -166,9 +166,14 @@ if sw1
     save(transferM_M,'Rall','dateAll','Matrix');
 %     dlmwrite('D:\Trading\hmmMatlabIn.txt',MatrixSpring,'delimiter',',','precision','%.5f','newline','pc');
 %     msgbox('Needed data is prepared now,please run ''D:\Trading\Python\machinelearning\hmmSpring.py'' to train model and select good type CTA!');
-%     figure;
-%     statisticTrading(RTem);
-%% show results according to different days;
+    figure;
+    RTem=Rall(:,1);
+    [tem1,tem2]=statisticTrading(RTem);
+    legend(tem1,tem2);
+    figure;
+    RTem=Rall(:,2);
+    [tem1,tem2]=statisticTrading(RTem);
+    legend(tem1,tem2);%% show results according to different days;
 elseif sw2
     tem=load(transferM_M);
     Rall=tem.Rall;

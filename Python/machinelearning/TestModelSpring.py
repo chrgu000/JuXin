@@ -13,7 +13,7 @@ import numpy as np
 import scipy.io as sio
 import pickle,joblib
 
-sw1=0 # load data from .mat file,calculate model data adn save it;
+sw1=1 # load data from .mat file,calculate model data adn save it;
 sw2=0 # train hmm model
 sw3=1 # test hmm model
 fileSave='D:\Trade\Python\machinelearning\modelTestSpring'
@@ -41,7 +41,10 @@ if sw1:
         for i2 in range(10,Li-5):
             if Close[i2-1]<Low[i2-1]+(High[i2-1]-Low[i2-1])*0.25 and Close[i2]/Close[i2-1]<1.095 and High[i2]>Low[i2] \
             and 1.025 <=Close[i2]/Close[i2-1]<1.055 and Low[i2]/Low[i2-1]>=1.01:
-                Rall.append(Close[i2+2]/Close[i2]-1)
+                if Close[i2+1]>Close[i2]:
+                    Rall.append(Close[i2+2]/Close[i2]-1)
+                else:
+                    Rall.append(Close[i2+1]/Close[i2]-1)
                 dateAll.extend(date[i2][0].tolist())
                 Matrix.append([ np.std([Close[i2],Open[i2],Low[i2],High[i2]])/np.std([Close[i2-1],Open[i2-1],Low[i2-1],High[i2-1]]),\
                                      np.mean(Close[i2-3:i2+1])/np.mean(Close[i2-10:i2+1]),High[i2]/High[i2-1],Close[i2]/Low[i2-1],Close[i2]/High[i2-1] ])

@@ -80,7 +80,7 @@ if sw1
     Lstocks=size(opens,2);
     Rall=zeros(2000000,5);
     dateAll=cell(2000000,1);
-    Matrix=zeros(2000000,27); % for indicators
+    Matrix=zeros(2000000,31); % for indicators
     iRall=0;
     Radd=[];
     DaysAdd=0;
@@ -144,13 +144,13 @@ if sw1
                 Matrix(iRall,:)=[ corr2([low(ii-3),open(ii-3),close(ii-3),high(ii-3)],[low(ii),close(ii),open(ii),high(ii)]),...
                     corr2([low(ii-2),open(ii-2),close(ii-2),high(ii-2)],[low(ii-1),close(ii-1),open(ii-1),high(ii-1)]),...
                     corr2([low(ii-3),open(ii-3),close(ii-3),high(ii-3),low(ii-2),open(ii-2),close(ii-2),high(ii-2)],[low(ii),close(ii),open(ii),high(ii),low(ii-1),close(ii-1),open(ii-1),high(ii-1)]),...
-                    vol(ii-1)/vol(ii-2),vol(ii)/vol(ii-2),vol(ii)/vol(ii-1),...
+                    vol(ii)/vol(ii-3),vol(ii)/vol(ii-2),vol(ii)/vol(ii-1),vol(ii-1)/vol(ii-3),vol(ii-1)/vol(ii-2),vol(ii-2)/vol(ii-3),(vol(ii)+vol(ii-1))/(vol(ii-3)+vol(ii-2)),...
                     high(ii)/high(ii-1),high(ii)/open(ii-1),high(ii)/low(ii-1),high(ii)/close(ii-1),...
                     low(ii)/high(ii-1),low(ii)/open(ii-1),low(ii)/low(ii-1),low(ii)/close(ii-1),...
                     open(ii)/high(ii-1),open(ii)/open(ii-1),open(ii)/low(ii-1),open(ii)/close(ii-1),...
                     close(ii)/high(ii-1),close(ii)/open(ii-1),close(ii)/low(ii-1),close(ii)/close(ii-1),...
-                    mean(close(ii-4:ii+1))/mean(close(ii-9:ii+1)),mean(high(ii-4:ii+1))/mean(high(ii-9:ii+1)),...
-                    std(close(ii-4:ii+1))/std(close(ii-9:ii+1)),std(high(ii-4:ii+1))/std(high(ii-9:ii+1)),...
+                    mean(close(ii-4:ii))/mean(close(ii-9:ii)),mean(high(ii-4:ii))/mean(high(ii-9:ii)),...
+                    std(close(ii-4:ii))/std(close(ii-9:ii)),std(high(ii-4:ii))/std(high(ii-9:ii)),...
                     std([ close(ii),open(ii),high(ii),low(ii) ])/std([close(ii-1),open(ii-1),high(ii-1),low(ii-1)]) ];  
                 if fig && figNumi<figNum
                     figNumi=figNumi+1;
@@ -174,8 +174,14 @@ if sw1
     fprintf('get %d records in all.',iRall);
 %     dlmwrite('D:\Trading\hmmMatlabIn.txt',MatrixSpring,'delimiter',',','precision','%.5f','newline','pc');
 %     msgbox('Needed data is prepared now,please run ''D:\Trading\Python\machinelearning\hmmSpring.py'' to train model and select good type CTA!');
-%     figure;
-%     statisticTrading(RTem);
+    figure;
+    RTem=Rall(:,1);
+    [tem1,tem2]=statisticTrading(RTem);
+    legend(tem1,tem2);
+    figure;
+    RTem=Rall(:,2);
+    [tem1,tem2]=statisticTrading(RTem);
+    legend(tem1,tem2);
 %% show results according to different days;
 elseif sw2
     tem=load(transferM_M);
@@ -334,6 +340,7 @@ for i=2:Lt
 end
 Line=plot(R);
 try
+    hold on;
     plot(indDraw,pointDraw,'r*');
 end
 Lege=sprintf('Orders:%d; IR:%.4f; winRatio(ratioWL):%.2f%%(%.2f);\nmaxDraw:%.2f%%; profitP: %.4f%%'...
