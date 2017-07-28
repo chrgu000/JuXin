@@ -9,24 +9,20 @@ Created on Mon Jul 24 11:10:55 2017
 from hmmlearn.hmm import GaussianHMM
 from seqlearn.perceptron import StructuredPerceptron
 from sklearn.cross_validation import train_test_split
+from sklearn.svm import SVC
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io as sio
 import joblib, warnings
 
-sw1=1 # test all for the first time
-sw2=0 # show figure after delete some bad type (should be done by hand)
-sw3=0 # test all for the second time after delete some bad type
-sw4=0 # train by seq
-
 warnings.filterwarnings("ignore")
 fileSave='D:\\Trade\\Python\\machinelearning\\testHMM'
-def hmmTestAll(Xraw,Reraw):
+def hmmTestAll(Xraw,Reraw,figStart): # figStart: how many figs to show 0 means show all and Xcol mean show one (in all)
     Xshape=Xraw.shape
     Xrow=Xshape[0]
     Xcol=Xshape[1]
 #    Xraw,X0,Re,y0=train_test_split(Xraw,np.array(Re),test_size=0.0)
-    for lp in range(Xcol+1):
+    for lp in range(figStart,Xcol+1):
         if lp<Xcol:
             X=Xraw[:,lp]
             figTitle=str(lp)
@@ -90,7 +86,8 @@ def hmmTestAll(Xraw,Reraw):
             plt.title(figTitle,fontsize=16)
     #        plt.legend(loc='upper',bbox_to_anchor=(0.0,1.0),ncol=1,fancybox=True,shadow=True)
             plt.legend(loc='upper left')
-            plt.grid(1)    
+            plt.grid(1)
+            return flag
        
 
 def hmmTestCertain(Matrix,Re,flagSelected):
@@ -133,27 +130,125 @@ def hmmTestCertain(Matrix,Re,flagSelected):
     plt.legend(loc='upper left')
     plt.grid(1) 
     return flag
-               
-if sw1:
-    fileName='E:\Trade\R_Matrix'
+
+def seqTrain(Matrix,Re,figTitle):
+    X = np.row_stack(Matrix)
+    X_train,X_test,y_train,y_test=train_test_split(X,Re,test_size=0.5)
+#    X_train=X;X_test=X;y_train=Re;y_test=Re;
+    
+    y_trainLabel=np.ones(len(y_train))*3
+    indTem=y_train<0.0
+    y_trainLabel[indTem]=1
+    y_testLabel=np.ones(len(y_test))*3
+    indTem=y_test<0.0
+    y_testLabel[indTem]=1
+
+#    y_trainLabel=np.ones(len(y_train))*3
+#    indTem=y_train<-0.01
+#    y_trainLabel[indTem]=1
+#    indTem=(y_train>=-0.01)*(y_train<=0.01)
+#    y_trainLabel[indTem]=2
+#    y_testLabel=np.ones(len(y_test))*3
+#    indTem=y_test<-0.01
+#    y_testLabel[indTem]=1
+#    indTem=(y_test>=-0.01)*(y_test<=0.01)
+#    y_testLabel[indTem]=2
+    
+    seq=StructuredPerceptron()
+    seq.fit(X_train,y_trainLabel,[len(y_train),])
+    #joblib.dump(hmm,'HMMTest')
+    y_pred=seq.predict(X_test,[len(y_test)])
+#    svm=SVC(kernel='rbf',random_state=0,gamma=0.010,C=1)
+#    svm.fit(X_train,y_trainLabel)
+#    y_pred=svm.predict(X_test)
+    print (figTitle+'-accuracy:%.3f%%' %( (y_testLabel==y_pred).sum()*100/float(len(y_test)) ))
+    
+    yU=np.unique(y_pred)
+    plt.figure(figsize=(15,8))
+    xi=[]
+    yi=[]
+    for i in range(len(yU)):
+        state=(y_pred==yU[i])
+        ReT=y_test[state]
+        ReTcs=ReT.cumsum()
+        LT=len(ReT)
+        if LT<2:
+            continue
+        maxDraw=0
+        maxDrawi=0
+        maxDrawValue=0
+        i2High=0
+        for i2 in range(LT):
+            if ReTcs[i2]>i2High:
+                i2High=ReTcs[i2]
+            drawT=i2High-ReTcs[i2]
+            if maxDraw<drawT:
+                maxDraw=drawT
+                maxDrawi=i2
+                maxDrawValue=ReTcs[i2]
+        xi.append(maxDrawi)
+        yi.append(maxDrawValue)  
+        plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.2f%%;'\
+                 %(i,LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))  
+    plt.plot(xi,yi,'r*')
+    plt.title(figTitle)
+    plt.legend()
+    plt.grid(1)
+
+
+
+sw1=0 # test all for the first time
+sw2=0 # show figure after delete some bad type (should be done by hand)
+sw3=0 # test all for the second time after delete some bad type
+sw4=1 # train by seq   
+
+fileName='E:\Trade\R_Matrix' 
+if sw1+sw2+sw3:   
     tem=sio.loadmat(fileName)
     Matrix=tem['Matrix'] 
     Rall=tem['Rall']
+    dateAll=tem['dateAll']
     tem=[]
-    Re=Rall[:,1] #0:return1; 1:return2 
-    hmmTestAll(Matrix,Re)    
-if sw2:
-    flagSelected=[ [2,[0]],[3,[3]],[4,[2]],[6,[3,4]],[7,[1,3]],[8,[3]],[9,[3]],\
-                  [10,[0,3]],[11,[2]],[13,[1]],[14,[2]],[15,[4]],[16,[0,2]],[21,[2]],[24,[0]] ]
+    Re=Rall[:,1] #0:return1; 1:return2     
+if sw1:    
+    hmmTestAll(Matrix,Re,0)    
+if sw2:    
+    flagSelected=[ [2,[2]],[3,[1,4]],[4,[3]],[6,[4]],[7,[1]],[8,[1,2]],[9,[2,4]],[10,[1,4]],[11,[1,4]],\
+                  [12,[2]],[13,[2]],[14,[0,3]],[15,[4]],[17,[4]],[18,[4]],[19,[3]],[20,[3,4]],[25,[4]],[25,[4]] ]
     flag=hmmTestCertain(Matrix,Re,flagSelected) 
+    sio.savemat(fileName+'Selected',{'flag':flag})
 if sw3:
-    Matrix=Matrix[flag,:] 
-    Re=Re[flag]
-    hmmTestAll(Matrix[:,[0,1,3,9,10,11,14,15,17,23,24,25]],Re)
-    #hmmTestAll(Matrix,Re)
+    tem=sio.loadmat(fileName+'Selected')
+    flag_sw2=tem['flag_sw2'][0]>0
+    Matrix=Matrix[flag_sw2,:] 
+    Re=Re[flag_sw2]
+    dateAll=dateAll[flag_sw2]
+#    hmmTestAll(Matrix[:,[0,1,3,9,10,11,14,15,17,23,24,25]],Re)
+    flag_sw3=hmmTestAll(Matrix,Re,Matrix.shape[1])
+    sio.savemat(fileName+'Selected',{'flag_sw2':flag_sw2,'flag_sw3':flag_sw3,'Matrix':Matrix,'Re':Re,'dateAll':dateAll})
 if sw4:
-    
+    tem=sio.loadmat(fileName+'Selected')
+    flag_sw3=tem['flag_sw3'][0]
+    Matrix=tem['Matrix']
+    Re=tem['Re'][0]
+    dateAll=tem['dateAll']
 
+#    flagU=np.unique(flag_sw3)
+    flagU=[2] #2,4,1
+    
+    for i in range(len(flagU)):
+        indTem=flag_sw3==flagU[i]
+        
+        for i2 in range(Matrix.shape[1]):
+            X=Matrix[indTem,i2]
+            y=Re[indTem]
+            seqTrain(X,y,'flag:'+str(flagU[i])+'---indicator:'+str(i2))
+#        X=Matrix[indTem,:]
+#        X=X[:,[4,5,29,30]]
+#        y=Re[indTem]        
+#        seqTrain(X,y,'flag:'+str(flagU[i])+'---indicator:assembly')
+
+    
 
 
 

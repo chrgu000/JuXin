@@ -139,7 +139,12 @@ if sw1
             if low(ii-3)<=min(low(ii-5:ii))&&high(ii-2)>high(ii-3)&&high(ii-1)>high(ii)&&low(ii-1)>low(ii)&&...
                     min(vol(ii-2:ii-1))>max(vol([ii,ii-3])) && high(ii-3)>low(ii-3)&&high(ii-2)>low(ii-2)&&high(ii-1)>low(ii-1)&&high(ii)>low(ii)
                 iRall=iRall+1;
-                Rall(iRall,:)=[close(ii+1)/close(ii),close(ii+2)/close(ii),close(ii+3)/close(ii),close(ii+2)/close(ii+1),close(ii+3)/close(ii+1)]-1;
+                if close(ii+1)>close(ii)
+                    Rtem=close(ii+2)/close(ii);
+                else
+                    Rtem=close(ii+1)/close(ii);
+                end
+                Rall(iRall,:)=[close(ii+2)/close(ii),Rtem,close(ii+2)/close(ii),close(ii+2)/close(ii+1),close(ii+3)/close(ii+1)]-1;
                 dateAll(iRall)=datei(ii);   
                 Matrix(iRall,:)=[ corr2([low(ii-3),open(ii-3),close(ii-3),high(ii-3)],[low(ii),close(ii),open(ii),high(ii)]),...
                     corr2([low(ii-2),open(ii-2),close(ii-2),high(ii-2)],[low(ii-1),close(ii-1),open(ii-1),high(ii-1)]),...

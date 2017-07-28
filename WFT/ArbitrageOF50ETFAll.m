@@ -5,7 +5,7 @@ sw1=0;% show all options-future K lines which are trading in the "date";
 sw2=0;% get all options-future data in history; 
 sw3=0;% show Pictures;
 sw4=0;%code for draw principle figures;
-sw5=1;%
+sw5=1;% Bald eagle Strategy;
 test=0;% test odd portfolio;
 %% show two trading targets' difference for history price;50etf-50index
 if sw0
@@ -570,6 +570,75 @@ if sw4
     set(gca,'Xtick',pointsX);
     title('B:两张期权合约对冲一张期货合约');
     grid on;
+end
+%% Bald eagle Strategy;
+if sw5
+    stepBaldEagle=1;
+    w=windmatlab;
+    loops=ceil((today-datenum(2016,1,1))/29);
+    year=2015;
+    month=11;
+    monthTem=1;
+    day=28;
+    Date=[];
+    Re=[];
+    for j=1:loops
+        if monthTem==12
+            year=year+1;
+        end
+        month=month+1;
+        monthTem=mod(month,12);
+        if monthTem==0
+            monthTem=12;
+        end
+        Datej=datenum(year,monthTem,day);
+        if Datej>today
+            Datej=today;
+        end    
+        parameters=['date=',datestr(Datej,'yyyy-mm-dd'),';','us_code=510050.SH;option_var=全部;',...
+            'call_put=全部;field=option_code,strike_price,month,call_put,first_tradedate,last_tradedate,option_name'];
+        data=w.wset('optionchain',parameters);
+        if monthTem==12
+            dateTem=(year+1)*100+1;
+        else
+            dateTem=year*100+monthTem+1;
+        end
+        indTem=(strcmp('认购',data(:,4))) & ([data{:,3}]==dateTem)';
+        options=data(indTem,1);
+        priceExecute=[data{indTem,2}];
+        dateStart=data(indTem,5);
+        dateEnd=data(indTem,6);
+        [priceExecute,indTem]=sort(priceExecute);
+        options=options(indTem);
+        dateStart=dateStart(indTem);
+        dateEnd=dateEnd(indTem);        
+        if j==1
+            dateSt=dateStart{1};
+        else
+            tem=w.tdays(Date(end),Date(end)+12);
+            dateSt=tem{2};            
+        end
+        etf50=w.wss('510050.SH','close',['tradeDate=',dateSt],'priceAdj=U','cycle=D');
+        indETF50=sum(priceExecute<etf50);
+        opt1=indETF50+stepBaldEagle;
+        opt2=indETF50+stepBaldEagle*2;
+        opt_1=indETF50-stepBaldEagle+1;
+        opt_2=indETF50-stepBaldEagle*2+1;
+        Tem=w.wsd(options([opt_2,opt_1,opt1,opt2]),'open',dateSt,dateEnd(1),'Fill=Previous');
+        [dataTem,~,~,dateTem]=w.wsd(options([opt_2,opt_1,opt1,opt2]),'close',dateSt,dateEnd(1),'Fill=Previous');
+        dataTem=[Tem;dataTem];
+        indTem=sum(isnan(dataTem),2);
+        dataTem=dataTem(~indTem,:);
+        Date=[Date;dateTem(end)];
+        ReTem=(dataTem(end,:)-dataTem(1,:))*[1;-1;-1;1]./sum(dataTem(1,:));
+        Re=[Re;ReTem];           
+    end
+    plot(cumsum(Re));   
+    Lre=length(Re);
+    step=max(floor(Lre/10),1);
+    set(gca,'xtick',1:step:Lre);
+    set(gca,'xticklabel',cellstr(datestr(Date(1:step:Lre),'yyyy-mm-dd')),'XTickLabelRotation',60);
+    
 end
 %% test some odd arbitrage portfolio;
 if test
