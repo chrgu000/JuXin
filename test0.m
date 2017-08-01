@@ -9,9 +9,9 @@
 % fields
 % times
 % x=w.wsd('000001.sh','close');
-function test0
 
-end
+
+
 
 
 

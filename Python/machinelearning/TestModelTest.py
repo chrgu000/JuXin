@@ -10,13 +10,35 @@ from hmmlearn.hmm import GaussianHMM
 from seqlearn.perceptron import StructuredPerceptron
 from sklearn.cross_validation import train_test_split
 from sklearn.svm import SVC
+from sklearn.decomposition import PCA
+from matplotlib.colors import ListedColormap
+from sklearn.linear_model import LogisticRegression
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io as sio
 import joblib, warnings
-
 warnings.filterwarnings("ignore")
 fileSave='D:\\Trade\\Python\\machinelearning\\testHMM'
+fileName='E:\Trade\R_Matrix' 
+
+def plot_decision_regions(X,y,classifier,resolution=0.02):
+    markers=('s','x','o','^','v')
+    colors=('red','blue','lightgreen','gray','cyan')
+    cmap=ListedColormap(colors[:len(np.unique(y))])
+    x1_min, x1_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    x2_min, x2_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    xx1, xx2 = np.meshgrid(np.arange(x1_min, x1_max, resolution),
+                         np.arange(x2_min, x2_max, resolution))
+    Z = classifier.predict(np.array([xx1.ravel(), xx2.ravel()]).T)
+    Z = Z.reshape(xx1.shape)
+    plt.contourf(xx1, xx2, Z, alpha=0.4, cmap=cmap)
+    plt.xlim(xx1.min(), xx1.max())
+    plt.ylim(xx2.min(), xx2.max())
+    for idx, cl in enumerate(np.unique(y)):
+        plt.scatter(x=X[y == cl, 0], y=X[y == cl, 1],
+                    alpha=0.8, c=cmap(idx),
+                    marker=markers[idx], label=cl)
+
 def hmmTestAll(Xraw,Reraw,figStart): # figStart: how many figs to show 0 means show all and Xcol mean show one (in all)
     Xshape=Xraw.shape
     Xrow=Xshape[0]
@@ -195,14 +217,72 @@ def seqTrain(Matrix,Re,figTitle):
     plt.legend()
     plt.grid(1)
 
+def PCAtest(Matrix,Re):
+    figTitle='test'
+    pca=PCA(n_components=12)
+    X_train,X_test,y_train,y_test=train_test_split(Matrix,Re,test_size=0.5)
+    y_trainLabel=np.ones(len(y_train))*3
+    indTem=y_train<0
+    y_trainLabel[indTem]=1
+#    indTem=(y_train>=-0.01)*(y_train<=0.01)
+#    y_trainLabel[indTem]=2
+    y_testLabel=np.ones(len(y_test))*3
+    indTem=y_test<0
+    y_testLabel[indTem]=1
+#    indTem=(y_test>=-0.01)*(y_test<=0.01)
+#    y_testLabel[indTem]=2
+    svm=SVC(kernel='rbf',random_state=0,gamma=0.10,C=1000000)
+    X_train_pca=pca.fit_transform(X_train)
+    X_test_pca=pca.transform(X_test)
+    svm.fit(X_train_pca,y_trainLabel)
+#    plot_decision_regions(X_train_pca,y_trainLabel,classifier=svm)   
+    
+    y_pred=svm.predict(X_test_pca)
+    print (figTitle+'-accuracy:%.3f%%' %( (y_testLabel==y_pred).sum()*100/float(len(y_test)) ))
+    
+    yU=np.unique(y_pred)
+    plt.figure(figsize=(15,8))
+    xi=[]
+    yi=[]
+    for i in range(len(yU)):
+        state=(y_pred==yU[i])
+        ReT=y_test[state]
+        ReTcs=ReT.cumsum()
+        LT=len(ReT)
+        if LT<2:
+            continue
+        maxDraw=0
+        maxDrawi=0
+        maxDrawValue=0
+        i2High=0
+        for i2 in range(LT):
+            if ReTcs[i2]>i2High:
+                i2High=ReTcs[i2]
+            drawT=i2High-ReTcs[i2]
+            if maxDraw<drawT:
+                maxDraw=drawT
+                maxDrawi=i2
+                maxDrawValue=ReTcs[i2]
+        xi.append(maxDrawi)
+        yi.append(maxDrawValue)  
+        plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.2f%%;'\
+                 %(i,LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))  
+    plt.plot(xi,yi,'r*')
+    plt.title(figTitle)
+    plt.legend()
+    plt.grid(1)
+    
+    
+    
+
 
 
 sw1=0 # test all for the first time
 sw2=0 # show figure after delete some bad type (should be done by hand)
 sw3=0 # test all for the second time after delete some bad type
-sw4=1 # train by seq   
+sw4=0 # train by seq   
+sw5=1 # PCA
 
-fileName='E:\Trade\R_Matrix' 
 if sw1+sw2+sw3:   
     tem=sio.loadmat(fileName)
     Matrix=tem['Matrix'] 
@@ -247,6 +327,13 @@ if sw4:
 #        X=X[:,[4,5,29,30]]
 #        y=Re[indTem]        
 #        seqTrain(X,y,'flag:'+str(flagU[i])+'---indicator:assembly')
+if sw5:
+    tem=sio.loadmat(fileName+'Selected')
+    flag_sw3=tem['flag_sw3'][0]
+    Matrix=tem['Matrix']
+    Re=tem['Re'][0]
+    dateAll=tem['dateAll']
+    PCAtest(Matrix,Re)
 
     
 

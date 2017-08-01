@@ -48,6 +48,7 @@ try:
                 print('Close %s: %d shares;'%(holdStocks[i],holdShares[i]),)
                 if tradeFlag:
                     w.torder(holdStocks[i], 'Sell', '0', holdShares[i], 'OrderType=B5TC;'+'LogonID='+str(logId))
+                    holdDays.pop(holdStocks[i])
                     print( 'send trade command!')
                 else:
                     print ('not realy trade!')       

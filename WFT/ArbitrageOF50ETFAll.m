@@ -573,7 +573,7 @@ if sw4
 end
 %% Bald eagle Strategy;
 if sw5
-    stepBaldEagle=1;
+    stepBaldEagle=0;
     w=windmatlab;
     loops=ceil((today-datenum(2016,1,1))/29);
     year=2015;
@@ -582,6 +582,10 @@ if sw5
     day=28;
     Date=[];
     Re=[];
+    records=[];
+    optionsRec={};
+    Comm=[];%for commission of all;
+    etfMonth={};
     for j=1:loops
         if monthTem==12
             year=year+1;
@@ -603,7 +607,7 @@ if sw5
         else
             dateTem=year*100+monthTem+1;
         end
-        indTem=(strcmp('»œπ∫',data(:,4))) & ([data{:,3}]==dateTem)';
+        indTem=(strcmp('»œπ∫',data(:,4)))' & ([data{:,3}]==dateTem) & mod([data{:,2}],0.05)==0;
         options=data(indTem,1);
         priceExecute=[data{indTem,2}];
         dateStart=data(indTem,5);
@@ -612,33 +616,100 @@ if sw5
         options=options(indTem);
         dateStart=dateStart(indTem);
         dateEnd=dateEnd(indTem);        
-        if j==1
+        if isempty(Date)
             dateSt=dateStart{1};
         else
             tem=w.tdays(Date(end),Date(end)+12);
             dateSt=tem{2};            
         end
-        etf50=w.wss('510050.SH','close',['tradeDate=',dateSt],'priceAdj=U','cycle=D');
-        indETF50=sum(priceExecute<etf50);
-        opt1=indETF50+stepBaldEagle;
-        opt2=indETF50+stepBaldEagle*2;
-        opt_1=indETF50-stepBaldEagle+1;
-        opt_2=indETF50-stepBaldEagle*2+1;
-        Tem=w.wsd(options([opt_2,opt_1,opt1,opt2]),'open',dateSt,dateEnd(1),'Fill=Previous');
-        [dataTem,~,~,dateTem]=w.wsd(options([opt_2,opt_1,opt1,opt2]),'close',dateSt,dateEnd(1),'Fill=Previous');
-        dataTem=[Tem;dataTem];
-        indTem=sum(isnan(dataTem),2);
-        dataTem=dataTem(~indTem,:);
-        Date=[Date;dateTem(end)];
-        ReTem=(dataTem(end,:)-dataTem(1,:))*[1;-1;-1;1]./sum(dataTem(1,:));
-        Re=[Re;ReTem];           
+        try
+            Tem=w.wsd('510050.SH','close','ED-1TD',dateSt,'priceAdj=U','cycle=D'); % according to real value;
+            etf50_1=Tem(1);
+            etf50=Tem(2);
+            etf50end=w.wss('510050.SH','close',['tradeDate=',dateEnd{1}],'priceAdj=U','cycle=D');
+%             indETF50=sum(priceExecute<etf50);
+%             opt1=indETF50+stepBaldEagle;
+%             opt2=opt1+1;
+%             opt_2=indETF50-stepBaldEagle;
+%             opt_1=opt_2+1;      
+            tem=floor(length(priceExecute)/2);% according to middle value;
+            opt1=tem+stepBaldEagle+1;
+            opt2=opt1+1;
+            opt_2=tem-stepBaldEagle-1;
+            opt_1=opt_2+1; 
+
+            Tem=w.wsd(options([opt_2,opt_1,opt1,opt2]),'open',dateSt,dateEnd(1),'Fill=Previous');
+            [dataTem,~,~,dateTem]=w.wsd(options([opt_2,opt_1,opt1,opt2]),'close',dateSt,dateEnd(1),'Fill=Previous');
+            dataTem=[Tem;dataTem];
+            indTem=sum(isnan(dataTem),2);
+            dataTem=dataTem(~indTem,:);
+            records=[records;[dataTem(1,:),priceExecute([opt_2,opt_1,opt1,opt2]),etf50,etf50end]];
+            optionsRec=[optionsRec;options([opt_2,opt_1,opt1,opt2])];
+            etfMonth=[etfMonth,dateEnd(1)];
+            Date=[Date;dateTem(end)];
+            Comm_1=commission(priceExecute(opt_1),dataTem(1,2),etf50_1);
+            Comm1=commission(priceExecute(opt1),dataTem(1,3),etf50_1);
+            CommAll=Comm_1+Comm1+sum(dataTem(2,[1,4]))*10000;
+            Comm=[Comm,CommAll];
+            ReTem=(dataTem(end,:)-dataTem(1,:))*[1;-1;-1;1]*10000./CommAll;
+            Re=[Re;ReTem];           
+        end
     end
-    plot(cumsum(Re));   
+    figure;
+    plot(cumsum(Re));  
+    grid on;
     Lre=length(Re);
     step=max(floor(Lre/10),1);
     set(gca,'xtick',1:step:Lre);
     set(gca,'xticklabel',cellstr(datestr(Date(1:step:Lre),'yyyy-mm-dd')),'XTickLabelRotation',60);
-    
+    Lt=size(records,1);
+    for i=1:Lt
+        etfStart=records(i,9);etfEnd=records(i,10);
+        p_2=records(i,1);p_1=records(i,2);p1=records(i,3);p2=records(i,4);
+        p_2Ex=records(i,5);p_1Ex=records(i,6);p1Ex=records(i,7);p2Ex=records(i,8);
+        diffTem=p1Ex-p_1Ex;
+        X=[p_2Ex-diffTem,p_2Ex,p_1Ex,p1Ex,p2Ex,p2Ex+diffTem];
+        Y=[p_1+p1-p_2-p2,p_1+p1-p_2-p2,p_1+p1-p_2-p2+p_1Ex-p_2Ex,p_1+p1-p_2-p2+p_1Ex-p_2Ex,p_1+p1-p_2-p2,p_1+p1-p_2-p2];
+        Fi=mod(i,6);
+        if Fi==1
+            figure;
+            set(gcf,'position',[100,100,1800,900]);
+        elseif Fi==0
+            Fi=6;
+        end
+        subplot(2,3,Fi);
+        plot(X,Y);
+        hold on;
+        line1=plot(etfStart,getY(etfStart,X,Y),'r>');
+        line2=plot(etfEnd,getY(etfEnd,X,Y),'b<');
+        legend([line1,line2],{'Open Order','Close Order'});
+        title(etfMonth(i));
+        grid on;
+        ax1=gca;
+        set(ax1,'XColor','k','YColor','k');
+        ax2=axes('Position',get(ax1,'Position'),'XAxisLocation','top','YAxisLocation','right',...
+           'Color','none','XColor','r','YColor','r');
+       Tem=w.wsd(optionsRec(i,:),'close',etfStart,etfEnd,'Fill=Previous');
+       Tem=10000*(Tem(2:end,:)-Tem(1,:))*[1;-1;-1;1]/Comm(i);
+       plot(Tem);
+    end
+end
+function Comm=commission(pEx,p_1,etf50_1) 
+    imaginary=max(pEx-etf50_1,0);
+    Comm=(p_1+max(0.12*etf50_1-imaginary,0.07*etf50_1))*12000/0.8;
+end
+function y=getY(x,X,Y)
+    if x<=X(2)
+        y=Y(1);
+    elseif x<=X(3)
+        y=Y(1)+(Y(3)-Y(2))*(x-X(2))/(X(3)-X(2));
+    elseif x<=X(4)
+        y=Y(3);
+    elseif x<=X(5)
+        y=Y(3)-(Y(4)-Y(5))*(x-X(4))/(X(5)-X(4));
+    else
+        y=Y(5);
+    end
 end
 %% test some odd arbitrage portfolio;
 if test
