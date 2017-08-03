@@ -644,7 +644,7 @@ if sw5
             indTem=sum(isnan(dataTem),2);
             dataTem=dataTem(~indTem,:);
             records=[records;[dataTem(1,:),priceExecute([opt_2,opt_1,opt1,opt2]),etf50,etf50end]];
-            optionsRec=[optionsRec;options([opt_2,opt_1,opt1,opt2])];
+            optionsRec=[optionsRec;options([opt_2,opt_1,opt1,opt2])',dateSt,dateEnd(1)];
             etfMonth=[etfMonth,dateEnd(1)];
             Date=[Date;dateTem(end)];
             Comm_1=commission(priceExecute(opt_1),dataTem(1,2),etf50_1);
@@ -678,25 +678,35 @@ if sw5
             Fi=6;
         end
         subplot(2,3,Fi);
-        plot(X,Y);
+        plot(X,Y,'color','k');
         hold on;
-        line1=plot(etfStart,getY(etfStart,X,Y),'r>');
-        line2=plot(etfEnd,getY(etfEnd,X,Y),'b<');
-        legend([line1,line2],{'Open Order','Close Order'});
-        title(etfMonth(i));
+        line1=plot(etfStart,getY(etfStart,X,Y),'k>');
+        line2=plot(etfEnd,getY(etfEnd,X,Y),'k<');
+%         legend([line1,line2],{'Open Order','Close Order'});
+        xlabel(etfMonth(i));
+        ylabel('套利模型');
         grid on;
         ax1=gca;
         set(ax1,'XColor','k','YColor','k');
         ax2=axes('Position',get(ax1,'Position'),'XAxisLocation','top','YAxisLocation','right',...
            'Color','none','XColor','r','YColor','r');
-       Tem=w.wsd(optionsRec(i,:),'close',etfStart,etfEnd,'Fill=Previous');
-       Tem=10000*(Tem(2:end,:)-Tem(1,:))*[1;-1;-1;1]/Comm(i);
-       plot(Tem);
+       [Tem,~,~,dates]=w.wsd(optionsRec(i,1:4),'close',optionsRec(i,5),optionsRec(i,6),'Fill=Previous');
+       indtem=~sum(isnan(Tem),2);
+       Tem=Tem(indtem,:);
+       dates=dates(indtem);
+       Tem=10000*(Tem(2:end,:)-repmat(Tem(1,:),length(Tem)-1,1))*[1;-1;-1;1]/Comm(i);
+       Lt=length(Tem);
+       line3=line(1:Lt,Tem,'Parent',ax2);
+       set(line3,'color','r','linestyle','-.');
+       ylabel('仓位走势情况');
+       step=ceil(Lt/5);
+       set(ax2,'xtick',1:step:Lt);
+       set(ax2,'xticklabel',cellstr(datestr(dates(1:step:Lt),'yyyy-mm-dd')),'XTickLabelRotation',30);
     end
 end
 function Comm=commission(pEx,p_1,etf50_1) 
     imaginary=max(pEx-etf50_1,0);
-    Comm=(p_1+max(0.12*etf50_1-imaginary,0.07*etf50_1))*12000/0.8;
+    Comm=(p_1+max(0.12*etf50_1-imaginary,0.07*etf50_1))*15000;
 end
 function y=getY(x,X,Y)
     if x<=X(2)
