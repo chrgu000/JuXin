@@ -63,16 +63,23 @@ from WindPy import *
 import numpy as np
 import pymysql,datetime
 
-sw1=0 # load stocks' data from wind and save it into MySQL;
-sw2=1 # load new stocks' data (comparing to sw1) from wind and add them into MySQL;
+sw1=0 # load stocks' data from wind and save it into MySQL database--pythonStocks;
+sw2=0 # load new stocks' data and add them into sw1;
+sw3=0 # load stocks minutes' data from wind and save it into MySQL database--pythonStocksMinutes;
+sw4=0 # load new stocks minutes' data and add them into sw3;
+sw5=1 # load Futures minutes' data from wind and save it into MySQL database--pythonFuturesMinutes;
 
 today=datetime.date.today()
 yesterday=today-timedelta(days=1)
 w.start()
-tem=w.wset('sectorconstituent','a001010100000000')
-stocks=tem.Data[1]
+if sw1+sw2+sw3+sw4:
+    tem=w.wset('sectorconstituent','a001010100000000')
+    stocks=tem.Data[1]
+if sw5+sw6:
+    tem=w.wset('sectorconstituent','a001010100000000')
+    futures=tem.Data[1]
 
-def loadData(stocks,yesterday):
+def loadStocks(stocks,yesterday):
     Lt=len(stocks)
     dates=w.tdays('ED-3000TD',yesterday).Data[0]
     opens=[]
@@ -107,12 +114,12 @@ def loadData(stocks,yesterday):
                 lows.extend(tem)
                 break
         while 1:
-            tem=w.wsd(stocks[i:iend],'volume','ED-3000TD',yesterday,'Fill=Previous','PriceAdj=F').Data
+            tem=w.wsd(stocks[i:iend],'volume','ED-3000TD',yesterday,'PriceAdj=F').Data
             if len(tem)>1:
                 vols.extend(tem)
                 break
         while 1:
-            tem=w.wsd(stocks[i:iend],'free_turn','ED-3000TD',yesterday,'Fill=Previous','PriceAdj=F').Data
+            tem=w.wsd(stocks[i:iend],'free_turn','ED-3000TD',yesterday,'PriceAdj=F').Data
             if len(tem)>1:
                 turns.extend(tem)
                 break
@@ -133,7 +140,7 @@ def loadData(stocks,yesterday):
     cur.close()
     conn.close()
 
-def addData(stocks,yesterday):
+def addStocks(stocks,yesterday):
     Lt=len(stocks)
     conn=pymysql.connect('localhost','caofa','caofa','pythonStocks')
     cur=conn.cursor()
@@ -156,8 +163,8 @@ def addData(stocks,yesterday):
     closes=w.wsd(stocksAdd,'close',dateStart,yesterday,'Fill=Previous','PriceAdj=F').Data
     highs=w.wsd(stocksAdd,'high',dateStart,yesterday,'Fill=Previous','PriceAdj=F').Data
     lows=w.wsd(stocksAdd,'low',dateStart,yesterday,'Fill=Previous','PriceAdj=F').Data
-    vols=w.wsd(stocksAdd,'volume',dateStart,yesterday,'Fill=Previous','PriceAdj=F').Data
-    turns=w.wsd(stocksAdd,'free_turn',dateStart,yesterday,'Fill=Previous','PriceAdj=F').Data
+    vols=w.wsd(stocksAdd,'volume',dateStart,yesterday,'PriceAdj=F').Data
+    turns=w.wsd(stocksAdd,'free_turn',dateStart,yesterday,'PriceAdj=F').Data
     Lt=len(stocksAdd)
     for i in range(Lt):
         print('add stock-%s %d/%d;' %(stocksAdd[i],i+1,Lt))
@@ -271,12 +278,83 @@ def addData(stocks,yesterday):
     conn.commit()
     cur.close()
     conn.close()
-           
-if sw1:
-    loadData(stocks,yesterday)
-if sw2:
-    addData(stocks,yesterday)
+
+def loadStocksMinutes(stocks,today):
+    conn=pymysql.connect('localhost','caofa','caofa')
+    cur=conn.cursor()
+    cur.execute('create database if not exists pythonStocksMinutes')
+    conn.select_db('pythonStocksMinutes')
+    cur.execute('create table if not exists stocks(name varchar(9))') # 还没有写入
+    cur.executemany('insert into stocks values(%s)', stocks) 
     
+    Lt=len(stocks)
+    for i in range(Lt):
+        print('load stock-%s:%d/%d' %(stocks[i],i+1,Lt))
+        while 1:
+            tem=w.wsi(stocks[i],'open,close,high,low,volume',today-timedelta(days=3*370),today,'periodstart=09:30:00;periodend=15:01:00;Fill=Previous;PriceAdj=F')
+            if len(tem.Data)>1:
+                break
+        Matrix=[tem.Times]
+        Matrix.extend(tem.Data)
+        cur.execute('create table if not exists '+stocks[i][:6]+stocks[i][7:]+'(time datetime,open float,close float,high float,low float,vol int)')
+        cur.executemany('insert into '+stocks[i][:6]+stocks[i][7:]+' values(%s,%s,%s,%s,%s,%s)', np.column_stack(Matrix).tolist()) 
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+def addStocksMinutes(stocks,today):
+    conn=pymysql.connect('localhost','caofa','caofa','pythonStocksMinutes')
+    cur=conn.cursor()
+    tem=cur.execute('select * from 000001SZ')
+    cur.scroll(tem-1,'absolute')
+    dateStart=cur.fetchone()[0]+datetime.timedelta(minutes=10)    
+    
+    cur.execute('select * from stocks')
+    stocksRaw=set([i[0] for i in cur.fetchall()])
+    stocks=set(stocks)
+    stocksAdd=list(stocks-stocksRaw)
+    stocksRaw=list(stocksRaw & stocks) # get their both;
+    
+    Lt=len(stocksAdd)
+    for i in range(Lt):
+        print('add stock-%s:%d/%d' %(stocksAdd[i],i+1,Lt))
+        while 1:
+            tem=w.wsi(stocksAdd[i],'open,close,high,low,volume',dateStart,today,'periodstart=09:30:00;periodend=15:01:00;Fill=Previous;PriceAdj=F')
+            if len(tem.Data)>1:
+                break
+        Matrix=[tem.Times]
+        Matrix.extend(tem.Data)
+        cur.execute('create table if not exists '+stocksAdd[i][:6]+stocksAdd[i][7:]+'(time datetime,open float,close float,high float,low float,vol int)')
+        cur.executemany('insert into '+stocksAdd[i][:6]+stocksAdd[i][7:]+' values(%s,%s,%s,%s,%s,%s)', np.column_stack(Matrix).tolist()) 
+    cur.executemany('insert into stocks values(%s)', stocksAdd)
+    
+    Lt=len(stocksRaw)
+    for i in range(Lt):
+        print('update stock-%s:%d/%d' %(stocksRaw[i],i+1,Lt))
+        tem=w.wsi(stocksRaw[i],'open,close,high,low,volume',dateStart,today,'periodstart=09:30:00;periodend=15:01:00;Fill=Previous;PriceAdj=F')
+            if len(tem.Data)>1:
+                break
+        Matrix=[tem.Times]
+        Matrix.extend(tem.Data)
+        cur.executemany('insert into '+stocksRaw[i][:6]+stocksRaw[i][7:]+' values(%s,%s,%s,%s,%s,%s)', np.column_stack(Matrix).tolist()) 
+    conn.commit()
+    cur.close()
+    conn.close()    
+
+if sw1:
+    loadStocks(stocks,yesterday)
+if sw2:
+    addStocks(stocks,yesterday)
+if sw3: #take up more disk space;
+    x1=datetime.datetime.now()
+    t1=time.clock()
+    loadStocksMinutes(stocks,today)
+    x2=datetime.datetime.now()
+    print((x2-x1).minutes)
+if sw4:
+    addStocksMinutes(stocks,today)
+if sw5:
+    loadFuturesMinutes(futures,today)
     
     
         

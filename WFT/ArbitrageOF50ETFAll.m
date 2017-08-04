@@ -573,7 +573,8 @@ if sw4
 end
 %% Bald eagle Strategy;
 if sw5
-    stepBaldEagle=0;
+    stepBaldEagle=3;
+    diffMonth=1;
     w=windmatlab;
     loops=ceil((today-datenum(2016,1,1))/29);
     year=2015;
@@ -602,10 +603,17 @@ if sw5
         parameters=['date=',datestr(Datej,'yyyy-mm-dd'),';','us_code=510050.SH;option_var=全部;',...
             'call_put=全部;field=option_code,strike_price,month,call_put,first_tradedate,last_tradedate,option_name'];
         data=w.wset('optionchain',parameters);
-        if monthTem==12
-            dateTem=(year+1)*100+1;
+        if monthTem+diffMonth>12
+            dateTem=(year+1)*100+diffMonth-1;
         else
-            dateTem=year*100+monthTem+1;
+            dateTem=year*100+monthTem+diffMonth;
+        end
+        while 1
+            if sum([data{:,3}]==dateTem)<1
+                dateTem=dateTem+1;
+            else
+                break;
+            end
         end
         indTem=(strcmp('认购',data(:,4)))' & ([data{:,3}]==dateTem) & mod([data{:,2}],0.05)==0;
         options=data(indTem,1);
