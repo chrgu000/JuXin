@@ -763,6 +763,9 @@ if sw5x
     UniMonth=unique(months);
     loops=length(UniMonth);
     for i=1:loops    
+        if i==8
+            i
+        end
         indT=months==UniMonth(i);
         optionT=options(indT);
         priceT=prices(indT);
@@ -783,6 +786,7 @@ if sw5x
         tem=find(monthDiff==min(monthDiff),1);
         startT=startT(tem);
         endT=endT(tem);
+        
         for i2=1:Lt-stepBaldEagle-4
             opt_2=i2;
             opt_1=opt_2+1;
