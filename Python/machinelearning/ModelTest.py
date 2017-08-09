@@ -294,18 +294,52 @@ if sw1+sw2+sw3:
     cur=conn.cursor()
     cur.execute('create database if not exists '+nameDB) # create database;        
     conn.select_db('pythonStocks')            
-    df = pd.read_sql('show tables',con=conn)
+    stocks = pd.read_sql('show tables',con=conn)
+    for i in range(stocks.shape[0]-1):
+        tem=pd.read_sql('select * from '+stocks.loc[0][0],con=conn)
+        dates=tem['date']
+        opens=tem['open']
+        closes=tem['close']
+        highs=tem['high']
+        lows=tem['low']
+        vols=tem['vol']
+        turns=tem['turn']
+        Lt=opens.shape[0]
+        if Lt<20:
+            continue
+        maN=np.zeros(Lt)
+        ma10=np.zeros(Lt)
+        for i2 in range(10,Lt):
+            maN[i2]=np.mean(closes.loc[i2-3:i2])
+            ma10[i2]=np.mean(closes.loc[i2-10:i2])
+        Re=[]
+        dateAll=[]
+        Matrix=[]
+        for i2 in range(12,Lt-3):
+            if lows[i2-3]<=min(lows.loc[i2-5:i2]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
+            min(vols.loc[i2-2:i2-1])>max(vols[[i2,i2-3]]) and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
+                if closes[i2+1]>closes[i2]:
+                    Re.append(closes[i2+2]/closes[i2])
+                else:
+                    Re.append(closes[i2+1]/closes[i2])
+                dateAll.append(dates[i2])
+                
+                
+        
+        
+        
+    
 
 
 
     
     
-    tem=sio.loadmat(fileName)
-    Matrix=tem['Matrix'] 
-    Rall=tem['Rall']
-    dateAll=tem['dateAll']
-    tem=[]
-    Re=Rall[:,1] #0:return1; 1:return2     
+#    tem=sio.loadmat(fileName)
+#    Matrix=tem['Matrix'] 
+#    Rall=tem['Rall']
+#    dateAll=tem['dateAll']
+#    tem=[]
+#    Re=Rall[:,1] #0:return1; 1:return2     
 if sw1:    
     hmmTestAll(Matrix,Re,0)    
 if sw2:    

@@ -750,9 +750,11 @@ if sw5x
     [options,indTem]=unique(options);
     Data=Data(indTem,:);
     prices=cell2mat(Data(:,2));
-    months=cell2mat(Data(:,3));
-    starts=Data(:,5);
-    ends=Data(:,6);
+    indTem=mod(prices,0.05)<0.00000001;
+    prices=prices(indTem);
+    months=cell2mat(Data(indTem,3));
+    starts=Data(indTem,5);
+    ends=Data(indTem,6);        
     Date=[];
     Re=[];
     records=[];
@@ -768,6 +770,10 @@ if sw5x
         priceT=prices(indT);
         startT=starts(indT);
         endT=ends(indT);
+        [priceT,indT]=sort(priceT);
+        optionT=optionT(indT);
+        startT=startT(indT);
+        endT=endT(indT);        
         monthDiff=month(datenum(endT))-month(datenum(startT));% months for options' holding;
         monthDiff(monthDiff<0)=monthDiff(monthDiff<0)+12;
         indT=monthDiff>=diffMonth;
@@ -775,49 +781,51 @@ if sw5x
         if stepBaldEagle+4>Lt%|| (min(monthDiff)>diffMonth)
             continue;
         end        
+        if ismember('10000632.SH',optionT)
+            optionT(1)
+        end
         optionT=optionT(indT);
         priceT=priceT(indT);
         startT=startT(indT);
         endT=endT(indT);
-        monthDiff=monthDiff(indT);
+        monthDiff=monthDiff(indT);        
         tem=find(monthDiff==min(monthDiff),1);
         startT=startT(tem);
         endT=endT(tem);
-        for i2=1:Lt-stepBaldEagle-4
+        for i2=1:Lt-stepBaldEagle-3
             opt_2=i2;
             opt_1=opt_2+1;
             opt1=opt_1+stepBaldEagle+1;
             opt2=opt1+1;      
-            while 1
-                Tem=w.wsd(options([opt_2,opt_1,opt1,opt2]),'open',startT,endT,'Fill=Previous');
-                if length(Tem)>1
-                    break;
-                end
-            end
+            Tem1=w.wss(optionT([opt_2,opt_1,opt1,opt2]),'close',['tradeDate=',startT{1}],'priceAdj=U','cycle=D');
+            Tem2=w.wss(optionT([opt_2,opt_1,opt1,opt2]),'close',['tradeDate=',endT{1}],'priceAdj=U','cycle=D');
             try
-                if sum(sum(isnan(Tem)))
+                if sum(isnan([Tem1;Tem2]))
                     continue;
                 end
             catch
                 continue; % nan cell;
             end
-            [dataTem,~,~,dateTem]=w.wsd(options([opt_2,opt_1,opt1,opt2]),'close',startT,endT,'Fill=Previous');
-            dataTem=[Tem;dataTem];
-            Tem=w.wsd('510050.SH','close','ED-1TD',startT,'priceAdj=U','cycle=D'); % according to real value;
+            Tem0=w.wss(optionT([opt_1,opt1]),'open',['tradeDate=',startT{1}],'priceAdj=U','cycle=D');
+            if iscell(Tem0) || sum(isnan(Tem0))
+                continue;
+            end
+            Tem=w.wsd('510050.SH','close','ED-1TD',startT,'priceAdj=U'); % according to real value;
             etf50_1=Tem(1);
             etf50=Tem(2);
-            etf50end=w.wss('510050.SH','close',endT,'priceAdj=U','cycle=D');
-            records=[records;[dataTem(1,:),priceT([opt_2,opt_1,opt1,opt2])',etf50,etf50end]];
-            recordOptions=[recordOptions;options([opt_2,opt_1,opt1,opt2])'];
-            optionsRec=[optionsRec;options([opt_2,opt_1,opt1,opt2])',startT,endT];
+            etf50end=w.wss('510050.SH','close',['tradeDate=',endT{1}],'priceAdj=U','cycle=D');
+            CommAll=commission(priceT(opt_1),Tem0(1),etf50_1)+commission(priceT(opt1),Tem0(2),etf50_1)+sum(Tem2([1,4]))*10000;             
+            ReTem=[1,-1,-1,1]*(Tem2-Tem1)*10000./CommAll;
+%             if isnan(ReTem)
+%                 continue;
+%             end
+            records=[records;[Tem1',priceT([opt_2,opt_1,opt1,opt2])',etf50,etf50end]];
+            recordOptions=[recordOptions;optionT([opt_2,opt_1,opt1,opt2])'];
+            optionsRec=[optionsRec;optionT([opt_2,opt_1,opt1,opt2])',startT,endT];
             etfMonth=[etfMonth,endT];
-            Date=[Date;dateTem(end)];
-            Comm_1=commission(priceT(opt_1),dataTem(1,2),etf50_1);
-            Comm1=commission(priceT(opt1),dataTem(1,3),etf50_1);
-            CommAll=Comm_1+Comm1+sum(dataTem(2,[1,4]))*10000;
-            Comm=[Comm,CommAll];
-            ReTem=(dataTem(end,:)-dataTem(1,:))*[1;-1;-1;1]*10000./CommAll;
-            Re=[Re;ReTem];   
+            Date=[Date;endT];
+            Comm=[Comm,CommAll];  
+            Re=[Re;ReTem];
         end
     end
     
@@ -858,7 +866,7 @@ if sw5x
         set(ax1,'XColor','k','YColor','k');
         ax2=axes('Position',get(ax1,'Position'),'XAxisLocation','top','YAxisLocation','right',...
            'Color','none','XColor','r','YColor','r');
-       [Tem,~,~,dates]=w.wsd(optionsRec(i,1:4),'close',optionsRec(i,5),optionsRec(i,6),'Fill=Previous');
+       [Tem,~,~,dates]=w.wsd(optionsRec(i,1:4),'close',optionsRec(i,5),optionsRec(i,6));
        indtem=~sum(isnan(Tem),2);
        Tem=Tem(indtem,:);
        dates=dates(indtem);
