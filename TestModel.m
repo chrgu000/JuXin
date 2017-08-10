@@ -1,7 +1,7 @@
 function TestModel
 tic;
 sw1=1;fig=1;figNum=20;figNumi=0;%get data from model;
-sw2=1;randArray=0; %sort for results according to data analysis and different days;
+sw2=0;randArray=0; %sort for results according to data analysis and different days;
 
 transferM_M='E:\Trade\R_Matrix';     % transfer between matlab;
 transferM_P='E:\Trade\Matlab_Python'; % transfer between matlab and python;
