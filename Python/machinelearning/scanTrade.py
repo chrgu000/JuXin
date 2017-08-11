@@ -9,9 +9,9 @@ import numpy as np
 import pickle,datetime,joblib,time
 
 t1=time.clock()
-
-firstTime=1 # control whether this is the first time to run this procedure;
-reload=0 # re down load data;
+firstTime=0 # control whether this is the first time to run this procedure;
+Reload=0 # re-down load data;
+holdOrders=0 # record wether hold orders;
 tradeFlag=input('Please confirm trading or not [y/n]?')
 tradeFlag=tradeFlag.lower()=='y'    
 w.start()
@@ -25,6 +25,7 @@ if not firstTime:
     dataTem=pickle.load(fileTem)
     fileTem.close()
     Date=dataTem['Date']
+    stocks=dataTem['stocks']    
     Opens=dataTem['Opens']
     Closes=dataTem['Closes']
     Highs=dataTem['Highs']
@@ -34,11 +35,12 @@ if not firstTime:
     holdDays=dataTem['holdDays']   
     dateStart=dataTem['dateStart']
     dataTem=w.tquery('Position', 'LogonId='+str(logId))
-    holdStocks=dataTem.Data[0]
-    holdShares=dataTem.Data[3]    
+    if len(dataTem.Data)>3:
+        holdStocks=dataTem.Data[0]
+        holdShares=dataTem.Data[3]   
+        holdOrders=1    
     lastTradeDay=w.tdays('ED-1TD',today).Data[0][0]
     if lastTradeDay==Date[-1]:
-        stocks=dataTem['stocks']
         Opens=np.column_stack([np.row_stack(Opens),w.wsq(stocks,'rt_open').Data[0]])
         Closes=np.column_stack([np.row_stack(Closes),w.wsq(stocks,'rt_latest').Data[0]])
         Highs=np.column_stack([np.row_stack(Highs),w.wsq(stocks,'rt_high').Data[0]])
@@ -69,7 +71,7 @@ if firstTime or Reload:
             Vols=np.column_stack([np.row_stack(Vols),w.wsq(stocks,'rt_vol').Data[0]])
             break
         
-if not firstTime: # close orders
+if holdOrders: # close orders or not
     for i in range(len(holdStocks)):
         try:
             daysi=holdDays[holdStocks[i]]
@@ -176,7 +178,7 @@ pickle.dump(dataPKL,fileTem)
 fileTem.close()
 
 t2=time.clock()
-print('time elapses:%.1f minute' %(t2-t1)/60)
+print('time elapses:%.1f minute' %((t2-t1)/60))
         
         
         

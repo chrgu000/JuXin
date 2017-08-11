@@ -574,20 +574,14 @@ if sw4
 end
 %% Bald eagle Strategy;
 if sw5
-    stepBaldEagle=1;
-    diffMonth=2;
+    stepBaldEagle=1;% gas between _1 and 1;
     w=windmatlab;
-    loops=ceil((today-datenum(2016,1,1))/29);
+    loops=ceil((today-datenum(2015,2,9))/29);
     year=2015;
-    Month=11;
+    Month=1;
     monthTem=1;
     day=28;
-    Date=[];
-    Re=[];
-    records=[];
-    optionsRec={};
-    Comm=[];%for commission of all;
-    etfMonth={};
+    Data=[];% store data for all options;
     for j=1:loops
         if monthTem==12
             year=year+1;
@@ -597,73 +591,105 @@ if sw5
         if monthTem==0
             monthTem=12;
         end
-        Datej=datenum(year,monthTem,day);
-        if Datej>today
-            Datej=today;
+        Date=datenum(year,monthTem,day);
+        if Date >today
+            Date=today;
         end    
-        parameters=['date=',datestr(Datej,'yyyy-mm-dd'),';','us_code=510050.SH;option_var=全部;',...
-            'call_put=全部;field=option_code,strike_price,month,call_put,first_tradedate,last_tradedate,option_name'];
+        parameters=['date=',datestr(Date,'yyyy-mm-dd'),';','us_code=510050.SH;option_var=全部;',...
+            'call_put=认购;field=option_code,strike_price,month,call_put,first_tradedate,last_tradedate,option_name'];
         data=w.wset('optionchain',parameters);
-        if monthTem+diffMonth>12
-            dateTem=(year+1)*100+diffMonth-1;
-        else
-            dateTem=year*100+monthTem+diffMonth;
-        end
-        while 1
-            if sum([data{:,3}]==dateTem)<1
-                dateTem=dateTem+1;
-            else
-                break;
-            end
-        end
-        indTem=(strcmp('认购',data(:,4)))' & ([data{:,3}]==dateTem) & mod([data{:,2}],0.05)==0;
-        options=data(indTem,1);
-        priceExecute=[data{indTem,2}];
-        dateStart=data(indTem,5);
-        dateEnd=data(indTem,6);
-        [priceExecute,indTem]=sort(priceExecute);
-        options=options(indTem);
-        dateStart=dateStart(indTem);
-        dateEnd=dateEnd(indTem);        
-        if isempty(Date)%&&diffMonth==1 有错误
-            dateSt=dateStart{1};
-        else
-            tem=w.tdays(Date(end),Date(end)+12);
-            dateSt=tem{2};            
-        end
-        try
-            Tem=w.wsd('510050.SH','close','ED-1TD',dateSt,'priceAdj=U','cycle=D'); % according to real value;
-            etf50_1=Tem(1);
-            etf50=Tem(2);
-            etf50end=w.wss('510050.SH','close',['tradeDate=',dateEnd{1}],'priceAdj=U','cycle=D');
-%             indETF50=sum(priceExecute<etf50);
-%             opt1=indETF50+stepBaldEagle;
-%             opt2=opt1+1;
-%             opt_2=indETF50-stepBaldEagle;
-%             opt_1=opt_2+1;      
-            tem=floor(length(priceExecute)/2);% according to middle value;
-            opt1=tem+stepBaldEagle+1;
-            opt2=opt1+1;
-            opt_1=tem-stepBaldEagle-1;
-            opt_2=opt_1-1; 
-
-            Tem=w.wsd(options([opt_2,opt_1,opt1,opt2]),'open',dateSt,dateEnd(1),'Fill=Previous');
-            [dataTem,~,~,dateTem]=w.wsd(options([opt_2,opt_1,opt1,opt2]),'close',dateSt,dateEnd(1),'Fill=Previous');
-            dataTem=[Tem;dataTem];
-            indTem=sum(isnan(dataTem),2);
-            dataTem=dataTem(~indTem,:);
-            records=[records;[dataTem(1,:),priceExecute([opt_2,opt_1,opt1,opt2]),etf50,etf50end]];
-            optionsRec=[optionsRec;options([opt_2,opt_1,opt1,opt2])',dateSt,dateEnd(1)];
-            etfMonth=[etfMonth,dateEnd(1)];
-            Date=[Date;dateTem(end)];
-            Comm_1=commission(priceExecute(opt_1),dataTem(1,2),etf50_1);
-            Comm1=commission(priceExecute(opt1),dataTem(1,3),etf50_1);
-            CommAll=Comm_1+Comm1+sum(dataTem(2,[1,4]))*10000;
-            Comm=[Comm,CommAll];
-            ReTem=(dataTem(end,:)-dataTem(1,:))*[1;-1;-1;1]*10000./CommAll;
-            Re=[Re;ReTem];           
-        end
+        Data=[Data;data];
+        if Date==today
+            break;
+        end       
     end
+    options=Data(:,1);
+    [options,indTem]=unique(options);
+    Data=Data(indTem,:);
+    prices=cell2mat(Data(:,2));
+    indTem=mod(prices,0.05)<0.00000001;
+    prices=prices(indTem);
+    months=cell2mat(Data(indTem,3));
+    starts=Data(indTem,5);
+    ends=Data(indTem,6);        
+    Date=[];
+    Re=[];
+    records=[];
+    recordOptions={};
+    optionsRec={};
+    Comm=[];%for commission of all;
+    etfMonth={};
+    UniMonth=unique(months);
+    loops=length(UniMonth);
+    for i=1:loops  
+        if year*100+month(today)<=UniMonth(i)
+            continue;
+        end
+        indT=months==UniMonth(i);
+        optionT=options(indT);
+        priceT=prices(indT);
+        startT=starts(indT);
+        endT=ends(indT);
+        Lopti=length(priceT);
+        [priceT,indT]=sort(priceT);
+        optionT=optionT(indT);
+        startT=startT(indT);
+        endT=endT(indT);        
+        monthDiff=month(datenum(endT))-month(datenum(startT));% months for options' holding;
+        monthDiff(monthDiff<0)=monthDiff(monthDiff<0)+12;
+        tem=find(monthDiff==1,1);
+        if isempty(tem)
+            endT=endT{1};
+            startT=datestr(datenum(endT)-30,'yyyy/mm/dd');
+        else
+            startT=startT(tem);
+            endT=endT(tem);
+        end
+        Tem=w.wsd('510050.SH','close','ED-1TD',startT,'priceAdj=U'); % according to real value;
+        etf50_1=Tem(1);
+        etf50=Tem(2);     
+        tem=strcat('tradeDate=',endT);
+        if iscell(tem)
+            tem=tem{1};
+        end
+        etf50end=w.wss('510050.SH','close',tem,'priceAdj=U','cycle=D');
+        [~,tem]=min(abs(priceT-etf50));
+        opt_1=tem-stepBaldEagle;
+        opt_2=opt_1-1;
+        opt1=tem+stepBaldEagle;
+        opt2=opt1+1;
+        tem=strcat('tradeDate=',startT);
+        if iscell(tem)
+            startDate=tem{1};
+        else
+            startDate=tem;
+        end
+        if opt_2<1 || opt2>Lopti
+            continue;
+        end
+        Tem1=w.wss(optionT([opt_2,opt_1,opt1,opt2]),'close',startDate,'priceAdj=U','cycle=D');
+        tem=strcat('tradeDate=',endT);
+        if iscell(tem)
+            endDate=tem{1};
+        else
+            endDate=tem;
+        end
+        Tem2=w.wss(optionT([opt_2,opt_1,opt1,opt2]),'close',endDate,'priceAdj=U','cycle=D');
+        Tem0=w.wss(optionT([opt_1,opt1]),'open',startDate,'priceAdj=U','cycle=D');
+        if iscell(Tem0)
+            continue;
+        end
+        CommAll=commission(priceT(opt_1),Tem0(1),etf50_1)+commission(priceT(opt1),Tem0(2),etf50_1)+sum(Tem2([1,4]))*10000;             
+        ReTem=[1,-1,-1,1]*(Tem2-Tem1)*10000./CommAll;
+        records=[records;[Tem1',priceT([opt_2,opt_1,opt1,opt2])',etf50,etf50end]];
+        recordOptions=[recordOptions;optionT([opt_2,opt_1,opt1,opt2])'];
+        optionsRec=[optionsRec;optionT([opt_2,opt_1,opt1,opt2])',startT,endT];
+        etfMonth=[etfMonth,endT];
+        Date=[Date;endT];
+        Comm=[Comm,CommAll];  
+        Re=[Re;ReTem];
+    end
+
     figure;
     plot(cumsum(Re));  
     grid on;
@@ -671,11 +697,13 @@ if sw5
     step=max(floor(Lre/10),1);
     set(gca,'xtick',1:step:Lre);
     set(gca,'xticklabel',cellstr(datestr(Date(1:step:Lre),'yyyy-mm-dd')),'XTickLabelRotation',60);
+%     title(sprintf('年化平均收益：%.2f%%',mean(Re)*6*100));
     Lt=size(records,1);
     for i=1:Lt
         etfStart=records(i,9);etfEnd=records(i,10);
         p_2=records(i,1);p_1=records(i,2);p1=records(i,3);p2=records(i,4);
         p_2Ex=records(i,5);p_1Ex=records(i,6);p1Ex=records(i,7);p2Ex=records(i,8);
+        ReOptions=strcat(recordOptions(i,:));
         diffTem=p1Ex-p_1Ex;
         X=[p_2Ex-diffTem,p_2Ex,p_1Ex,p1Ex,p2Ex,p2Ex+diffTem];
         Y=[p_1+p1-p_2-p2,p_1+p1-p_2-p2,p_1+p1-p_2-p2+p_1Ex-p_2Ex,p_1+p1-p_2-p2+p_1Ex-p_2Ex,p_1+p1-p_2-p2,p_1+p1-p_2-p2];
@@ -692,14 +720,14 @@ if sw5
         line1=plot(etfStart,getY(etfStart,X,Y),'k>');
         line2=plot(etfEnd,getY(etfEnd,X,Y),'k<');
 %         legend([line1,line2],{'Open Order','Close Order'});
-        xlabel(etfMonth(i));
+        xlabel(strcat(etfMonth(i),ReOptions));
         ylabel('套利模型');
         grid on;
         ax1=gca;
         set(ax1,'XColor','k','YColor','k');
         ax2=axes('Position',get(ax1,'Position'),'XAxisLocation','top','YAxisLocation','right',...
            'Color','none','XColor','r','YColor','r');
-       [Tem,~,~,dates]=w.wsd(optionsRec(i,1:4),'close',optionsRec(i,5),optionsRec(i,6),'Fill=Previous');
+       [Tem,~,~,dates]=w.wsd(optionsRec(i,1:4),'close',optionsRec(i,5),optionsRec(i,6));
        indtem=~sum(isnan(Tem),2);
        Tem=Tem(indtem,:);
        dates=dates(indtem);
@@ -711,12 +739,12 @@ if sw5
        step=ceil(Lt/5);
        set(ax2,'xtick',1:step:Lt);
        set(ax2,'xticklabel',cellstr(datestr(dates(1:step:Lt),'yyyy-mm-dd')),'XTickLabelRotation',30);
-    end
+    end    
 end
 
 %% Bald eagle Strategy modified;
 if sw5x
-    stepBaldEagle=0;% gas between _1 and 1;
+    stepBaldEagle=3;% gas between _1 and 1;
     diffMonth=1; % how many months to hold;
     w=windmatlab;
     loops=ceil((today-datenum(2015,2,9))/29);
@@ -776,7 +804,7 @@ if sw5x
         endT=endT(indT);        
         monthDiff=month(datenum(endT))-month(datenum(startT));% months for options' holding;
         monthDiff(monthDiff<0)=monthDiff(monthDiff<0)+12;
-        indT=monthDiff>=diffMonth;
+        indT=monthDiff==diffMonth;
         Lt=sum(indT);
         if stepBaldEagle+4>Lt%|| (min(monthDiff)>diffMonth)
             continue;
@@ -836,7 +864,7 @@ if sw5x
     step=max(floor(Lre/10),1);
     set(gca,'xtick',1:step:Lre);
     set(gca,'xticklabel',cellstr(datestr(Date(1:step:Lre),'yyyy-mm-dd')),'XTickLabelRotation',60);
-    title(sprintf('年化平均收益：%.2f%%',mean(Re)*6*100));
+%     title(sprintf('年化平均收益：%.2f%%',mean(Re)*6*100));
     Lt=size(records,1);
     for i=1:Lt
         etfStart=records(i,9);etfEnd=records(i,10);

@@ -291,6 +291,66 @@ sw4=0 # train by seq
 sw5=0 # PCA
 
 if sw0:   
+     
+    x1=time.clock()
+    conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
+    cur=conn.cursor()
+    cur.execute('create database if not exists '+nameDB) # create database;        
+    conn.select_db('pythonStocks')  
+    
+    Lstocks=cur.execute('select * from stocks')
+    tem=cur.fetchall()
+    stocks=tem['name']
+    numbers=tem['number']
+    cur.execute('select * from dataDay')
+       
+
+    Re=[]
+    dateAll=[]
+    Matrix=[]
+    for i in range(Lstocks):
+        print('stocks:%d' %(i+1))
+        tem=cur.fetchmany(numbers[i])
+        dates=tem['date']
+        opens=tem['open']
+        closes=tem['close']
+        highs=tem['high']
+        lows=tem['low']
+        vols=tem['vol']
+        turns=tem['turn']
+        Lt=opens.shape[0]
+        if Lt<20:
+            continue
+        maN=np.zeros(Lt)
+        ma10=np.zeros(Lt)
+        for i2 in range(10,Lt):
+            maN[i2]=np.mean(closes.loc[i2-3:i2])
+            ma10[i2]=np.mean(closes.loc[i2-10:i2])
+        for i2 in range(12,Lt-3):
+            if lows[i2-3]<=min(lows.loc[i2-5:i2]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
+            min(vols.loc[i2-2:i2-1])>max(vols[[i2,i2-3]]) and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
+                if closes[i2+1]>closes[i2]:
+                    Re.append(closes[i2+2]/closes[i2])
+                else:
+                    Re.append(closes[i2+1]/closes[i2])
+                dateAll.append(dates[i2])
+                tem=[ pd.DataFrame([lows[i2-3],opens[i2-3],closes[i2-3],highs[i2-3]])[0].corr(pd.DataFrame([lows[i2],closes[i2],opens[i2],highs[i2]])[0]),\
+                    pd.DataFrame([lows[i2-2],opens[i2-2],closes[i2-2],highs[i2-2]])[0].corr(pd.DataFrame([lows[i2-1],closes[i2-1],opens[i2-1],highs[i2-1]])[0]),\
+                    pd.DataFrame([lows[i2-3],opens[i2-3],closes[i2-3],highs[i2-3],lows[i2-2],opens[i2-2],closes[i2-2],highs[i2-2]])[0].corr(pd.DataFrame(\
+                                [lows[i2],closes[i2],opens[i2],highs[i2],lows[i2-1],closes[i2-1],opens[i2-1],highs[i2-1]])[0]),\
+                    vols[i2]/vols[i2-3],vols[i2]/vols[i2-2],vols[i2]/vols[i2-1],vols[i2-1]/vols[i2-3],\
+                    vols[i2-1]/vols[i2-2],vols[i2-2]/vols[i2-3],(vols[i2]+vols[i2-1])/(vols[i2-3]+vols[i2-2]),\
+                    highs[i2]/highs[i2-1],highs[i2]/opens[i2-1],highs[i2]/lows[i2-1],highs[i2]/closes[i2-1],\
+                    lows[i2]/highs[i2-1],lows[i2]/opens[i2-1],lows[i2]/lows[i2-1],lows[i2]/closes[i2-1],\
+                    opens[i2]/highs[i2-1],opens[i2]/opens[i2-1],opens[i2]/lows[i2-1],opens[i2]/closes[i2-1],\
+                    closes[i2]/highs[i2-1],closes[i2]/opens[i2-1],closes[i2]/lows[i2-1],closes[i2]/closes[i2-1],\
+                    np.mean(closes[i2-4:i2])/np.mean(closes[i2-9:i2]),np.mean(highs[i2-4:i2])/np.mean(highs[i2-9:i2]),\
+                    np.std(closes[i2-4:i2])/np.std(closes[i2-9:i2]),np.std(highs[i2-4:i2])/np.std(highs[i2-9:i2]),\
+                    np.std([ closes[i2],opens[i2],highs[i2],lows[i2] ])/np.std([closes[i2-1],opens[i2-1],highs[i2-1],lows[i2-1]])]
+                Matrix.append(tem)
+    x2=time.clock()
+    print(x2-x1)
+    
     
 #    x1=time.clock()
 #    
@@ -346,13 +406,14 @@ if sw0:
 #    print(x2-x1)
     
 
-if sw1+sw2+sw3:        
-    tem=sio.loadmat(saveData)
-    Matrix=tem['Matrix'] 
-    Rall=tem['Rall']
-    dateAll=tem['dateAll']
-    tem=[]
-    Re=Rall[:,1] #0:return1; 1:return2     
+#if sw1+sw2+sw3:        
+#    tem=sio.loadmat(saveData)
+#    Matrix=tem['Matrix'] 
+#    Rall=tem['Rall']
+#    dateAll=tem['dateAll']
+#    tem=[]
+#    Re=Rall[:,1] #0:return1; 1:return2     
+
 if sw1:    
     hmmTestAll(Matrix,Re,0)    
 if sw2:    

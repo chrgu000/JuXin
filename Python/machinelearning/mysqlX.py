@@ -62,12 +62,14 @@ Created on Mon Jul 31 11:36:27 2017
 from WindPy import *
 import numpy as np
 import pymysql,datetime
+t1=datetime.datetime.now()
 
-sw1=0 # load stocks' data from wind and save it into MySQL database--pythonStocks;
+sw1=1 # load stocks' data from wind and save it into MySQL database--pythonStocks;
 sw2=0 # load new stocks' data and add them into sw1;
 sw3=0 # load stocks minutes' data from wind and save it into MySQL database--pythonStocksMinutes;
 sw4=0 # load new stocks minutes' data and add them into sw3;
-sw5=1 # load Futures minutes' data from wind and save it into MySQL database--pythonFuturesMinutes;
+sw5=0 # load Futures minutes' data from wind and save it into MySQL database--pythonFuturesMinutes;
+sw6=0 
 
 today=datetime.date.today()
 yesterday=today-timedelta(days=1)
@@ -88,7 +90,9 @@ def loadStocks(stocks,yesterday):
     lows=[]
     vols=[]
     turns=[]
+
     for i in range(0,Lt,400):
+        print('load:%d' %(i+1))
         if i+400>Lt:
             iend=Lt
         else:
@@ -114,31 +118,45 @@ def loadStocks(stocks,yesterday):
                 lows.extend(tem)
                 break
         while 1:
-            tem=w.wsd(stocks[i:iend],'volume','ED-3000TD',yesterday,'PriceAdj=F').Data
+            tem=w.wsd(stocks[i:iend],'volume','ED-3000TD',yesterday,'Fill=Previous','PriceAdj=F').Data
             if len(tem)>1:
                 vols.extend(tem)
                 break
         while 1:
-            tem=w.wsd(stocks[i:iend],'free_turn','ED-3000TD',yesterday,'PriceAdj=F').Data
-            if len(tem)>1:
-                turns.extend(tem)
+            tem=w.wsd(stocks[i:iend],'free_turn','ED-3000TD',yesterday,'Fill=Previous','PriceAdj=F').Data
+            if type(tem[0][0])==float:
+                if len(tem)>1:
+                    turns.extend(tem)
+                else:
+                    turns.extend(tem[0])
                 break
     
     conn=pymysql.connect('localhost','caofa','caofa')
     cur=conn.cursor()
     cur.execute('create database if not exists pythonStocks')
     conn.select_db('pythonStocks')
-    cur.execute('create table if not exists stocks(name varchar(9))')
-    cur.executemany('insert into stocks values(%s)', stocks) 
+    cur.execute('create table if not exists stocks(name varchar(9), number int)')
+    cur.execute('create table if not exists dataDay(date date,open float,close float,high float,low float,vol bigint,turn float)')
     for i in range(Lt):
         print(i)
         tem=np.isnan(opens[i]).sum()
         Matrix=[dates[tem:],opens[i][tem:],closes[i][tem:],highs[i][tem:],lows[i][tem:],vols[i][tem:],turns[i][tem:]]
-        cur.execute('create table if not exists '+stocks[i][:6]+stocks[i][7:]+'(date date,open float,close float,high float,low float,vol bigint,turn float)')
-        cur.executemany('insert into '+stocks[i][:6]+stocks[i][7:]+' values(%s,%s,%s,%s,%s,%s,%s)', np.column_stack(Matrix).tolist()) 
+        NumberTem=cur.executemany('insert into dataDay values(%s,%s,%s,%s,%s,%s,%s)', np.column_stack(Matrix).tolist()) 
+        cur.execute('insert into stocks values(%s,%s)',[stocks[i],NumberTem])        
     conn.commit()
     cur.close()
-    conn.close()
+    conn.close()    
+#    cur.execute('create table if not exists stocks(name varchar(9))')
+#    cur.executemany('insert into stocks values(%s)', stocks) 
+#    for i in range(Lt):
+#        print(i)
+#        tem=np.isnan(opens[i]).sum()
+#        Matrix=[dates[tem:],opens[i][tem:],closes[i][tem:],highs[i][tem:],lows[i][tem:],vols[i][tem:],turns[i][tem:]]
+#        cur.execute('create table if not exists '+stocks[i][:6]+stocks[i][7:]+'(date date,open float,close float,high float,low float,vol bigint,turn float)')
+#        cur.executemany('insert into '+stocks[i][:6]+stocks[i][7:]+' values(%s,%s,%s,%s,%s,%s,%s)', np.column_stack(Matrix).tolist()) 
+#    conn.commit()
+#    cur.close()
+#    conn.close()
 
 def addStocks(stocks,yesterday):
     Lt=len(stocks)
@@ -332,8 +350,8 @@ def addStocksMinutes(stocks,today):
     for i in range(Lt):
         print('update stock-%s:%d/%d' %(stocksRaw[i],i+1,Lt))
         tem=w.wsi(stocksRaw[i],'open,close,high,low,volume',dateStart,today,'periodstart=09:30:00;periodend=15:01:00;Fill=Previous;PriceAdj=F')
-            if len(tem.Data)>1:
-                break
+        if len(tem.Data)>1:
+            break
         Matrix=[tem.Times]
         Matrix.extend(tem.Data)
         cur.executemany('insert into '+stocksRaw[i][:6]+stocksRaw[i][7:]+' values(%s,%s,%s,%s,%s,%s)', np.column_stack(Matrix).tolist()) 
@@ -346,7 +364,6 @@ if sw1:
 if sw2:
     addStocks(stocks,yesterday)
 if sw3: #take up more disk space;
-    x1=datetime.datetime.now()
     t1=time.clock()
     loadStocksMinutes(stocks,today)
     x2=datetime.datetime.now()
@@ -355,6 +372,9 @@ if sw4:
     addStocksMinutes(stocks,today)
 if sw5:
     loadFuturesMinutes(futures,today)
+    
+t2=datetime.datetime.now()
+print('time elapses %.1f minutes' %((t2-t1).seconds/60))
     
     
         
