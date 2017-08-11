@@ -6,16 +6,21 @@ Created on Tue Jul 18 08:59:37 2017
 """
 from WindPy import *
 import numpy as np
-import pickle,datetime,joblib
+import pickle,datetime,joblib,time
 
+t1=time.clock()
 
+firstTime=1 # control whether this is the first time to run this procedure;
+reload=0 # re down load data;
 tradeFlag=input('Please confirm trading or not [y/n]?')
 tradeFlag=tradeFlag.lower()=='y'    
 w.start()
 Tem=w.tlogon('0000', '0', 'W115294100301', '*********', 'SHSZ')
 logId=Tem.Data[0][0]
 today=datetime.date.today()
-try:
+yesterday=today-datetime.timedelta(days=1)
+
+if not firstTime:
     fileTem=open('scanTrade','rb')
     dataTem=pickle.load(fileTem)
     fileTem.close()
@@ -25,20 +30,46 @@ try:
     Highs=dataTem['Highs']
     Lows=dataTem['Lows']
     Vols=dataTem['Vols']
-    Date.append(today)
-    stocks=dataTem['stocks']
-    Opens=np.column_stack([np.row_stack(Opens),w.wsq(stocks,'rt_open').Data[0]])
-    Closes=np.column_stack([np.row_stack(Closes),w.wsq(stocks,'rt_latest').Data[0]])
-    Highs=np.column_stack([np.row_stack(Highs),w.wsq(stocks,'rt_high').Data[0]])
-    Lows=np.column_stack([np.row_stack(Lows),w.wsq(stocks,'rt_low').Data[0]])
-    Vols=np.column_stack([np.row_stack(Vols),w.wsq(stocks,'rt_vol').Data[0]])
-    lastTradeDay=dataTem['lastTradeDay']
     assets=dataTem['assets']
     holdDays=dataTem['holdDays']   
     dateStart=dataTem['dateStart']
     dataTem=w.tquery('Position', 'LogonId='+str(logId))
     holdStocks=dataTem.Data[0]
-    holdShares=dataTem.Data[3]
+    holdShares=dataTem.Data[3]    
+    lastTradeDay=w.tdays('ED-1TD',today).Data[0][0]
+    if lastTradeDay==Date[-1]:
+        stocks=dataTem['stocks']
+        Opens=np.column_stack([np.row_stack(Opens),w.wsq(stocks,'rt_open').Data[0]])
+        Closes=np.column_stack([np.row_stack(Closes),w.wsq(stocks,'rt_latest').Data[0]])
+        Highs=np.column_stack([np.row_stack(Highs),w.wsq(stocks,'rt_high').Data[0]])
+        Lows=np.column_stack([np.row_stack(Lows),w.wsq(stocks,'rt_low').Data[0]])
+        Vols=np.column_stack([np.row_stack(Vols),w.wsq(stocks,'rt_vol').Data[0]])        
+    else:
+        Reload=1
+if firstTime or Reload:
+    dataTem=w.wset('SectorConstituent')
+    stocks=dataTem.Data[1]
+    assets=[w.tquery('Capital', 'LogonId='+str(logId)).Data[5]]
+    holdDays={}    
+    dateStart={}
+    while 1:
+        dataTem=w.wsd(stocks,'open','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F')
+        Date=dataTem.Times
+        Opens=dataTem.Data
+        Closes=w.wsd(stocks,'close','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
+        Highs=w.wsd(stocks,'high','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
+        Lows=w.wsd(stocks,'low','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
+        Vols=w.wsd(stocks,'volume','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
+        if np.all([len(Opens)-1,len(Closes)-1,len(Highs)-1,len(Lows)-1,len(Vols)-1]):
+            dataPKL={'Date':Date,'Opens':Opens,'Closes':Closes,'Highs':Highs,'Lows':Lows,'Vols':Vols,'stocks':stocks}
+            Opens=np.column_stack([np.row_stack(Opens),w.wsq(stocks,'rt_open').Data[0]])
+            Closes=np.column_stack([np.row_stack(Closes),w.wsq(stocks,'rt_latest').Data[0]])
+            Highs=np.column_stack([np.row_stack(Highs),w.wsq(stocks,'rt_high').Data[0]])
+            Lows=np.column_stack([np.row_stack(Lows),w.wsq(stocks,'rt_low').Data[0]])
+            Vols=np.column_stack([np.row_stack(Vols),w.wsq(stocks,'rt_vol').Data[0]])
+            break
+        
+if not firstTime: # close orders
     for i in range(len(holdStocks)):
         try:
             daysi=holdDays[holdStocks[i]]
@@ -54,56 +85,6 @@ try:
                     print ('not realy trade!')       
         except:
             print ('stocks %s was trade by hand, please close this order by hands too.'%holdStocks[i])
-    dataTem=w.tdays('ED-1TD',today)
-    daysTem=dataTem.Data[0]
-    if daysTem[1].date()==today:
-        lastTradeDay=daysTem[0]
-    else:
-        lastTradeDay=daysTem[1]
-    if Date[-1]<lastTradeDay[-1]:
-        while 1:
-            dataTem=w.wsd(stocks,'open','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F')
-            Date=dataTem.Times
-            Opens=dataTem.Data
-            Closes=w.wsd(stocks,'close','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
-            Highs=w.wsd(stocks,'high','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
-            Lows=w.wsd(stocks,'low','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
-            Vols=w.wsd(stocks,'volume','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
-            if np.all([len(Opens)-1,len(Closes)-1,len(Highs)-1,len(Lows)-1,len(Vols)-1]):
-                dataPKL={'Date':Date,'Opens':Opens,'Closes':Closes,'Highs':Highs,'Lows':Lows,'Vols':Vols,'stocks':stocks}
-                Date.append(today)
-                Opens=np.column_stack([np.row_stack(Opens),w.wsq(stocks,'rt_open').Data[0]])
-                Closes=np.column_stack([np.row_stack(Closes),w.wsq(stocks,'rt_latest').Data[0]])
-                Highs=np.column_stack([np.row_stack(Highs),w.wsq(stocks,'rt_high').Data[0]])
-                Lows=np.column_stack([np.row_stack(Lows),w.wsq(stocks,'rt_low').Data[0]])
-                Vols=np.column_stack([np.row_stack(Vols),w.wsq(stocks,'rt_vol').Data[0]])
-                break
-except:
-    dataTem=w.wset('SectorConstituent')
-    stocks=dataTem.Data[1]
-#    yesterday=today-datetime.timedelta(days=4) # test before; should comment line 77~82,Data.append,Open.append and so on;
-    yesterday=today-datetime.timedelta(days=1)
-    lastTradeDay=[yesterday]
-    assets=[w.tquery('Capital', 'LogonId='+str(logId)).Data[5]]
-    holdDays={}    
-    dateStart={}
-    while 1:
-        dataTem=w.wsd(stocks,'open','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F')
-        Date=dataTem.Times
-        Opens=dataTem.Data
-        Closes=w.wsd(stocks,'close','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
-        Highs=w.wsd(stocks,'high','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
-        Lows=w.wsd(stocks,'low','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
-        Vols=w.wsd(stocks,'volume','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
-        if np.all([len(Opens)-1,len(Closes)-1,len(Highs)-1,len(Lows)-1,len(Vols)-1]):
-            dataPKL={'Date':Date,'Opens':Opens,'Closes':Closes,'Highs':Highs,'Lows':Lows,'Vols':Vols,'stocks':stocks}
-            Date.append(today)
-            Opens=np.column_stack([np.row_stack(Opens),w.wsq(stocks,'rt_open').Data[0]])
-            Closes=np.column_stack([np.row_stack(Closes),w.wsq(stocks,'rt_latest').Data[0]])
-            Highs=np.column_stack([np.row_stack(Highs),w.wsq(stocks,'rt_high').Data[0]])
-            Lows=np.column_stack([np.row_stack(Lows),w.wsq(stocks,'rt_low').Data[0]])
-            Vols=np.column_stack([np.row_stack(Vols),w.wsq(stocks,'rt_vol').Data[0]])
-            break
         
 Lstocks=len(stocks)
 stocksi=[] # name of stocks;
@@ -189,16 +170,13 @@ holdDays=dict(holdDays,**holdDaysTem)
 dateStart=dict(dateStart,**dateStartTem)
 dataPKL['holdDays']=holdDays
 dataPKL['dateStart']=dateStart
-if lastTradeDay[-1]<today:
-    lastTradeDay.append(today)
-    assets.append(assetNow)
-dataPKL['lastTradeDay']=lastTradeDay
 dataPKL['assets']=assets
 fileTem=open('scanTrade','wb')
 pickle.dump(dataPKL,fileTem)
 fileTem.close()
 
-        
+t2=time.clock()
+print('time elapses:%.1f minute' %(t2-t1)/60)
         
         
         

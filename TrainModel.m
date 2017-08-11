@@ -1,7 +1,8 @@
 function TrainModel % copy from TestModel;
 tic;
 fig=1;figNum=20;figNumi=0;%get data from model;
-transferM_M='E:\Matlab2Python\R_Matrix';     % transfer between matlab;
+NameModel='TrainModel';
+transferM_M=['E:\Matlab2Python\',NameModel];     % transfer between matlab;
 %% get data from model;
 try
     load allStocks1;
@@ -113,7 +114,7 @@ for i=iStart:iEnd
             else
                 Rtem=close(ii+1)/close(ii);
             end
-            Rall(iRall,:)=[close(ii+2)/close(ii),Rtem,close(ii+2)/close(ii),close(ii+2)/close(ii+1),close(ii+3)/close(ii+1)]-1;
+            Rall(iRall,:)=[Rtem,close(ii+2)/close(ii),close(ii+2)/close(ii),close(ii+2)/close(ii+1),close(ii+3)/close(ii+1)]-1;
             dateAll(iRall)=datei(ii);   
             Matrix(iRall,:)=[ corr2([low(ii-3),open(ii-3),close(ii-3),high(ii-3)],[low(ii),close(ii),open(ii),high(ii)]),...
                 corr2([low(ii-2),open(ii-2),close(ii-2),high(ii-2)],[low(ii-1),close(ii-1),open(ii-1),high(ii-1)]),...

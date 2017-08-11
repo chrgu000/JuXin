@@ -26,7 +26,7 @@ import scipy.io as sio
 import joblib, warnings,pymysql,time
 warnings.filterwarnings("ignore")
 nameDB='TrainModel'
-MatlabData='E:\Matlab2Python\R_Matrix'
+saveData='E:\\Matlab2Python\\'+nameDB
 
 def plot_decision_regions(X,y,classifier,resolution=0.02):
     markers=('s','x','o','^','v')
@@ -71,7 +71,7 @@ def hmmTestAll(Xraw,Reraw,figStart): # figStart: how many figs to show 0 means s
             Retest=Reraw[trainSample:]
             
         hmm=GaussianHMM(n_components=5,covariance_type='diag',n_iter=10000).fit(np.row_stack(Xtrain)) #spherical,diag,full,tied 
-        joblib.dump(hmm,fileSave+figTitle)
+        joblib.dump(hmm,saveData+figTitle)
         
 #        for i in range(2):
         for i in range(1):
@@ -129,7 +129,7 @@ def hmmTestCertain(Matrix,Re,flagSelected):
             flagNot.append(paraList[i][1])            
         flag=np.ones(len(X))>0
         for i2 in range(len(Nind)):    
-            hmm=joblib.load(fileSave+str(Nind[i2]))
+            hmm=joblib.load(saveData+str(Nind[i2]))
             flagTem=hmm.predict(np.row_stack(X[:,Nind[i2]]))
             for i in range(len(flagNot[i2])):
                     flag=flag*(flagTem!=flagNot[i2][i])       
@@ -291,6 +291,7 @@ sw4=0 # train by seq
 sw5=0 # PCA
 
 if sw0:   
+    
 #    x1=time.clock()
 #    
 #    conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
@@ -346,7 +347,7 @@ if sw0:
     
 
 if sw1+sw2+sw3:        
-    tem=sio.loadmat(MatlabData)
+    tem=sio.loadmat(saveData)
     Matrix=tem['Matrix'] 
     Rall=tem['Rall']
     dateAll=tem['dateAll']
@@ -357,10 +358,23 @@ if sw1:
 if sw2:    
     flagSelected=[ [2,[2]],[3,[1,4]],[4,[3]],[6,[4]],[7,[1]],[8,[1,2]],[9,[2,4]],[10,[1,4]],[11,[1,4]],\
                   [12,[2]],[13,[2]],[14,[0,3]],[15,[4]],[17,[4]],[18,[4]],[19,[3]],[20,[3,4]],[25,[4]],[25,[4]] ]
-    flag=hmmTestCertain(Matrix,Re,flagSelected) 
-    sio.savemat(fileName+'Selected',{'flag':flag})
+    flag=hmmTestCertain(Matrix,Re,flagSelected)  # flag is 1 or 0;
+    conn=pymysql.connect('localhost','caofa','caofa')
+    cur=conn.cursor()
+    cur.execute('create database if not exists '+nameDB)    
+    conn.select_db(nameDB)
+    cur.execute('create table if not exists '+'sw2'+'(flag tinyint)')
+    cur.executemany('insert into '+'sw2'+' values(%s)', flag) 
+    conn.commit()
+    cur.close()
+    conn.close()
 if sw3:
     tem=sio.loadmat(fileName+'Selected')
+    conn=pymysql.connect('localhost','caofa','caofa',nameDB)
+    cur=conn.cursor()
+    cur.execute('select * from '+'sw2')
+    
+    flag_sw2=pd.sql
     flag_sw2=tem['flag_sw2'][0]>0
     Matrix=Matrix[flag_sw2,:] 
     Re=Re[flag_sw2]

@@ -14,8 +14,8 @@ import scipy.io as sio
 import pickle,joblib
 
 sw1=1 # load data from .mat file,calculate model data adn save it;
-sw2=0 # train hmm model
-sw3=1 # test hmm model
+sw2=1 # train hmm model
+sw3=0 # test hmm model
 fileSave='D:\Trade\Python\machinelearning\modelTestSpring'
 
 if sw1:
