@@ -91,17 +91,19 @@ def loadStocks(stocks,yesterday):
     vols=[]
     turns=[]
 
-    for i in range(0,Lt,400):
+    for i in range(0,Lt,30):
         print('load:%d' %(i+1))
-        if i+400>Lt:
+        if i+30>Lt:
             iend=Lt
         else:
-            iend=i+400
+            iend=i+30
         while 1:
             tem=w.wsd(stocks[i:iend],'open','ED-3000TD',yesterday,'Fill=Previous','PriceAdj=F').Data
             if len(tem)>1:
                 opens.extend(tem)
                 break
+            else:
+                print('some thing error occurs when w.wsd(),please check again!')
         while 1:
             tem=w.wsd(stocks[i:iend],'close','ED-3000TD',yesterday,'Fill=Previous','PriceAdj=F').Data
             if len(tem)>1:

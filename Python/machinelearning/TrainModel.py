@@ -299,36 +299,43 @@ if sw0:
     conn.select_db('pythonStocks')  
     
     Lstocks=cur.execute('select * from stocks')
-    tem=cur.fetchall()
-    stocks=tem['name']
-    numbers=tem['number']
-    cur.execute('select * from dataDay')
-       
+    stocks=cur.fetchall()  
 
     Re=[]
     dateAll=[]
     Matrix=[]
     for i in range(Lstocks):
         print('stocks:%d' %(i+1))
-        tem=cur.fetchmany(numbers[i])
-        dates=tem['date']
-        opens=tem['open']
-        closes=tem['close']
-        highs=tem['high']
-        lows=tem['low']
-        vols=tem['vol']
-        turns=tem['turn']
-        Lt=opens.shape[0]
+        if i==0:
+            startT=0
+        else:
+            startT=stocks[i-1][1]
+        endT=stocks[i][1]
+        cur.execute('select date from dataDay limit '+str(startT)+','+str(endT))
+        dates=cur.fetchall()
+        cur.execute('select open from dataDay limit '+str(startT)+','+str(endT))
+        opens=cur.fetchall()
+        cur.execute('select close from dataDay limit '+str(startT)+','+str(endT))
+        closes=cur.fetchall()
+        cur.execute('select high from dataDay limit '+str(startT)+','+str(endT))
+        highs=cur.fetchall()
+        cur.execute('select low from dataDay limit '+str(startT)+','+str(endT))
+        lows=cur.fetchall()
+        cur.execute('select vol from dataDay limit '+str(startT)+','+str(endT))
+        vols=cur.fetchall()
+        cur.execute('select turn from dataDay limit '+str(startT)+','+str(endT))
+        turns=cur.fetchall()
+        Lt=len(opens)
         if Lt<20:
             continue
         maN=np.zeros(Lt)
         ma10=np.zeros(Lt)
         for i2 in range(10,Lt):
-            maN[i2]=np.mean(closes.loc[i2-3:i2])
-            ma10[i2]=np.mean(closes.loc[i2-10:i2])
+            maN[i2]=np.mean(closes[i2-3:i2+1])
+            ma10[i2]=np.mean(closes[i2-10:i2+1])
         for i2 in range(12,Lt-3):
-            if lows[i2-3]<=min(lows.loc[i2-5:i2]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
-            min(vols.loc[i2-2:i2-1])>max(vols[[i2,i2-3]]) and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
+            if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
+            min(vols[i2-2:i2])>max([vols[i2],vols[i2-3]]) and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
                 if closes[i2+1]>closes[i2]:
                     Re.append(closes[i2+2]/closes[i2])
                 else:
@@ -350,39 +357,34 @@ if sw0:
                 Matrix.append(tem)
     x2=time.clock()
     print(x2-x1)
-    
-    
-#    x1=time.clock()
-#    
-#    conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
-#    cur=conn.cursor()
-#    cur.execute('create database if not exists '+nameDB) # create database;        
-#    conn.select_db('pythonStocks')            
-#    stocks = pd.read_sql('show tables',con=conn)
-#    Re=[]
-#    dateAll=[]
-#    Matrix=[]
-#    for i in range(stocks.shape[0]-1):
+#    for i in range(Lstocks):
 #        print('stocks:%d' %(i+1))
-#        tem=pd.read_sql('select * from '+stocks.loc[0][0],con=conn)
-#        dates=tem['date']
-#        opens=tem['open']
-#        closes=tem['close']
-#        highs=tem['high']
-#        lows=tem['low']
-#        vols=tem['vol']
-#        turns=tem['turn']
-#        Lt=opens.shape[0]
+#        if i==0:
+#            startT=0
+#        else:
+#            startT=stocks[i-1][1]
+#        endT=stocks[i][1]
+#        cur.execute('select * from dataDay limit '+str(startT)+','+str(endT))
+#        tem=cur.fetchall()
+#        tem=np.column_stack(tem)
+#        dates=tem[0].tolist()
+#        opens=tem[1].tolist()
+#        closes=tem[2].tolist()
+#        highs=tem[3].tolist()
+#        lows=tem[4].tolist()
+#        vols=tem[5].tolist()
+#        turns=tem[6].tolist()
+#        Lt=len(opens)
 #        if Lt<20:
 #            continue
 #        maN=np.zeros(Lt)
 #        ma10=np.zeros(Lt)
 #        for i2 in range(10,Lt):
-#            maN[i2]=np.mean(closes.loc[i2-3:i2])
-#            ma10[i2]=np.mean(closes.loc[i2-10:i2])
+#            maN[i2]=np.mean(closes[i2-3:i2+1])
+#            ma10[i2]=np.mean(closes[i2-10:i2+1])
 #        for i2 in range(12,Lt-3):
-#            if lows[i2-3]<=min(lows.loc[i2-5:i2]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
-#            min(vols.loc[i2-2:i2-1])>max(vols[[i2,i2-3]]) and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
+#            if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
+#            min(vols[i2-2:i2])>max([vols[i2],vols[i2-3]]) and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
 #                if closes[i2+1]>closes[i2]:
 #                    Re.append(closes[i2+2]/closes[i2])
 #                else:

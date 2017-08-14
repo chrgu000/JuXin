@@ -5,8 +5,8 @@ sw1=0;% show all options-future K lines which are trading in the "date";
 sw2=0;% get all options-future data in history; 
 sw3=0;% show Pictures;
 sw4=0;%code for draw principle figures;
-sw5=0;% Bald eagle Strategy;
-sw5x=1; % Modify sw5 and let it more flexible;
+sw5=1;% Bald eagle Strategy;
+sw5x=0; % Modify sw5 and let it more flexible;
 test=0;% test odd portfolio;
 %% show two trading targets' difference for history price;50etf-50index
 if sw0
@@ -346,7 +346,7 @@ if sw2
     year=2015;
     Month=1;
     monthTem=1;
-    day=28;
+    Day=28;
     Data=[];% store data for all options;
     for j=1:loops
         if monthTem==12
@@ -357,7 +357,7 @@ if sw2
         if monthTem==0
             monthTem=12;
         end
-        Date=datenum(year,monthTem,day);
+        Date=datenum(year,monthTem,Day);
         if Date >today
             Date=today;
         end    
@@ -580,7 +580,7 @@ if sw5
     year=2015;
     Month=1;
     monthTem=1;
-    day=28;
+    Day=28;
     Data=[];% store data for all options;
     for j=1:loops
         if monthTem==12
@@ -591,7 +591,7 @@ if sw5
         if monthTem==0
             monthTem=12;
         end
-        Date=datenum(year,monthTem,day);
+        Date=datenum(year,monthTem,Day);
         if Date >today
             Date=today;
         end    
@@ -611,8 +611,8 @@ if sw5
     prices=prices(indTem);
     months=cell2mat(Data(indTem,3));
     starts=Data(indTem,5);
-    ends=Data(indTem,6);        
-    Date=[];
+    ends=Data(indTem,6);      
+    options=options(indTem);
     Re=[];
     records=[];
     recordOptions={};
@@ -630,20 +630,29 @@ if sw5
         priceT=prices(indT);
         startT=starts(indT);
         endT=ends(indT);
-        Lopti=length(priceT);
-        [priceT,indT]=sort(priceT);
-        optionT=optionT(indT);
-        startT=startT(indT);
-        endT=endT(indT);        
+        [priceT,tem]=unique(priceT);
+        optionT=optionT(tem);
+        startT=startT(tem);
+        endT=endT(tem);        
+        Lopti=length(priceT);        
         monthDiff=month(datenum(endT))-month(datenum(startT));% months for options' holding;
         monthDiff(monthDiff<0)=monthDiff(monthDiff<0)+12;
-        tem=find(monthDiff==1,1);
-        if isempty(tem)
+        tem=monthDiff==1;
+        if sum(tem)<1
             endT=endT{1};
-            startT=datestr(datenum(endT)-30,'yyyy/mm/dd');
+            tem=datenum(endT);
+            tem=w.tdays(tem-40,tem-30);
+            startT=tem(end);
         else
+            endT=endT(1);
             startT=startT(tem);
-            endT=endT(tem);
+            [~,tem]=max(datenum(startT));
+            startT=startT(tem);
+            if day(startT)<20
+                tem=datenum(endT);
+                tem=w.tdays(tem-40,tem-30);
+                startT=tem(end);
+            end
         end
         Tem=w.wsd('510050.SH','close','ED-1TD',startT,'priceAdj=U'); % according to real value;
         etf50_1=Tem(1);
@@ -658,6 +667,7 @@ if sw5
         opt_2=opt_1-1;
         opt1=tem+stepBaldEagle;
         opt2=opt1+1;
+        
         tem=strcat('tradeDate=',startT);
         if iscell(tem)
             startDate=tem{1};
@@ -675,17 +685,16 @@ if sw5
             endDate=tem;
         end
         Tem2=w.wss(optionT([opt_2,opt_1,opt1,opt2]),'close',endDate,'priceAdj=U','cycle=D');
-        Tem0=w.wss(optionT([opt_1,opt1]),'open',startDate,'priceAdj=U','cycle=D');
-        if iscell(Tem0)
-            continue;
-        end
-        CommAll=commission(priceT(opt_1),Tem0(1),etf50_1)+commission(priceT(opt1),Tem0(2),etf50_1)+sum(Tem2([1,4]))*10000;             
+        Tem0=w.wss(optionT([opt_1,opt1]),'open',startDate,'priceAdj=U','cycle=D');%w.wss('10000041.SH','ipo_date,lasttradingdate')
+        CommAll=commission(priceT(opt_1),Tem0(1),etf50_1)+commission(priceT(opt1),Tem0(2),etf50_1)+sum(Tem2([1,4]))*10000;
         ReTem=[1,-1,-1,1]*(Tem2-Tem1)*10000./CommAll;
         records=[records;[Tem1',priceT([opt_2,opt_1,opt1,opt2])',etf50,etf50end]];
         recordOptions=[recordOptions;optionT([opt_2,opt_1,opt1,opt2])'];
+%         if ismember('10000749.SH',optionT([opt_2,opt_1,opt1,opt2]))
+%             i
+%         end
         optionsRec=[optionsRec;optionT([opt_2,opt_1,opt1,opt2])',startT,endT];
         etfMonth=[etfMonth,endT];
-        Date=[Date;endT];
         Comm=[Comm,CommAll];  
         Re=[Re;ReTem];
     end
@@ -696,7 +705,7 @@ if sw5
     Lre=length(Re);
     step=max(floor(Lre/10),1);
     set(gca,'xtick',1:step:Lre);
-    set(gca,'xticklabel',cellstr(datestr(Date(1:step:Lre),'yyyy-mm-dd')),'XTickLabelRotation',60);
+    set(gca,'xticklabel',etfMonth(1:step:Lre),'XTickLabelRotation',60);
 %     title(sprintf('年化平均收益：%.2f%%',mean(Re)*6*100));
     Lt=size(records,1);
     for i=1:Lt
@@ -751,7 +760,7 @@ if sw5x
     year=2015;
     Month=1;
     monthTem=1;
-    day=28;
+    Day=28;
     Data=[];% store data for all options;
     for j=1:loops
         if monthTem==12
@@ -762,7 +771,7 @@ if sw5x
         if monthTem==0
             monthTem=12;
         end
-        Date=datenum(year,monthTem,day);
+        Date=datenum(year,monthTem,Day);
         if Date >today
             Date=today;
         end    
@@ -782,7 +791,8 @@ if sw5x
     prices=prices(indTem);
     months=cell2mat(Data(indTem,3));
     starts=Data(indTem,5);
-    ends=Data(indTem,6);        
+    ends=Data(indTem,6); 
+    options=options(indTem);
     Date=[];
     Re=[];
     records=[];
@@ -909,10 +919,6 @@ if sw5x
     end    
 end
 
-function Comm=commission(pEx,p_1,etf50_1) 
-    imaginary=max(pEx-etf50_1,0);
-    Comm=(p_1+max(0.12*etf50_1-imaginary,0.07*etf50_1))*15000;
-end
 function y=getY(x,X,Y)
     if x<=X(2)
         y=Y(1);
