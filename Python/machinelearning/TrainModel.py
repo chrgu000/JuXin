@@ -18,12 +18,15 @@ from sklearn.cross_validation import train_test_split
 from sklearn.svm import SVC
 from sklearn.decomposition import PCA
 from matplotlib.colors import ListedColormap
+from matplotlib.pylab import date2num
 from sklearn.linear_model import LogisticRegression
 import matplotlib.pyplot as plt
+import matplotlib.finance as mpf
 import numpy as np
 import pandas as pd
 import scipy.io as sio
 import joblib, warnings,pymysql,time
+
 warnings.filterwarnings("ignore")
 nameDB='TrainModel'
 saveData='E:\\Matlab2Python\\'+nameDB
@@ -291,51 +294,47 @@ sw4=0 # train by seq
 sw5=0 # PCA
 
 if sw0:   
-     
+    fig=1
+    figNum=10
     x1=time.clock()
     conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
     cur=conn.cursor()
     cur.execute('create database if not exists '+nameDB) # create database;        
-    conn.select_db('pythonStocks')  
+    conn.select_db('pythonStocks')     
+    Lstocks=cur.execute('select number from stocks') # select name from stocks: get stocks' name;
+    Number=np.insert(np.cumsum(cur.fetchall()),0,0)
+    cur.execute('select name from stocks') # select name from stocks: get stocks' name;
+    stocks=cur.fetchall()
     
-    Lstocks=cur.execute('select * from stocks')
-    stocks=cur.fetchall()  
+    cur.execute('select * from dataDay') #'select * from dataDay limit '
+    dataAll=np.column_stack(cur.fetchall())
 
     Re=[]
     dateAll=[]
     Matrix=[]
     for i in range(Lstocks):
-        print('stocks:%d' %(i+1))
-        if i==0:
-            startT=0
-        else:
-            startT=stocks[i-1][1]
-        endT=stocks[i][1]
-        cur.execute('select date from dataDay limit '+str(startT)+','+str(endT))
-        dates=cur.fetchall()
-        cur.execute('select open from dataDay limit '+str(startT)+','+str(endT))
-        opens=cur.fetchall()
-        cur.execute('select close from dataDay limit '+str(startT)+','+str(endT))
-        closes=cur.fetchall()
-        cur.execute('select high from dataDay limit '+str(startT)+','+str(endT))
-        highs=cur.fetchall()
-        cur.execute('select low from dataDay limit '+str(startT)+','+str(endT))
-        lows=cur.fetchall()
-        cur.execute('select vol from dataDay limit '+str(startT)+','+str(endT))
-        vols=cur.fetchall()
-        cur.execute('select turn from dataDay limit '+str(startT)+','+str(endT))
-        turns=cur.fetchall()
+        print('%s:%d' %(stocks[i][0],i+1),end=' ',flush=True) #print(i, sep=' ', end=' ', flush=True)
+        startT=Number[i]
+        endT=Number[i+1]
+        dates=dataAll[0][startT:endT]
+        opens=dataAll[1][startT:endT]
+        closes=dataAll[2][startT:endT]
+        highs=dataAll[3][startT:endT]
+        lows=dataAll[4][startT:endT]
+        vols=dataAll[5][startT:endT]
+        turns=dataAll[6][startT:endT]
+        
         Lt=len(opens)
         if Lt<20:
             continue
-        maN=np.zeros(Lt)
-        ma10=np.zeros(Lt)
-        for i2 in range(10,Lt):
-            maN[i2]=np.mean(closes[i2-3:i2+1])
-            ma10[i2]=np.mean(closes[i2-10:i2+1])
+#        maN=np.zeros(Lt)
+#        ma10=np.zeros(Lt)
+#        for i2 in range(10,Lt):
+#            maN[i2]=np.mean(closes[i2-3:i2+1])
+#            ma10[i2]=np.mean(closes[i2-10:i2+1])
         for i2 in range(12,Lt-3):
             if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
-            min(vols[i2-2:i2])>max([vols[i2],vols[i2-3]]) and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
+            vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
                 if closes[i2+1]>closes[i2]:
                     Re.append(closes[i2+2]/closes[i2])
                 else:
@@ -351,61 +350,29 @@ if sw0:
                     lows[i2]/highs[i2-1],lows[i2]/opens[i2-1],lows[i2]/lows[i2-1],lows[i2]/closes[i2-1],\
                     opens[i2]/highs[i2-1],opens[i2]/opens[i2-1],opens[i2]/lows[i2-1],opens[i2]/closes[i2-1],\
                     closes[i2]/highs[i2-1],closes[i2]/opens[i2-1],closes[i2]/lows[i2-1],closes[i2]/closes[i2-1],\
-                    np.mean(closes[i2-4:i2])/np.mean(closes[i2-9:i2]),np.mean(highs[i2-4:i2])/np.mean(highs[i2-9:i2]),\
-                    np.std(closes[i2-4:i2])/np.std(closes[i2-9:i2]),np.std(highs[i2-4:i2])/np.std(highs[i2-9:i2]),\
+                    closes[i2-4:i2].mean()/closes[i2-9:i2].mean(),highs[i2-4:i2].mean()/highs[i2-9:i2].mean(),\
+                    closes[i2-4:i2].std()/closes[i2-9:i2].std(),highs[i2-4:i2].std()/highs[i2-9:i2].std(),\
                     np.std([ closes[i2],opens[i2],highs[i2],lows[i2] ])/np.std([closes[i2-1],opens[i2-1],highs[i2-1],lows[i2-1]])]
                 Matrix.append(tem)
+                if fig and figNum>fig:
+                    plt.figure()
+                    candleData=[]
+                    for i3 in range(i2-10,i2+3):
+                        tem=(date2num(dates[i3]),opens[i3],highs[i3],lows[i3],closes[i3])
+                        candleData.append(tem)
+                    ax=plt.subplot()
+                    ax.xaxis_date()
+                    plt.xticks(rotation=45)
+                    plt.yticks()
+                    plt.title(stocks[i][0])
+                    plt.xlabel('Date')
+                    plt.ylabel('Price')
+                    mpf.candlestick_ohlc(ax,candleData,width=0.8,colorup='r',colordown='g')
+                    plt.grid()      
+                    fig=fig+1
+                
     x2=time.clock()
     print(x2-x1)
-#    for i in range(Lstocks):
-#        print('stocks:%d' %(i+1))
-#        if i==0:
-#            startT=0
-#        else:
-#            startT=stocks[i-1][1]
-#        endT=stocks[i][1]
-#        cur.execute('select * from dataDay limit '+str(startT)+','+str(endT))
-#        tem=cur.fetchall()
-#        tem=np.column_stack(tem)
-#        dates=tem[0].tolist()
-#        opens=tem[1].tolist()
-#        closes=tem[2].tolist()
-#        highs=tem[3].tolist()
-#        lows=tem[4].tolist()
-#        vols=tem[5].tolist()
-#        turns=tem[6].tolist()
-#        Lt=len(opens)
-#        if Lt<20:
-#            continue
-#        maN=np.zeros(Lt)
-#        ma10=np.zeros(Lt)
-#        for i2 in range(10,Lt):
-#            maN[i2]=np.mean(closes[i2-3:i2+1])
-#            ma10[i2]=np.mean(closes[i2-10:i2+1])
-#        for i2 in range(12,Lt-3):
-#            if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
-#            min(vols[i2-2:i2])>max([vols[i2],vols[i2-3]]) and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
-#                if closes[i2+1]>closes[i2]:
-#                    Re.append(closes[i2+2]/closes[i2])
-#                else:
-#                    Re.append(closes[i2+1]/closes[i2])
-#                dateAll.append(dates[i2])
-#                tem=[ pd.DataFrame([lows[i2-3],opens[i2-3],closes[i2-3],highs[i2-3]])[0].corr(pd.DataFrame([lows[i2],closes[i2],opens[i2],highs[i2]])[0]),\
-#                    pd.DataFrame([lows[i2-2],opens[i2-2],closes[i2-2],highs[i2-2]])[0].corr(pd.DataFrame([lows[i2-1],closes[i2-1],opens[i2-1],highs[i2-1]])[0]),\
-#                    pd.DataFrame([lows[i2-3],opens[i2-3],closes[i2-3],highs[i2-3],lows[i2-2],opens[i2-2],closes[i2-2],highs[i2-2]])[0].corr(pd.DataFrame(\
-#                                [lows[i2],closes[i2],opens[i2],highs[i2],lows[i2-1],closes[i2-1],opens[i2-1],highs[i2-1]])[0]),\
-#                    vols[i2]/vols[i2-3],vols[i2]/vols[i2-2],vols[i2]/vols[i2-1],vols[i2-1]/vols[i2-3],\
-#                    vols[i2-1]/vols[i2-2],vols[i2-2]/vols[i2-3],(vols[i2]+vols[i2-1])/(vols[i2-3]+vols[i2-2]),\
-#                    highs[i2]/highs[i2-1],highs[i2]/opens[i2-1],highs[i2]/lows[i2-1],highs[i2]/closes[i2-1],\
-#                    lows[i2]/highs[i2-1],lows[i2]/opens[i2-1],lows[i2]/lows[i2-1],lows[i2]/closes[i2-1],\
-#                    opens[i2]/highs[i2-1],opens[i2]/opens[i2-1],opens[i2]/lows[i2-1],opens[i2]/closes[i2-1],\
-#                    closes[i2]/highs[i2-1],closes[i2]/opens[i2-1],closes[i2]/lows[i2-1],closes[i2]/closes[i2-1],\
-#                    np.mean(closes[i2-4:i2])/np.mean(closes[i2-9:i2]),np.mean(highs[i2-4:i2])/np.mean(highs[i2-9:i2]),\
-#                    np.std(closes[i2-4:i2])/np.std(closes[i2-9:i2]),np.std(highs[i2-4:i2])/np.std(highs[i2-9:i2]),\
-#                    np.std([ closes[i2],opens[i2],highs[i2],lows[i2] ])/np.std([closes[i2-1],opens[i2-1],highs[i2-1],lows[i2-1]])]
-#                Matrix.append(tem)
-#    x2=time.clock()
-#    print(x2-x1)
     
 
 #if sw1+sw2+sw3:        
