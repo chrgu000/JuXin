@@ -52,8 +52,10 @@ if firstTime or Reload:
     dataTem=w.wset('SectorConstituent')
     stocks=dataTem.Data[1]
     assets=[w.tquery('Capital', 'LogonId='+str(logId)).Data[5]]
-    holdDays={}    
-    dateStart={}
+    if firstTime:
+        holdDays={}    
+        dateStart={}
+
     while 1:
         dataTem=w.wsd(stocks,'open','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F')
         Date=dataTem.Times

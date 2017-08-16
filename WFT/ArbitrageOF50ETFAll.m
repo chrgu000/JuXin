@@ -5,8 +5,8 @@ sw1=0;% show all options-future K lines which are trading in the "date";
 sw2=0;% get all options-future data in history; 
 sw3=0;% show Pictures;
 sw4=0;% code for draw principle figures;
-sw5=0;% Bald eagle Strategy;
-sw5x=1;% Modify sw5 and let it more flexible;
+sw5=1;% Bald eagle Strategy;
+sw5x=0;% Modify sw5 and let it more flexible;
 test=0;% test odd portfolio;
 %% show two trading targets' difference for history price;50etf-50index
 if sw0
@@ -643,6 +643,7 @@ if sw5
         monthDiff=month(datenum(endT))-month(datenum(startT));% months for options' holding;
         monthDiff(monthDiff<0)=monthDiff(monthDiff<0)+12;
         tem=monthDiff<=1;
+        
 %         if sum(tem)<1
 %             endT=endT{1};
 %             tem=datenum(endT);
@@ -660,7 +661,7 @@ if sw5
 %             end
 %         end                
         endT=endT{1};
-        tem=w.tdays(datenum(endT)-20,endT);
+        tem=w.tdays(datenum(endT)-15,endT);
         startT=tem(1);        
         
         Tem=w.wsd('510050.SH','close','ED-1TD',startT,'priceAdj=U'); % according to real value;

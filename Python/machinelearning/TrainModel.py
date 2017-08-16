@@ -29,7 +29,7 @@ import joblib, warnings,pymysql,time
 
 warnings.filterwarnings("ignore")
 nameDB='TrainModel'
-saveData='E:\\Matlab2Python\\'+nameDB
+saveData='E:\\joblib\\'+nameDB
 
 def plot_decision_regions(X,y,classifier,resolution=0.02):
     markers=('s','x','o','^','v')
@@ -53,7 +53,7 @@ def hmmTestAll(Xraw,Reraw,figStart): # figStart: how many figs to show 0 means s
     Xshape=Xraw.shape
     Xrow=Xshape[0]
     Xcol=Xshape[1]
-#    Xraw,X0,Re,y0=train_test_split(Xraw,np.array(Re),test_size=0.0)
+    Xraw,X0,Reraw,y0=train_test_split(Xraw,np.array(Reraw),test_size=0.0)
     for lp in range(figStart,Xcol+1):
         if lp<Xcol:
             X=Xraw[:,lp]
@@ -61,7 +61,7 @@ def hmmTestAll(Xraw,Reraw,figStart): # figStart: how many figs to show 0 means s
         else:
             X=Xraw
             figTitle='All'
-        trainSample=50000
+        trainSample=30000
         if Xrow<trainSample:
             Xtrain=X[:Xrow//2]
             Xtest=X[Xrow//2:]
@@ -77,8 +77,7 @@ def hmmTestAll(Xraw,Reraw,figStart): # figStart: how many figs to show 0 means s
         joblib.dump(hmm,saveData+figTitle)
         
 #        for i in range(2):
-        for i in range(1):
-            i=1
+        for i in range(1,2):
             
             if i==0:
                 Xtem=Xtrain
@@ -119,7 +118,7 @@ def hmmTestAll(Xraw,Reraw,figStart): # figStart: how many figs to show 0 means s
     #        plt.legend(loc='upper',bbox_to_anchor=(0.0,1.0),ncol=1,fancybox=True,shadow=True)
             plt.legend(loc='upper left')
             plt.grid(1)
-            return flag
+#            return flag
        
 
 def hmmTestCertain(Matrix,Re,flagSelected):
@@ -336,20 +335,55 @@ if sw0:
             if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
             vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
                 if closes[i2+1]>closes[i2]:
-                    Re.append(closes[i2+2]/closes[i2])
+                    Re.append(closes[i2+2]/closes[i2]-1)
                 else:
-                    Re.append(closes[i2+1]/closes[i2])
+                    Re.append(closes[i2+1]/closes[i2]-1)
                 dateAll.append(dates[i2])
+                if max(closes[i2-4:i2+1])>max(closes[i2-9:i2-4]) and min(closes[i2-4:i2+1])>min(closes[i2-9:i2-4]):
+                    ud5=1
+                elif max(closes[i2-4:i2+1])<max(closes[i2-9:i2-4]) and min(closes[i2-4:i2+1])<min(closes[i2-9:i2-4]):
+                    ud5=-1
+                else:
+                    ud5=0
+                if max(closes[i2-9:i2+1])>max(closes[i2-19:i2-9]) and min(closes[i2-9:i2+1])>min(closes[i2-19:i2-9]):
+                    ud10=1
+                elif max(closes[i2-9:i2+1])<max(closes[i2-19:i2-9]) and min(closes[i2-9:i2+1])<min(closes[i2-19:i2-9]):
+                    ud10=-1
+                else:
+                    ud10=0
+                if max(closes[i2-19:i2+1])>max(closes[i2-39:i2-19]) and min(closes[i2-19:i2+1])>min(closes[i2-39:i2-19]):
+                    ud20=1
+                elif max(closes[i2-19:i2+1])<max(closes[i2-39:i2-19]) and min(closes[i2-19:i2+1])<min(closes[i2-39:i2-19]):
+                    ud20=-1
+                else:
+                    ud20=0
+                    
+                if max(highs[i2-4:i2+1])>max(highs[i2-9:i2-4]) and min(lows[i2-4:i2+1])>min(lows[i2-9:i2-4]):
+                    ud_5=1
+                elif max(highs[i2-4:i2+1])<max(highs[i2-9:i2-4]) and min(lows[i2-4:i2+1])<min(lows[i2-9:i2-4]):
+                    ud_5=-1
+                else:
+                    ud_5=0
+                if max(highs[i2-9:i2+1])>max(highs[i2-19:i2-9]) and min(lows[i2-9:i2+1])>min(lows[i2-19:i2-9]):
+                    ud_10=1
+                elif max(highs[i2-9:i2+1])<max(highs[i2-19:i2-9]) and min(lows[i2-9:i2+1])<min(lows[i2-19:i2-9]):
+                    ud_10=-1
+                else:
+                    ud_10=0
+                if max(highs[i2-19:i2+1])>max(highs[i2-39:i2-19]) and min(lows[i2-19:i2+1])>min(lows[i2-39:i2-19]):
+                    ud_20=1
+                elif max(highs[i2-19:i2+1])<max(highs[i2-39:i2-19]) and min(lows[i2-19:i2+1])<min(lows[i2-39:i2-19]):
+                    ud_20=-1
+                else:
+                    ud_20=0
+                    
                 tem=[ pd.DataFrame([lows[i2-3],opens[i2-3],closes[i2-3],highs[i2-3]])[0].corr(pd.DataFrame([lows[i2],closes[i2],opens[i2],highs[i2]])[0]),\
-                    pd.DataFrame([lows[i2-2],opens[i2-2],closes[i2-2],highs[i2-2]])[0].corr(pd.DataFrame([lows[i2-1],closes[i2-1],opens[i2-1],highs[i2-1]])[0]),\
-                    pd.DataFrame([lows[i2-3],opens[i2-3],closes[i2-3],highs[i2-3],lows[i2-2],opens[i2-2],closes[i2-2],highs[i2-2]])[0].corr(pd.DataFrame(\
-                                [lows[i2],closes[i2],opens[i2],highs[i2],lows[i2-1],closes[i2-1],opens[i2-1],highs[i2-1]])[0]),\
-                    vols[i2]/vols[i2-3],vols[i2]/vols[i2-2],vols[i2]/vols[i2-1],vols[i2-1]/vols[i2-3],\
+                    ud5,ud10,ud20,vols[i2]/vols[i2-3],vols[i2]/vols[i2-2],vols[i2]/vols[i2-1],vols[i2-1]/vols[i2-3],\
                     vols[i2-1]/vols[i2-2],vols[i2-2]/vols[i2-3],(vols[i2]+vols[i2-1])/(vols[i2-3]+vols[i2-2]),\
                     highs[i2]/highs[i2-1],highs[i2]/opens[i2-1],highs[i2]/lows[i2-1],highs[i2]/closes[i2-1],\
                     lows[i2]/highs[i2-1],lows[i2]/opens[i2-1],lows[i2]/lows[i2-1],lows[i2]/closes[i2-1],\
                     opens[i2]/highs[i2-1],opens[i2]/opens[i2-1],opens[i2]/lows[i2-1],opens[i2]/closes[i2-1],\
-                    closes[i2]/highs[i2-1],closes[i2]/opens[i2-1],closes[i2]/lows[i2-1],closes[i2]/closes[i2-1],\
+                    ud_5,ud_10,ud_20,closes[i2]/closes[i2-1],\
                     closes[i2-4:i2].mean()/closes[i2-9:i2].mean(),highs[i2-4:i2].mean()/highs[i2-9:i2].mean(),\
                     closes[i2-4:i2].std()/closes[i2-9:i2].std(),highs[i2-4:i2].std()/highs[i2-9:i2].std(),\
                     np.std([ closes[i2],opens[i2],highs[i2],lows[i2] ])/np.std([closes[i2-1],opens[i2-1],highs[i2-1],lows[i2-1]])]
@@ -370,12 +404,34 @@ if sw0:
                     mpf.candlestick_ohlc(ax,candleData,width=0.8,colorup='r',colordown='g')
                     plt.grid()      
                     fig=fig+1
-                
+    
+    conn.select_db(nameDB)
+    Matrix=np.row_stack(Matrix)
+    Matrix=np.column_stack((dateAll,Re,Matrix))
+    cur.execute('drop table if exists indicators')
+    cur.execute('create table if not exists indicators(date date,Re float,ind1 float,ind2 float,ind3 float,ind4 float,ind5 float,ind6 float,ind7 float,ind8 float,\
+    ind9 float,ind10 float,ind11 float,ind12 float,ind13 float,ind14 float,ind15 float,ind16 float,ind17 float,ind18 float,ind19 float,ind20 float,ind21 float,ind22 float,\
+    ind23 float,ind24 float,ind25 float,ind26 float,ind27 float,ind28 float,ind29 float,ind30 float,ind31 float,ind32 float)')
+    cur.executemany('insert into indicators values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', Matrix.tolist()) 
+    conn.commit()
+    cur.close()
+    conn.close()
     x2=time.clock()
     print(x2-x1)
-    
+    dateAll=Matrix[:,0]
+    Re=Matrix[:,1]
+    Matrix=Matrix[:,2:]
+    hmmTestAll(Matrix,Re,0)    
 
-#if sw1+sw2+sw3:        
+if sw1+sw2+sw3:  
+    conn=pymysql.connect('localhost','caofa','caofa',nameDB)     
+    cur=conn.cursor()
+    cur.execute('select * from indicators')
+    Matrix=np.row_stack(cur.fetchall())
+    dateAll=Matrix[:,0]
+    Re=Matrix[:,1]
+    Matrix=Matrix[:,2:]
+    
 #    tem=sio.loadmat(saveData)
 #    Matrix=tem['Matrix'] 
 #    Rall=tem['Rall']
@@ -384,6 +440,9 @@ if sw0:
 #    Re=Rall[:,1] #0:return1; 1:return2     
 
 if sw1:    
+#    pca=PCA(n_components=12)
+#    Matrix=pca.fit_transform(Matrix[:,[0,4,7,8,9,12,13,14,15,16,18,21,26,27,28,29]])
+    Matrix=Matrix[:,[]]
     hmmTestAll(Matrix,Re,0)    
 if sw2:    
     flagSelected=[ [2,[2]],[3,[1,4]],[4,[3]],[6,[4]],[7,[1]],[8,[1,2]],[9,[2,4]],[10,[1,4]],[11,[1,4]],\
@@ -393,6 +452,7 @@ if sw2:
     cur=conn.cursor()
     cur.execute('create database if not exists '+nameDB)    
     conn.select_db(nameDB)
+    cur.execute('drop table if exists ')
     cur.execute('create table if not exists '+'sw2'+'(flag tinyint)')
     cur.executemany('insert into '+'sw2'+' values(%s)', flag) 
     conn.commit()
