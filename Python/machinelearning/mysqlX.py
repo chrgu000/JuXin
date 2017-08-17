@@ -164,6 +164,9 @@ def addStocks(stocks,yesterday):
     Lt=len(stocks)
     conn=pymysql.connect('localhost','caofa','caofa','pythonStocks')
     cur=conn.cursor()
+    
+    
+    
     tem=cur.execute('select * from 000001SZ')
     cur.scroll(tem-1,'absolute')
     dateStart=cur.fetchone()[0]+datetime.timedelta(days=1)    

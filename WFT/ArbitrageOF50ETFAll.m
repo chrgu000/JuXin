@@ -3,9 +3,9 @@ tic;
 sw0=0;% show two trading targets' difference for history price;50etf-50index
 sw1=0;% show all options-future K lines which are trading in the "date";
 sw2=0;% get all options-future data in history; 
-sw3=0;% show Pictures;
+sw3=1;% show Pictures;
 sw4=0;% code for draw principle figures;
-sw5=1;% Bald eagle Strategy;
+sw5=0;% Bald eagle Strategy;
 sw5x=0;% Modify sw5 and let it more flexible;
 test=0;% test odd portfolio;
 %% show two trading targets' difference for history price;50etf-50index
@@ -455,7 +455,7 @@ if sw3
         Open=[];
         Days=unique(Time);
         Ldays=length(Days);
-        if Ldays<60 
+        if Ldays<10 
             continue;
         end
         for ii=1:Ldays
