@@ -363,7 +363,7 @@ sw5=0 # PCA
 
 if sw0:   
     fig=1
-    figNum=10
+    figNum=0
     conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
     cur=conn.cursor()
     cur.execute('create database if not exists '+nameDB) # create database;        
@@ -429,7 +429,8 @@ if sw0:
                     closes[i2-4:i2].std()/closes[i2-9:i2].std(),highs[i2-4:i2].std()/highs[i2-9:i2].std(),\
                     np.std([ closes[i2],opens[i2],highs[i2],lows[i2] ])/np.std([closes[i2-1],opens[i2-1],highs[i2-1],lows[i2-1]])]
                 Matrix.append(tem)
-                if fig and figNum>fig:
+                if fig and figNum%1000<1 and figNum<10000:
+                    figNum=figNum+1
                     plt.figure()
                     candleData=[]
                     for i3 in range(i2-10,i2+3):
@@ -444,7 +445,6 @@ if sw0:
                     plt.ylabel('Price')
                     mpf.candlestick_ohlc(ax,candleData,width=0.8,colorup='r',colordown='g')
                     plt.grid()      
-                    fig=fig+1
     
     conn.select_db(nameDB)
     Matrix=np.row_stack(Matrix)

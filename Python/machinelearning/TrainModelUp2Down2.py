@@ -332,14 +332,13 @@ def sortStatastic(sorts,Re,Title):
 sw0=0 # get dataset for the model and test all for the first time;
 sw1=0 # test selected figures;
 sw2=0 # show one figure with one line after delete some bad type (should be done by hand)
-sw3=0 # show one figure with different line acorrding to hmm sort;
-sw3_1=1 # show many figures and each one is sorted according to different date/time; 
+sw3=1 # show one figure with different line of hmm sort according to sw2's selected;
+sw3_1=0 # show many figures and each one is sorted according to different date/time; 
 sw4=0 # train by seq   
 sw5=0 # PCA
 
 if sw0:   
-    fig=1
-    figNum=10
+    fig=10
     conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
     cur=conn.cursor()
     cur.execute('create database if not exists '+nameDB) # create database;        
@@ -376,7 +375,7 @@ if sw0:
 #            ma10[i2]=np.mean(closes[i2-10:i2+1])
         for i2 in range(15,Lt-3):
             if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
-            vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
+            highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]: #vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and 
                 if closes[i2+1]>closes[i2]:
                     Re.append(closes[i2+2]/closes[i2]-1)
                 else:
@@ -405,7 +404,8 @@ if sw0:
                     closes[i2-4:i2].std()/closes[i2-9:i2].std(),highs[i2-4:i2].std()/highs[i2-9:i2].std(),\
                     np.std([ closes[i2],opens[i2],highs[i2],lows[i2] ])/np.std([closes[i2-1],opens[i2-1],highs[i2-1],lows[i2-1]])]
                 Matrix.append(tem)
-                if fig and figNum>fig:
+                if fig>0:
+                    fig=fig-1
                     plt.figure()
                     candleData=[]
                     for i3 in range(i2-10,i2+3):
@@ -420,7 +420,6 @@ if sw0:
                     plt.ylabel('Price')
                     mpf.candlestick_ohlc(ax,candleData,width=0.8,colorup='r',colordown='g')
                     plt.grid()      
-                    fig=fig+1
     
     conn.select_db(nameDB)
     Matrix=np.row_stack(Matrix)
@@ -438,7 +437,8 @@ if sw0:
     Matrix=Matrix[:,2:]
     hmmTestAll(Matrix,Re,0)    
     
-selectInd=[0,1,7,9,14,15,]
+selectInd=[0,7,9,10,13,14,15,16,18,23,24,]
+#selectInd=range(0,25)
 if sw1+sw2+sw3+sw4:  
     conn=pymysql.connect('localhost','caofa','caofa',nameDB)     
     cur=conn.cursor()
@@ -448,7 +448,7 @@ if sw1+sw2+sw3+sw4:
     Re=Matrix[:,1]
     Matrix=Matrix[:,2:]
     if sw4:
-        Matrix=Matrix#[:,[0,1,7,9,14,15,]]
+        Matrix=Matrix[:,selectInd]
     else:
         Matrix=Matrix[:,selectInd]
     
@@ -464,7 +464,7 @@ if sw1:
 #    Matrix=pca.fit_transform(Matrix[:,[0,4,7,8,9,12,13,14,15,16,18,21,26,27,28,29]])
     hmmTestAll(Matrix,Re,0)    
 if sw2:    
-    flagSelected=[ [0,[3]],[1,[3]],[2,[1]],[4,[1,4]],[5,[0,4]],]
+    flagSelected=[ [0,[2]],[3,[0]],[5,[0,2]],[6,[3,4]],[7,[1]],[8,[1,3]],]
     flag=hmmTestCertain(Matrix,Re,flagSelected)  # flag is 1 or 0;
     conn=pymysql.connect('localhost','caofa','caofa',nameDB)
     cur=conn.cursor()
