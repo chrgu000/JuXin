@@ -406,12 +406,11 @@ def loadFuturesMinutes(futures,today):
     Lt=len(futures)
     for i in range(Lt):
         print('load future-%s:%d/%d' %(futures[i],i+1,Lt))
-        while 1:
-            tem=w.wsi(futures[i],'open,close,high,low,volume',today-timedelta(days=3*370),today,'periodstart=09:00:00;periodend=15:01:00;Fill=Previous')
-            if len(tem.Data)>1:
-                break
-            else:
-                print('something error'+tem.Data[0])
+        tem=w.wsi(futures[i],'open,close,high,low,volume',today-timedelta(days=3*370),today,'periodstart=09:00:00;periodend=15:01:00;Fill=Previous')
+        if len(tem.Data)<=1:
+            print(futures[i]+':something error:'+tem.Data[0][0])
+            continue            
+
         Matrix=[tem.Times]
         Matrix.extend(tem.Data)
         Matrix=np.column_stack(Matrix)
