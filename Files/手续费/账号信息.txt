@@ -5,5 +5,6 @@
 海通期权：9046050090 密码：同上
 个人高管信息注册信息：
 账户号----370282198302205112；密码----yJxJSdSL
+五矿期权模拟账号:17000002532 密码：123321
 
 MySQL: port Number 3306 Name: MySQL56 code:cf*t***0(root),user:caofa(caofa)

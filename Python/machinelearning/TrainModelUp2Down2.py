@@ -332,7 +332,7 @@ def sortStatastic(sorts,Re,Title):
 sw0=0 # get dataset for the model and test all for the first time;
 sw1=0 # test selected figures;
 sw2=0 # show one figure with one line after delete some bad type (should be done by hand)
-sw3=0 # show one figure with different line of hmm sort according to sw2's selected;
+sw3=0 # show one figure with different line of hmm sort according to sw2's selected and then show many features according to different date/time;
 sw3_1=1 # show many figures and each one is sorted according to different date/time; 
 sw4=0 # train by seq   
 sw5=0 # PCA
@@ -375,7 +375,7 @@ if sw0:
 #            ma10[i2]=np.mean(closes[i2-10:i2+1])
         for i2 in range(15,Lt-3):
             if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
-            highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]: #vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and 
+            highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2] and closes[i2]/closes[i2-1]<1.095: #vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and 
                 if closes[i2+1]>closes[i2]:
                     Re.append(closes[i2+2]/closes[i2]-1)
                 else:
@@ -437,7 +437,7 @@ if sw0:
     Matrix=Matrix[:,2:]
     hmmTestAll(Matrix,Re,0)    
     
-selectInd=[0,7,9,10,13,14,15,16,18,23,24,]
+selectInd=[0,6,7,9,10,13,14,15,16,17,18,21,23,24,]
 #selectInd=range(0,25)
 if sw1+sw2+sw3+sw4:  
     conn=pymysql.connect('localhost','caofa','caofa',nameDB)     
@@ -464,7 +464,7 @@ if sw1:
 #    Matrix=pca.fit_transform(Matrix[:,[0,4,7,8,9,12,13,14,15,16,18,21,26,27,28,29]])
     hmmTestAll(Matrix,Re,0)    
 if sw2:    
-    flagSelected=[ [0,[2]],[3,[0]],[5,[0,2]],[6,[3,4]],[7,[1]],[8,[1,3]],]
+    flagSelected=[ [0,[1,3]],[3,[1,2]],[4,[2]],[6,[0,2]],[7,[1,2]],[8,[2]],[9,[2]],[10,[3,4]],]
     flag=hmmTestCertain(Matrix,Re,flagSelected)  # flag is 1 or 0;
     conn=pymysql.connect('localhost','caofa','caofa',nameDB)
     cur=conn.cursor()
@@ -493,6 +493,27 @@ if sw3:
     conn.commit()
     cur.close()
     conn.close()
+    
+    flagU=np.unique(flag)
+    for i in range(len(flagU)):
+        tem=flag==flagU[i]
+        datei=dateAll[tem]
+        Rei=Re[tem]
+        Lt=len(datei)
+        month=[]
+        day=[]
+        week=[]
+        weekday=[]    
+        for i2 in range(Lt):
+            month.append(datei[i2].strftime('%m'))
+            day.append(datei[i2].strftime('%d'))
+            week.append(datei[i2].strftime('%W'))
+            weekday.append(datei[i2].strftime('%w'))
+        sortStatastic(weekday,Rei,'flag:'+str(flagU[i])+'--weekday')
+        sortStatastic(month,Rei,'flag:'+str(flagU[i])+'--month')
+        sortStatastic(day,Rei,'flag:'+str(flagU[i])+'--day')
+        sortStatastic(week,Rei,'flag:'+str(flagU[i])+'--week')
+
 if sw3_1:
     conn=pymysql.connect('localhost','caofa','caofa',nameDB)
     cur=conn.cursor()
@@ -502,7 +523,7 @@ if sw3_1:
     Re=Matrix[:,1]
     Matrix=Matrix[:,2:] 
     
-#    Matrix=Matrix[:,selectInd] # select according to sw2 if comment, select according to raw data
+#    Matrix=Matrix[:,selectInd] # select according to sw2; if comments, select according to raw data;
 #    cur.execute('select * from indSelected')
 #    indSelected=np.column_stack(cur.fetchall())[0]>0
 #    Matrix=Matrix[indSelected,:] 

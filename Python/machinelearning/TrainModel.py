@@ -1,33 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Aug  3 16:27:07 2017
+Created on Thu Aug 17 16:46:01 2017
 
 @author: Administrator
 """
-
-# python time format: x=datetime.date(2005, 4, 12); x.strftime('%A')
-#%y 两位数的年份表示（00-99）
-#%Y 四位数的年份表示（000-9999）
-#%m 月份（01-12）
-#%d 月内中的一天（0-31）
-#%H 24小时制小时数（0-23）
-#%I 12小时制小时数（01-12）
-#%M 分钟数（00=59）
-#%S 秒（00-59）
-#%a 本地简化星期名称
-#%A 本地完整星期名称
-#%b 本地简化的月份名称
-#%B 本地完整的月份名称
-#%c 本地相应的日期表示和时间表示
-#%j 年内的一天（001-366）
-#%p 本地A.M.或P.M.的等价符
-#%U 一年中的星期数（00-53）星期天为星期的开始
-#%w 星期（0-6），星期天为星期的开始
-#%W 一年中的星期数（00-53）星期一为星期的开始
-#%x 本地相应的日期表示
-#%X 本地相应的时间表示
-#%Z 当前时区的名称
-#%% %号本身
 
 from hmmlearn.hmm import GaussianHMM
 from seqlearn.perceptron import StructuredPerceptron
@@ -46,8 +22,8 @@ import joblib, warnings,pymysql,time
 
 x1=time.clock()
 warnings.filterwarnings("ignore")
-nameDB='TrainModel'
-saveData='E:\\joblib\\'+nameDB
+nameDB='Up2Down2'
+saveData='D:\\Trade\\joblib\\'+nameDB
 
 def plot_decision_regions(X,y,classifier,resolution=0.02):
     markers=('s','x','o','^','v')
@@ -356,14 +332,13 @@ def sortStatastic(sorts,Re,Title):
 sw0=0 # get dataset for the model and test all for the first time;
 sw1=0 # test selected figures;
 sw2=0 # show one figure with one line after delete some bad type (should be done by hand)
-sw3=0 # show one figure with different line acorrding to hmm sort;
+sw3=0 # show one figure with different line of hmm sort according to sw2's selected and then show many features according to different date/time;
 sw3_1=1 # show many figures and each one is sorted according to different date/time; 
 sw4=0 # train by seq   
 sw5=0 # PCA
 
 if sw0:   
-    fig=1
-    figNum=0
+    fig=10
     conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
     cur=conn.cursor()
     cur.execute('create database if not exists '+nameDB) # create database;        
@@ -400,7 +375,7 @@ if sw0:
 #            ma10[i2]=np.mean(closes[i2-10:i2+1])
         for i2 in range(15,Lt-3):
             if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
-            vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
+            highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2] and closes[i2]/closes[i2-1]<1.095: #vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and 
                 if closes[i2+1]>closes[i2]:
                     Re.append(closes[i2+2]/closes[i2]-1)
                 else:
@@ -429,8 +404,8 @@ if sw0:
                     closes[i2-4:i2].std()/closes[i2-9:i2].std(),highs[i2-4:i2].std()/highs[i2-9:i2].std(),\
                     np.std([ closes[i2],opens[i2],highs[i2],lows[i2] ])/np.std([closes[i2-1],opens[i2-1],highs[i2-1],lows[i2-1]])]
                 Matrix.append(tem)
-                if fig and figNum%1000<1 and figNum<10000:
-                    figNum=figNum+1
+                if fig>0:
+                    fig=fig-1
                     plt.figure()
                     candleData=[]
                     for i3 in range(i2-10,i2+3):
@@ -462,7 +437,8 @@ if sw0:
     Matrix=Matrix[:,2:]
     hmmTestAll(Matrix,Re,0)    
     
-selectInd=[0,1,7,9,14,15,]
+selectInd=[0,6,7,9,10,13,14,15,16,17,18,21,23,24,]
+#selectInd=range(0,25)
 if sw1+sw2+sw3+sw4:  
     conn=pymysql.connect('localhost','caofa','caofa',nameDB)     
     cur=conn.cursor()
@@ -472,7 +448,7 @@ if sw1+sw2+sw3+sw4:
     Re=Matrix[:,1]
     Matrix=Matrix[:,2:]
     if sw4:
-        Matrix=Matrix#[:,[0,1,7,9,14,15,]]
+        Matrix=Matrix[:,selectInd]
     else:
         Matrix=Matrix[:,selectInd]
     
@@ -488,7 +464,7 @@ if sw1:
 #    Matrix=pca.fit_transform(Matrix[:,[0,4,7,8,9,12,13,14,15,16,18,21,26,27,28,29]])
     hmmTestAll(Matrix,Re,0)    
 if sw2:    
-    flagSelected=[ [0,[3]],[1,[3]],[2,[1]],[4,[1,4]],[5,[0,4]],]
+    flagSelected=[ [0,[1,3]],[3,[1,2]],[4,[2]],[6,[0,2]],[7,[1,2]],[8,[2]],[9,[2]],[10,[3,4]],]
     flag=hmmTestCertain(Matrix,Re,flagSelected)  # flag is 1 or 0;
     conn=pymysql.connect('localhost','caofa','caofa',nameDB)
     cur=conn.cursor()
@@ -517,6 +493,27 @@ if sw3:
     conn.commit()
     cur.close()
     conn.close()
+    
+    flagU=np.unique(flag)
+    for i in range(len(flagU)):
+        tem=flag==flagU[i]
+        datei=dateAll[tem]
+        Rei=Re[tem]
+        Lt=len(datei)
+        month=[]
+        day=[]
+        week=[]
+        weekday=[]    
+        for i2 in range(Lt):
+            month.append(datei[i2].strftime('%m'))
+            day.append(datei[i2].strftime('%d'))
+            week.append(datei[i2].strftime('%W'))
+            weekday.append(datei[i2].strftime('%w'))
+        sortStatastic(weekday,Rei,'flag:'+str(flagU[i])+'--weekday')
+        sortStatastic(month,Rei,'flag:'+str(flagU[i])+'--month')
+        sortStatastic(day,Rei,'flag:'+str(flagU[i])+'--day')
+        sortStatastic(week,Rei,'flag:'+str(flagU[i])+'--week')
+
 if sw3_1:
     conn=pymysql.connect('localhost','caofa','caofa',nameDB)
     cur=conn.cursor()
@@ -526,7 +523,7 @@ if sw3_1:
     Re=Matrix[:,1]
     Matrix=Matrix[:,2:] 
     
-#    Matrix=Matrix[:,selectInd] # select according to sw2 if comment, select according to raw data
+#    Matrix=Matrix[:,selectInd] # select according to sw2; if comments, select according to raw data;
 #    cur.execute('select * from indSelected')
 #    indSelected=np.column_stack(cur.fetchall())[0]>0
 #    Matrix=Matrix[indSelected,:] 
