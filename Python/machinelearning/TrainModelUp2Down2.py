@@ -49,6 +49,8 @@ def hmmTestAll(Xraw,Reraw,figStart): # figStart: how many figs to show 0 means s
     Xcol=Xshape[1]
     if figStart!=Xcol:
         Xraw,X0,Reraw,y0=train_test_split(Xraw,np.array(Reraw),test_size=0.0)
+    dispersity=[] # hold dispesity of each column but last one not for some one column but all;
+    profitP=[] # hold each type's profit/per of each indicator column
     for lp in range(figStart,Xcol+1):
         if lp<Xcol:
             X=Xraw[:,lp]
@@ -76,7 +78,8 @@ def hmmTestAll(Xraw,Reraw,figStart): # figStart: how many figs to show 0 means s
         joblib.dump(hmm,saveData+figTitle)
         
 #        for i in range(2):
-        for i in range(1,2):
+        records=[] # hold two recordi
+        for i in range(2):
             
             if i==0:
                 Xtem=Xtrain
@@ -89,6 +92,7 @@ def hmmTestAll(Xraw,Reraw,figStart): # figStart: how many figs to show 0 means s
             plt.figure(figsize=(15,8))
             xi=[]
             yi=[]
+            recordi=[] # record number of total orders, IR,winratio,ratioWL,profitP
             for i2 in range(hmm.n_components):
                 state=(flag==i2)
                 ReT=Retem[state]
@@ -110,15 +114,40 @@ def hmmTestAll(Xraw,Reraw,figStart): # figStart: how many figs to show 0 means s
                         maxDrawValue=ReTcs[i3]
                 xi.append(maxDrawi)
                 yi.append(maxDrawValue)  
+                recordi.append([LT,np.mean(ReT)/np.std(ReT),ReTcs[-1]/LT*100])
                 plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
                          %(i2,LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))  
+            records.append(recordi)
             plt.plot(xi,yi,'r*')
             plt.title(figTitle,fontsize=16)
+            
+            if i==1:
+                rec1=np.row_stack(records[0])
+                rec2=np.row_stack(records[1])
+                profitP.append(rec2[:,2].tolist())
+                orders=rec2[:,0]
+                tem=orders>rec2.max()/4
+                if tem.sum()>1:
+                    orders=orders[tem]
+                    tem=rec2[:,2][tem].std()*np.sqrt(tem.sum())/(np.std(orders/orders.max())+1)
+                else:
+                    tem=0
+                dispersity.append(tem)
+                if tem>0.2:
+                    plt.xlabel( 'indicator column %d, correlative of train and test: %.10f, dispesity:%.10f'\
+                           %(lp,pd.DataFrame(rec1[:,1])[0].corr(pd.DataFrame(rec2[:,1])[0]), tem ),color='r')
+                else:
+                    plt.xlabel( 'indicator column %d, correlative of train and test: %.10f, dispesity:%.10f'\
+                           %(lp,pd.DataFrame(rec1[:,1])[0].corr(pd.DataFrame(rec2[:,1])[0]), tem ),color='gray')                        
     #        plt.legend(loc='upper',bbox_to_anchor=(0.0,1.0),ncol=1,fancybox=True,shadow=True)
             plt.legend(loc='upper left')
             plt.grid(1)
+            
     if figStart==Xcol:
         return flag
+    else:
+        dispersity=np.array(dispersity)
+        return np.array(range(len(dispersity)))[dispersity>0.2],profitP
        
 
 def hmmTestCertain(Matrix,Re,flagSelected):
@@ -329,11 +358,11 @@ def sortStatastic(sorts,Re,Title):
     plt.grid(1)
     
 
-sw0=0 # get dataset for the model and test all for the first time;
+sw0=1 # get dataset for the model and test all for the first time;
 sw1=0 # test selected figures;
 sw2=0 # show one figure with one line after delete some bad type (should be done by hand)
 sw3=0 # show one figure with different line of hmm sort according to sw2's selected and then show many features according to different date/time;
-sw3_1=1 # show many figures and each one is sorted according to different date/time; 
+sw3_1=0 # show many figures and each one is sorted according to different date/time; 
 sw4=0 # train by seq   
 sw5=0 # PCA
 
@@ -435,7 +464,10 @@ if sw0:
     dateAll=Matrix[:,0]
     Re=Matrix[:,1]
     Matrix=Matrix[:,2:]
-    hmmTestAll(Matrix,Re,0)    
+    indSelected,profitP=hmmTestAll(Matrix,Re,0)  
+    print('*'*100)
+    hmmTestAll(Matrix[:,indSelected],Re,len(indSelected))
+    print(profitP)
     
 selectInd=[0,6,7,9,10,13,14,15,16,17,18,21,23,24,]
 #selectInd=range(0,25)

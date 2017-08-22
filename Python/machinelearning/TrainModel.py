@@ -332,8 +332,8 @@ def sortStatastic(sorts,Re,Title):
 sw0=0 # get dataset for the model and test all for the first time;
 sw1=0 # test selected figures;
 sw2=0 # show one figure with one line after delete some bad type (should be done by hand)
-sw3=0 # show one figure with different line of hmm sort according to sw2's selected and then show many features according to different date/time;
-sw3_1=1 # show many figures and each one is sorted according to different date/time; 
+sw3=1 # show one figure with different line of hmm sort according to sw2's selected and then show many features according to different date/time;
+sw3_1=0 # show many figures and each one is sorted according to different date/time; 
 sw4=0 # train by seq   
 sw5=0 # PCA
 
