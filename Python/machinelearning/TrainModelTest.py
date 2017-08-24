@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Aug 17 16:46:01 2017
+Created on Thu Aug 24 16:26:27 2017
 
 @author: Administrator
 """
@@ -17,9 +17,9 @@ import pymysql,time
 import TrainModel
 x1=time.clock()
 
-firstTime=0
+firstTime=1
 ReSet=0
-nameDB='Up2Down2' # should be set for create a new mode test;
+nameDB='Test' # should be set for create a new mode test;
 
 TM=TrainModel.TrainModel(nameDB)
 if ReSet:
@@ -215,27 +215,38 @@ if not firstTime: # should select by hands
     tem=(ReSelectOk>0)*(ReSelectNot>0) # sort by time;
     if sum(tem)>0:
         TM.ReFig(Re[tem],'SelectOkNot') 
-    
-dateSort=dateAll[tem]
-ReSort=Re[tem]
-Lt=len(dateSort)
-month=[]
-day=[]
-week=[]
-weekday=[]    
-for i2 in range(Lt):
-    month.append(dateSort[i2].strftime('%m'))
-    day.append(dateSort[i2].strftime('%d'))
-    week.append(dateSort[i2].strftime('%W'))
-    weekday.append(dateSort[i2].strftime('%w'))
-TM.sortStatastic(weekday,ReSort,'selectNotOk--weekday')
-TM.sortStatastic(month,ReSort,'selectNotOk--month')
-TM.sortStatastic(day,ReSort,'selectNotOk--day')
-TM.sortStatastic(week,ReSort,'selectNotOk--week')
+
+        dateSort=dateAll[tem]
+        ReSort=Re[tem]
+        Lt=len(dateSort)
+        month=[]
+        day=[]
+        week=[]
+        weekday=[]    
+        for i2 in range(Lt):
+            month.append(dateSort[i2].strftime('%m'))
+            day.append(dateSort[i2].strftime('%d'))
+            week.append(dateSort[i2].strftime('%W'))
+            weekday.append(dateSort[i2].strftime('%w'))
+        TM.sortStatastic(weekday,ReSort,'selectNotOk--weekday')
+        TM.sortStatastic(month,ReSort,'selectNotOk--month')
+        TM.sortStatastic(day,ReSort,'selectNotOk--day')
+        TM.sortStatastic(week,ReSort,'selectNotOk--week')
 
 x2=time.clock()
 print('time elapse:%.1f minutes' %((x2-x1)/60))
     
+
+
+
+
+
+
+
+
+
+
+
 
 
     

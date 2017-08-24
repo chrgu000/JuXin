@@ -129,48 +129,60 @@ class TrainModel():
             dispersity=np.array(dispersity)
             return dispersity,profitP
        
-    def hmmTestCertain(self,Matrix,Re,flagSelected):
+    def hmmTestCertainNot(self,Matrix,flagSelect):
         X=np.row_stack(Matrix)  
-        def hmmTCi(paraList): #Nind -- which indicator; flaNot -- not which flag for this indicator;
-            Nind=[]
-            flagNot=[]
-            for i in range(len(paraList)):
-                Nind.append(paraList[i][0])
-                flagNot.append(paraList[i][1])            
-            flag=np.ones(len(X))>0
-            for i2 in range(len(Nind)):    
-                hmm=joblib.load(self.saveData+str(Nind[i2]))
-                flagTem=hmm.predict(np.row_stack(X[:,Nind[i2]]))
-                for i in range(len(flagNot[i2])):
-                        flag=flag*(flagTem!=flagNot[i2][i])       
-            return flag
-        
-        flag=hmmTCi(flagSelected)
+        Nind=[]
+        flagNot=[]
+        for i in range(len(flagSelect)):
+            Nind.append(flagSelect[i][0])
+            flagNot.append(flagSelect[i][1])            
+        ReSelect=np.ones(len(X))
+        for i2 in range(len(Nind)):    
+            hmm=joblib.load(self.saveData+str(Nind[i2]))
+            flagTem=hmm.predict(np.row_stack(X[:,Nind[i2]]))
+            for i in range(len(flagNot[i2])):
+                    ReSelect=ReSelect*(flagTem!=flagNot[i2][i])       
+        return ReSelect
     
-        ReT=Re[flag]
-        ReTcs=ReT.cumsum()
-        LT=len(ReT)
+    def hmmTestCertainOk(self,Matrix,flagSelect):
+        X=np.row_stack(Matrix)  
+        Nind=[]
+        flagOk=[]
+        for i in range(len(flagSelect)):
+            Nind.append(flagSelect[i][0])
+            flagOk.append(flagSelect[i][1])            
+        ReSelect=np.zeros(len(X))
+        for i2 in range(len(Nind)):    
+            hmm=joblib.load(self.saveData+str(Nind[i2]))
+            flagTem=hmm.predict(np.row_stack(X[:,Nind[i2]]))
+            for i in range(len(flagOk[i2])):
+                    ReSelect=ReSelect+(flagTem==flagOk[i2][i])    
+        return ReSelect
+    
+    def ReFig(self,Re,figTitle):
+        Recs=Re.cumsum()
+        LT=len(Re)
         maxDraw=0
         maxDrawi=0
         maxDrawValue=0
         i2High=0
         for i2 in range(LT):
-            if ReTcs[i2]>i2High:
-                i2High=ReTcs[i2]
-            drawT=i2High-ReTcs[i2]
+            if Recs[i2]>i2High:
+                i2High=Recs[i2]
+            drawT=i2High-Recs[i2]
             if maxDraw<drawT:
                 maxDraw=drawT
                 maxDrawi=i2
-                maxDrawValue=ReTcs[i2]
+                maxDrawValue=Recs[i2]
         plt.figure(figsize=(15,8))
-        plt.plot(range(LT),ReTcs,label='latent_state: %s;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
-                 %('Selected',LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))  
+        plt.plot(range(LT),Recs,label='latent_state: %s;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
+                 %('Selected',LT,np.mean(Re)/np.std(Re),sum(Re>0)/float(LT),np.mean(Re[Re>0])/-np.mean(Re[Re<0]),maxDraw*100,Recs[-1]/LT*100))  
         plt.plot(maxDrawi,maxDrawValue,'r*')
+        plt.title(figTitle)
         plt.legend(loc='upper left')
         plt.grid(1) 
-        return flag
 
-    def sortStatastic(sorts,Re,Title):
+    def sortStatastic(self,sorts,Re,Title):
         sorts=np.array(sorts)
         sortsU=np.unique(sorts)
         plt.figure(figsize=(15,8))
