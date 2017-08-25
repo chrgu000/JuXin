@@ -9,7 +9,7 @@ import numpy as np
 import pickle,datetime,joblib,time
 
 t1=time.clock()
-firstTime=0 # control whether this is the first time to run this procedure;
+firstTime=1 # control whether this is the first time to run this procedure;
 Reload=0 # re-down load data;
 holdOrders=0 # record wether hold orders;
 tradeFlag=input('Please confirm trading or not [y/n]?')

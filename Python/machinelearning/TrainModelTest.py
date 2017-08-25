@@ -5,6 +5,7 @@ Created on Thu Aug 24 16:26:27 2017
 @author: Administrator
 """
 
+
 from hmmlearn.hmm import GaussianHMM
 from sklearn.svm import SVC
 from sklearn.decomposition import PCA
@@ -66,8 +67,8 @@ if firstTime:
     #            maN[i2]=np.mean(closes[i2-3:i2+1])
     #            ma10[i2]=np.mean(closes[i2-10:i2+1])
         for i2 in range(15,Lt-3):
-            if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
-            highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2] and closes[i2]/closes[i2-1]<1.095: #vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and 
+            if closes[i2-1]<=lows[i2-1]+(highs[i2-1]-lows[i2-1])/4 and closes[i2]>=lows[i2]+(highs[i2]-lows[i2])*3/4 and closes[i2]>closes[i2-1] and highs[i2-1]-lows[i2-1]>np.mean(highs[i2-5:i2-1]-lows[i2-5:i2-1]) and \
+            highs[i2-4]>lows[i2-4] and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1] and highs[i2]>lows[i2] and closes[i2]/closes[i2-1]<1.095: #vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and 
                 if closes[i2+1]>closes[i2]:
                     Re.append(closes[i2+2]/closes[i2]-1)
                 else:
@@ -184,7 +185,7 @@ for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
     flagDi=[]
     for i2 in range(len(flagi)):
-        if flagi[i2]<0.4: #profitP<0.4%
+        if flagi[i2]<0.45: #profitP<0.4%
             flagDi.append(i2)
     if len(flagDi)>0:
         flagNot.append([colSelect[i],flagDi])
@@ -198,43 +199,65 @@ for i in range(len(colSelect)):
     if len(flagDi)>0:
         flagOk.append([colSelect[i],flagDi])
 ReSelectNot=TM.hmmTestCertainNot(Matrix,flagNot)
-TM.ReFig(Re[ReSelectNot>0],'SelectNot')
+TM.ReFig([Re[ReSelectNot>0],],['SelectNot',])
 ReSelectOk=TM.hmmTestCertainOk(Matrix,flagOk)
-TM.ReFig(Re[ReSelectOk>0],'SelectOk') # select how many flag is match by one Re
+TM.ReFig([Re[ReSelectOk>0],],['SelectOk',]) # select how many flag is match by one Re
+tem=(ReSelectOk>0)*(ReSelectNot>0) # draw final select figure;
+TM.ReFig([Re,Re[tem]],['RawRe','SelectOkNot']) 
+dateSort=dateAll[tem] # sort by time;
+ReSort=Re[tem]
+Lt=len(dateSort)
+month=[]
+day=[]
+week=[]
+weekday=[]    
+for i2 in range(Lt):
+    month.append(dateSort[i2].strftime('%m'))
+    day.append(dateSort[i2].strftime('%d'))
+    week.append(dateSort[i2].strftime('%W'))
+    weekday.append(dateSort[i2].strftime('%w'))
+TM.sortStatastic(weekday,ReSort,'selectNotOk--weekday')
+TM.sortStatastic(month,ReSort,'selectNotOk--month')
+TM.sortStatastic(day,ReSort,'selectNotOk--day')
+TM.sortStatastic(week,ReSort,'selectNotOk--week')
 
-if not firstTime: # should select by hands
-    flagTest=[ [0,[1]], ] # select flag 1 of column 0
-    ReSelectOk=TM.hmmTestCertainOk(Matrix,flagTest)
-    TM.ReFig(Re[ReSelectOk>0],'SelectTest')
+# test this model by hands freely according to your free mind.
+flagTest=[ [0,[1]], ] # select flag 1 of column 0 
+ReSelectOk=TM.hmmTestCertainOk(Matrix,flagTest)
+TM.ReFig([Re[ReSelectOk>0],],['SelectTest'])
+
+flagTest=[ [0,[2]], ] # select flag 1 of column 0
+tem1=TM.hmmTestCertainOk(Matrix,flagTest)
+flagTest=[ [24,[1]], ] # select flag 1 of column 0
+tem2=TM.hmmTestCertainOk(Matrix,flagTest)
+TM.ReFig([Re[tem1*tem2>0],],['SelectbyMany',])
     
-    flagTest=[ [0,[2]], ] # select flag 1 of column 0
-    tem1=TM.hmmTestCertainOk(Matrix,flagTest)
-    flagTest=[ [24,[1]], ] # select flag 1 of column 0
-    tem2=TM.hmmTestCertainOk(Matrix,flagTest)
-    TM.ReFig(Re[tem1*tem2>0],'SelectbyMany')
-    tem=(ReSelectOk>0)*(ReSelectNot>0) # sort by time;
-    if sum(tem)>0:
-        TM.ReFig(Re[tem],'SelectOkNot') 
-
-        dateSort=dateAll[tem]
-        ReSort=Re[tem]
-        Lt=len(dateSort)
-        month=[]
-        day=[]
-        week=[]
-        weekday=[]    
-        for i2 in range(Lt):
-            month.append(dateSort[i2].strftime('%m'))
-            day.append(dateSort[i2].strftime('%d'))
-            week.append(dateSort[i2].strftime('%W'))
-            weekday.append(dateSort[i2].strftime('%w'))
-        TM.sortStatastic(weekday,ReSort,'selectNotOk--weekday')
-        TM.sortStatastic(month,ReSort,'selectNotOk--month')
-        TM.sortStatastic(day,ReSort,'selectNotOk--day')
-        TM.sortStatastic(week,ReSort,'selectNotOk--week')
-
 x2=time.clock()
 print('time elapse:%.1f minutes' %((x2-x1)/60))
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+    
+
+
+
     
 
 

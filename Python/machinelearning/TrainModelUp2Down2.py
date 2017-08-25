@@ -184,7 +184,7 @@ for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
     flagDi=[]
     for i2 in range(len(flagi)):
-        if flagi[i2]<0.4: #profitP<0.4%
+        if flagi[i2]<0.45: #profitP<0.4%
             flagDi.append(i2)
     if len(flagDi)>0:
         flagNot.append([colSelect[i],flagDi])
@@ -198,25 +198,12 @@ for i in range(len(colSelect)):
     if len(flagDi)>0:
         flagOk.append([colSelect[i],flagDi])
 ReSelectNot=TM.hmmTestCertainNot(Matrix,flagNot)
-TM.ReFig(Re[ReSelectNot>0],'SelectNot')
+TM.ReFig([Re[ReSelectNot>0],],['SelectNot',])
 ReSelectOk=TM.hmmTestCertainOk(Matrix,flagOk)
-TM.ReFig(Re[ReSelectOk>0],'SelectOk') # select how many flag is match by one Re
-
-if not firstTime: # should select by hands
-    flagTest=[ [0,[1]], ] # select flag 1 of column 0
-    ReSelectOk=TM.hmmTestCertainOk(Matrix,flagTest)
-    TM.ReFig(Re[ReSelectOk>0],'SelectTest')
-    
-    flagTest=[ [0,[2]], ] # select flag 1 of column 0
-    tem1=TM.hmmTestCertainOk(Matrix,flagTest)
-    flagTest=[ [24,[1]], ] # select flag 1 of column 0
-    tem2=TM.hmmTestCertainOk(Matrix,flagTest)
-    TM.ReFig(Re[tem1*tem2>0],'SelectbyMany')
-    tem=(ReSelectOk>0)*(ReSelectNot>0) # sort by time;
-    if sum(tem)>0:
-        TM.ReFig(Re[tem],'SelectOkNot') 
-    
-dateSort=dateAll[tem]
+TM.ReFig([Re[ReSelectOk>0],],['SelectOk',]) # select how many flag is match by one Re
+tem=(ReSelectOk>0)*(ReSelectNot>0) # draw final select figure;
+TM.ReFig([Re,Re[tem]],['RawRe','SelectOkNot']) 
+dateSort=dateAll[tem] # sort by time;
 ReSort=Re[tem]
 Lt=len(dateSort)
 month=[]
@@ -233,9 +220,37 @@ TM.sortStatastic(month,ReSort,'selectNotOk--month')
 TM.sortStatastic(day,ReSort,'selectNotOk--day')
 TM.sortStatastic(week,ReSort,'selectNotOk--week')
 
+# test this model by hands freely according to your free mind.
+flagTest=[ [0,[1]], ] # select flag 1 of column 0 
+ReSelectOk=TM.hmmTestCertainOk(Matrix,flagTest)
+TM.ReFig([Re[ReSelectOk>0],],['SelectTest'])
+
+flagTest=[ [0,[2]], ] # select flag 1 of column 0
+tem1=TM.hmmTestCertainOk(Matrix,flagTest)
+flagTest=[ [24,[1]], ] # select flag 1 of column 0
+tem2=TM.hmmTestCertainOk(Matrix,flagTest)
+TM.ReFig([Re[tem1*tem2>0],],['SelectbyMany',])
+    
 x2=time.clock()
 print('time elapse:%.1f minutes' %((x2-x1)/60))
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
 
 
     

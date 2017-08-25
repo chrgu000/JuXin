@@ -160,27 +160,30 @@ class TrainModel():
         return ReSelect
     
     def ReFig(self,Re,figTitle):
-        Recs=Re.cumsum()
-        LT=len(Re)
-        maxDraw=0
-        maxDrawi=0
-        maxDrawValue=0
-        i2High=0
-        for i2 in range(LT):
-            if Recs[i2]>i2High:
-                i2High=Recs[i2]
-            drawT=i2High-Recs[i2]
-            if maxDraw<drawT:
-                maxDraw=drawT
-                maxDrawi=i2
-                maxDrawValue=Recs[i2]
         plt.figure(figsize=(15,8))
-        plt.plot(range(LT),Recs,label='latent_state: %s;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
-                 %('Selected',LT,np.mean(Re)/np.std(Re),sum(Re>0)/float(LT),np.mean(Re[Re>0])/-np.mean(Re[Re<0]),maxDraw*100,Recs[-1]/LT*100))  
-        plt.plot(maxDrawi,maxDrawValue,'r*')
-        plt.title(figTitle)
-        plt.legend(loc='upper left')
-        plt.grid(1) 
+        for i in range(len(figTitle)):
+            Rei=np.array(Re[i])
+            figTitlei=figTitle[i]
+            Recs=Rei.cumsum()
+            LT=len(Rei)
+            maxDraw=0
+            maxDrawi=0
+            maxDrawValue=0
+            i2High=0
+            for i2 in range(LT):
+                if Recs[i2]>i2High:
+                    i2High=Recs[i2]
+                drawT=i2High-Recs[i2]
+                if maxDraw<drawT:
+                    maxDraw=drawT
+                    maxDrawi=i2
+                    maxDrawValue=Recs[i2]
+            plt.plot(range(LT),Recs,label='%s ---- orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
+                     %(figTitlei,LT,np.mean(Rei)/np.std(Rei),sum(Rei>0)/float(LT),np.mean(Rei[Rei>0])/-np.mean(Rei[Rei<0]),maxDraw*100,Recs[-1]/LT*100))  
+            plt.plot(maxDrawi,maxDrawValue,'r*')
+            plt.legend(loc='upper left')
+            plt.grid(1) 
+        plt.title(' VS '.join(figTitle))
 
     def sortStatastic(self,sorts,Re,Title):
         sorts=np.array(sorts)
