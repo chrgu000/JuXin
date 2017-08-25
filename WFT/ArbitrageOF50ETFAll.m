@@ -1,9 +1,9 @@
  function [op,opX]=ArbitrageOF50ETFAll(varargin) % ih1705.cfe 新湖期货：16808015 code:280018期货市场监控中心账号020916808015 初始密码8990DUUm；咨询电话4008888398
 tic;
-sw0=1;% show two trading targets' difference for history price;50etf-50index
+sw0=0;% show two trading targets' difference for history price;50etf-50index
 sw1=0;% show all options-future K lines which are trading in the "date";
 sw2=0;% get all options-future data in history; 
-sw3=0;% show Pictures;
+sw3=1;% show Pictures;
 sw4=0;% code for draw principle figures;
 sw5=0;% Bald eagle Strategy;
 sw5x=0;% Modify sw5 and let it more flexible;
@@ -455,7 +455,7 @@ if sw3
         Open=[];
         Days=unique(Time);
         Ldays=length(Days);
-        if Ldays<40 
+        if Ldays>40 
             continue;
         end
         for ii=1:Ldays

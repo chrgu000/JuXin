@@ -198,27 +198,30 @@ for i in range(len(colSelect)):
     if len(flagDi)>0:
         flagOk.append([colSelect[i],flagDi])
 ReSelectNot=TM.hmmTestCertainNot(Matrix,flagNot)
-TM.ReFig([Re[ReSelectNot>0],],['SelectNot',])
+if sum(ReSelectNot)>0:
+    TM.ReFig([Re[ReSelectNot>0],],['SelectNot',])
 ReSelectOk=TM.hmmTestCertainOk(Matrix,flagOk)
-TM.ReFig([Re[ReSelectOk>0],],['SelectOk',]) # select how many flag is match by one Re
+if sum(ReSelectOk)>0:
+    TM.ReFig([Re[ReSelectOk>0],],['SelectOk',]) # select how many flag is match by one Re
 tem=(ReSelectOk>0)*(ReSelectNot>0) # draw final select figure;
-TM.ReFig([Re,Re[tem]],['RawRe','SelectOkNot']) 
-dateSort=dateAll[tem] # sort by time;
-ReSort=Re[tem]
-Lt=len(dateSort)
-month=[]
-day=[]
-week=[]
-weekday=[]    
-for i2 in range(Lt):
-    month.append(dateSort[i2].strftime('%m'))
-    day.append(dateSort[i2].strftime('%d'))
-    week.append(dateSort[i2].strftime('%W'))
-    weekday.append(dateSort[i2].strftime('%w'))
-TM.sortStatastic(weekday,ReSort,'selectNotOk--weekday')
-TM.sortStatastic(month,ReSort,'selectNotOk--month')
-TM.sortStatastic(day,ReSort,'selectNotOk--day')
-TM.sortStatastic(week,ReSort,'selectNotOk--week')
+if sum(tem)>0:
+    TM.ReFig([Re,Re[tem]],['RawRe','SelectOkNot']) 
+    dateSort=dateAll[tem] # sort by time;
+    ReSort=Re[tem]
+    Lt=len(dateSort)
+    month=[]
+    day=[]
+    week=[]
+    weekday=[]    
+    for i2 in range(Lt):
+        month.append(dateSort[i2].strftime('%m'))
+        day.append(dateSort[i2].strftime('%d'))
+        week.append(dateSort[i2].strftime('%W'))
+        weekday.append(dateSort[i2].strftime('%w'))
+    TM.sortStatastic(weekday,ReSort,'selectNotOk--weekday')
+    TM.sortStatastic(month,ReSort,'selectNotOk--month')
+    TM.sortStatastic(day,ReSort,'selectNotOk--day')
+    TM.sortStatastic(week,ReSort,'selectNotOk--week')
 
 # test this model by hands freely according to your free mind.
 flagTest=[ [0,[1]], ] # select flag 1 of column 0 
