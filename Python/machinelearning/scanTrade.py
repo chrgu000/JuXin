@@ -156,7 +156,7 @@ if Tem>0:
 
 Ltrade=len(profiti)
 for i in range(Ltrade):
-    print ('Buy %s: %d shares;use capital:%.f Yuan;profitPerOrder:%.2f,ModelNumber:%d;' %(stocksi[i],handsi[i],moneyi[i],profiti[i],moneyi[i]),)
+    print ('Buy %s: %d shares;use capital:%.f Yuan;profitPerOrder:%.2f,ModelNumber:%d;' %(stocksi[i],handsi[i],moneyi[i],profiti[i],modeli[i]),)
     if tradeFlag:
         w.torder(stocksi[i], 'Buy', '0', handsi[i], 'OrderType=B5TC;'+'LogonID='+str(logId))
         print('send trade command!')
