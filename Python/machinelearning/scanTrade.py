@@ -6,11 +6,12 @@ Created on Tue Jul 18 08:59:37 2017
 """
 from WindPy import *
 import numpy as np
-import pickle,datetime,joblib,time
+import pickle,datetime,joblib,time,TrainModel
 
 t1=time.clock()
-firstTime=1 # control whether this is the first time to run this procedure;
-Reload=0 # re-down load data;
+firstTime=0 # control whether this is the first time to run this procedure;
+
+Reload=1 # re-down load data;
 holdOrders=0 # record wether hold orders;
 tradeFlag=input('Please confirm trading or not [y/n]?')
 tradeFlag=tradeFlag.lower()=='y'    
@@ -22,18 +23,20 @@ yesterday=today-datetime.timedelta(days=1)
 
 if not firstTime:
     fileTem=open('scanTrade','rb')
-    dataTem=pickle.load(fileTem)
+    dataPKL=pickle.load(fileTem)
     fileTem.close()
-    Date=dataTem['Date']
-    stocks=dataTem['stocks']    
-    Opens=dataTem['Opens']
-    Closes=dataTem['Closes']
-    Highs=dataTem['Highs']
-    Lows=dataTem['Lows']
-    Vols=dataTem['Vols']
-    assets=dataTem['assets']
-    holdDays=dataTem['holdDays']   
-    dateStart=dataTem['dateStart']
+    Date=dataPKL['Date']
+    stocks=dataPKL['stocks']    
+    Opens=dataPKL['Opens']
+    Closes=dataPKL['Closes']
+    Highs=dataPKL['Highs']
+    Lows=dataPKL['Lows']
+    Vols=dataPKL['Vols']
+    assets=dataPKL['assets']
+    holdDays=dataPKL['holdDays']   
+    dateStart=dataPKL['dateStart']
+    if dataPKL['date_update']==time.strftime('%Y-%m-%d'):
+        Reload=0
     dataTem=w.tquery('Position', 'LogonId='+str(logId))
     if len(dataTem.Data)>3:
         holdStocks=dataTem.Data[0]
@@ -99,41 +102,80 @@ moneyi=[]  # money to trade;
 profiti=[] # expected profit of this trading;
 indicators=[] 
 for i in range(Lstocks):
-    Open=Opens[i]
-    Close=Closes[i]
-    High=Highs[i]
-    Low=Lows[i]
+    opens=Opens[i]
+    closes=Closes[i]
+    highs=Highs[i]
+    lows=Lows[i]
+    vols=Vols[i]
     
-    Lnan=sum(np.isnan(Open))
-    if Lnan>10:
+    Lnan=sum(np.isnan(opens))
+    if Lnan>5:
         continue
     else:
-        Open=Open[Lnan+1:]
-        Close=Close[Lnan+1:]
-        Low=Low[Lnan+1:]
-        High=High[Lnan+1:]
-    if Close[-1]/Close[-2]>=1.095:
+        opens=opens[Lnan+1:]
+        closes=closes[Lnan+1:]
+        lows=lows[Lnan+1:]
+        highs=highs[Lnan+1:]
+        vols=vols[Lnan+1:]        
+    if closes[-1]/closes[-2]>=1.095:
         continue
+    i2=len(opens)-1
     
-    # model 1: spring, model number 1
-    hmmSpring=joblib.load('D:\Trade\Python\machinelearning\modelTestSpringHMM') 
-    if Close[-2]<Low[-2]+(High[-2]-Low[-2])*0.25 and High[-1]>Low[-1]*1.000001 and 0.025<=Close[-1]/Close[-2]-1<0.055 and Low[-1]/Low[-2]-1>=0.01: 
-        flagi=hmmSpring.predict([ np.std([Close[-1],Open[-1],Low[-1],High[-1]])/np.std([Close[-2],Open[-2],Low[-2],High[-2]]),\
-                                 np.mean(Close[-4:])/np.mean(Close[-11:]),High[-1]/High[-2],Close[-1]/Low[-2],Close[-1]/High[-2]  ])
-        if flagi==0:
-            profiti.append(1.7)
-        elif flagi==2:
-            profiti.append(3.7)
-        elif flagi==4:
-            profiti.append(1.6)
+    modelSelect=[]
+    if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
+            highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]: #model 1
+                modelSelect.append(1)
+    
+    if len(modelSelect)>0:
+        max5near=max(closes[i2-4:i2+1]);max5far=max(closes[i2-9:i2-4]);
+        min5near=min(closes[i2-4:i2+1]);min5far=min(closes[i2-9:i2-4]);
+        max_7near=max(highs[i2-6:i2+1]);max_7far=max(highs[i2-13:i2-6]);
+        min_7near=min(lows[i2-6:i2+1]);min_7far=min(lows[i2-13:i2-6]);
+        if max_7near>max_7far and min_7near>min_7far:
+            ud_7=1
+        elif max_7near<max_7far and min_7near<min_7far:
+            ud_7=-1
         else:
-            continue
-        stocksi.append(stocks[i])
-        handsi.append(np.ceil(100/Close[-1])*100)
-        modeli.append(1)   # model number:1;
-        holdi.append(2)    # hold 2 days unless close[today]<close[yesterday]
-        moneyi.append(handsi[-1]*Close[-1])
-    
+            ud_7=0                                                       
+        Matrix=[ opens[i2]/highs[i2-1],\
+             lows[i2]/highs[i2-1],\
+             min5near/min5far,\
+             closes[i2-4:i2].mean()/closes[i2-9:i2].mean(),\
+             max5near/max5far,\
+             highs[i2-4:i2].mean()/highs[i2-9:i2].mean(),\
+             lows[i2]/opens[i2-1],\
+             highs[i2]/highs[i2-1],\
+             lows[i2]/lows[i2-1],\
+             lows[i2]/closes[i2-1],\
+             (vols[i2]+vols[i2-1])/(vols[i2-3]+vols[i2-2]),\
+             vols[i2-1]/vols[i2-2],\
+             vols[i2]/vols[i2-2],\
+             closes[i2-4:i2].std()/closes[i2-9:i2].std(),\
+             highs[i2]/closes[i2-1],\
+             ud_7,\
+             opens[i2]/closes[i2-1],\
+             vols[i2-1]/vols[i2-3],\
+             highs[i2]/lows[i2-1],\
+             vols[i2]/vols[i2-3] ]     
+        
+        if 1 in modelSelect: # model 1: Up2Down2, model number 1
+            TM=TrainModel.TrainModel('Up2Down2')
+            flagNot=[[0, [0, 3]],[1, [0, 4]],[2, [0, 3]],[3, [2, 3]],[4, [1, 3, 4]],[6, [1, 2]]]
+            ReSelectNot=TM.hmmTestCertainNot([Matrix],flagNot)
+            flagOk=[[0, [2, 4]], [1, [1, 2]], [2, [1, 2, 4]], [3, [1]], [4, [0]], [6, [3, 4]]]
+            ReSelectOk=TM.hmmTestCertainOk([Matrix],flagOk)
+            if ReSelectNot[0]*ReSelectOk[0]:
+                flag=TM.xgbPredict([Matrix])
+                if flag[0]==2:
+                    profiti.append(4.1)
+                else:
+                    continue
+                stocksi.append(stocks[i])
+                handsi.append(np.ceil(100/closes[-1])*100)
+                modeli.append(1)   # model number:1;
+                holdi.append(2)    # hold 2 days unless close[today]<close[yesterday]
+                moneyi.append(handsi[-1]*closes[-1])
+
 indTem=np.argsort(-np.array(profiti))
 profiti=np.array(profiti)[indTem]
 stocksi=np.array(stocksi)[indTem]
@@ -175,6 +217,7 @@ dateStart=dict(dateStart,**dateStartTem)
 dataPKL['holdDays']=holdDays
 dataPKL['dateStart']=dateStart
 dataPKL['assets']=assets
+dataPKL['date_update']=time.strftime('%Y-%m-%d')
 fileTem=open('scanTrade','wb')
 pickle.dump(dataPKL,fileTem)
 fileTem.close()

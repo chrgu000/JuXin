@@ -1,26 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Aug 24 16:26:27 2017
+Created on Thu Aug 17 16:46:01 2017
 
 @author: Administrator
 """
-
 
 from hmmlearn.hmm import GaussianHMM
 from sklearn.svm import SVC
 from sklearn.decomposition import PCA
 from matplotlib.pylab import date2num
+from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
 import numpy as np
 import pandas as pd
-import pymysql,time
-import TrainModel
+import pymysql,time,TrainModel
+
 x1=time.clock()
 
-firstTime=1
+firstTime=0
 ReSet=0
-nameDB='Test' # should be set for create a new mode test;
+nameDB='test' # should be set for create a new mode test;
 
 TM=TrainModel.TrainModel(nameDB)
 if ReSet:
@@ -67,8 +67,8 @@ if firstTime:
     #            maN[i2]=np.mean(closes[i2-3:i2+1])
     #            ma10[i2]=np.mean(closes[i2-10:i2+1])
         for i2 in range(15,Lt-3):
-            if closes[i2-1]<=lows[i2-1]+(highs[i2-1]-lows[i2-1])/4 and closes[i2]>=lows[i2]+(highs[i2]-lows[i2])*3/4 and closes[i2]>closes[i2-1] and highs[i2-1]-lows[i2-1]>np.mean(highs[i2-5:i2-1]-lows[i2-5:i2-1]) and \
-            highs[i2-4]>lows[i2-4] and highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1] and highs[i2]>lows[i2] and closes[i2]/closes[i2-1]<1.095: #vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and 
+            if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
+            highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2] and closes[i2]/closes[i2-1]<1.095: #vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and 
                 if closes[i2+1]>closes[i2]:
                     Re.append(closes[i2+2]/closes[i2]-1)
                 else:
@@ -104,21 +104,21 @@ if firstTime:
                      vols[i2-1]/vols[i2-2],\
                      vols[i2]/vols[i2-2],\
                      closes[i2-4:i2].std()/closes[i2-9:i2].std(),\
+                     highs[i2]/closes[i2-1],\
                      ud_7,\
-                     vols[i2-1]/vols[i2-3],\
                      opens[i2]/closes[i2-1],\
-                     pd.DataFrame([lows[i2-3],opens[i2-3],closes[i2-3],highs[i2-3]])[0].corr(pd.DataFrame([lows[i2],closes[i2],opens[i2],highs[i2]])[0]),\
+                     vols[i2-1]/vols[i2-3],\
+                     highs[i2]/lows[i2-1],\
                      vols[i2]/vols[i2-3],\
                      opens[i2]/opens[i2-1],\
+                     pd.DataFrame([lows[i2-3],opens[i2-3],closes[i2-3],highs[i2-3]])[0].corr(pd.DataFrame([lows[i2],closes[i2],opens[i2],highs[i2]])[0]),\
                      vols[i2]/vols[i2-1],\
                      highs[i2-4:i2].std()/highs[i2-9:i2].std(),\
                      vols[i2-2]/vols[i2-3],\
                      np.std([ closes[i2],opens[i2],highs[i2],lows[i2] ])/np.std([closes[i2-1],opens[i2-1],highs[i2-1],lows[i2-1]]),\
                      closes[i2]/closes[i2-1],\
                      opens[i2]/lows[i2-1],\
-                     highs[i2]/lows[i2-1],\
-                     highs[i2]/opens[i2-1],\
-                     highs[i2]/closes[i2-1] ]                
+                     highs[i2]/opens[i2-1] ]                
                 Matrix.append(tem)
                 if fig>0:
                     fig=fig-1
@@ -178,14 +178,14 @@ else:
     cur.close()
     conn.close()
     
-
-colSelect=np.array(list(range(len(dispersity))))[dispersity[:-1]>0.35] # -1 delete the last one wich is not for single but for all;
+dispersity=dispersity[:-1]
+colSelect=np.array(list(range(len(dispersity))))[dispersity>0.35] # -1 delete the last one wich is not for single but for all;
 flagNot=[]
 for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
     flagDi=[]
     for i2 in range(len(flagi)):
-        if flagi[i2]<0.4: #profitP<0.4%
+        if flagi[i2]<0.35: #profitP<0.4%
             flagDi.append(i2)
     if len(flagDi)>0:
         flagNot.append([colSelect[i],flagDi])
@@ -204,11 +204,11 @@ if sum(ReSelectNot)>0:
 ReSelectOk=TM.hmmTestCertainOk(Matrix,flagOk)
 if sum(ReSelectOk)>0:
     TM.ReFig([Re[ReSelectOk>0],],['SelectOk',]) # select how many flag is match by one Re
-tem=(ReSelectOk>0)*(ReSelectNot>0) # draw final select figure;
-if sum(tem)>0:
-    TM.ReFig([Re,Re[tem]],['RawRe','SelectOkNot']) 
-    dateSort=dateAll[tem] # sort by time;
-    ReSort=Re[tem]
+pointSelect=(ReSelectOk>0)*(ReSelectNot>0) # draw final select figure;
+if sum(pointSelect)>0:
+    TM.ReFig([Re,Re[pointSelect]],['RawRe','SelectOkNot']) 
+    dateSort=dateAll[pointSelect] # sort by time;
+    ReSort=Re[pointSelect]
     Lt=len(dateSort)
     month=[]
     day=[]
@@ -223,6 +223,35 @@ if sum(tem)>0:
     TM.sortStatastic(month,ReSort,'selectNotOk--month')
     TM.sortStatastic(day,ReSort,'selectNotOk--day')
     TM.sortStatastic(week,ReSort,'selectNotOk--week')
+    
+    # sort according to xgboost;
+    MatrixXGB=np.c_[dateAll[pointSelect],Matrix[pointSelect,:]];ReXGB=Re[pointSelect]
+    x_train,x_test,y_train,y_test=train_test_split(MatrixXGB,ReXGB,random_state=0,test_size=0.4)
+    date_train=x_train[:,0];x_train=x_train[:,1:21];date_test=x_test[:,0];x_test=x_test[:,1:21]
+    TM.xgbTrain(x_train,y_train,x_test,y_test)
+    for i2 in range(2):
+        if i2==0:
+            x_=x_train
+            y_=y_train
+            labeli='train'
+            date_=date_train
+        else:
+            x_=x_test
+            y_=y_test
+            labeli='test'
+            date_=date_test
+        y_pre=TM.xgbPredict(x_)
+        flags=np.unique(y_pre)
+        Rex=[];labelx=[]
+        for i in range(len(flags)):
+            tem=y_pre==flags[i]
+            Rex.append(y_[tem].tolist())
+            labelx.append(labeli+str(flags[i]))
+        TM.ReFig(Rex,labelx)          
+#        wd=np.array([int(date_[i].strftime('%w')) for i in range(len(dateAll))]) #sort according to weekday but not nice;
+#        for i in range(2):
+#            tem=y_pre==i+1
+#            TM.sortStatastic(wd[tem],y_[tem],'flag:'+str(i+1)+'--weekday')
 
 # test this model by hands freely according to your free mind.
 flagTest=[ [0,[1]], ] # select flag 1 of column 0 
@@ -252,24 +281,6 @@ print('time elapse:%.1f minutes' %((x2-x1)/60))
 
 
     
-
-
-
-
-
-    
-
-
-
-    
-
-
-
-
-
-
-
-
 
 
 

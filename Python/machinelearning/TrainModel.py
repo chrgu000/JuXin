@@ -10,6 +10,7 @@ from sklearn.cross_validation import train_test_split
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import xgboost as xgb
 import joblib, warnings
 
 warnings.filterwarnings("ignore")
@@ -24,7 +25,7 @@ class TrainModel():
         Xrow=Xshape[0]
         Xcol=Xshape[1]
         if figStart!=Xcol:
-            Xraw,X0,Reraw,y0=train_test_split(Xraw,np.array(Reraw),test_size=0.0)
+            Xraw,X0,Reraw,y0=train_test_split(Xraw,np.array(Reraw),random_state=0,test_size=0.0)
         dispersity=[] # hold dispesity of each column but last one not for some one column but all;
         profitP=[] # hold each type's profit/per of each indicator column
         if figStart!=0:
@@ -55,7 +56,7 @@ class TrainModel():
                 figTitle=str(figStart)
     
             hmm=GaussianHMM(n_components=5,covariance_type='diag',n_iter=10000).fit(np.row_stack(Xtrain)) #spherical,diag,full,tied 
-            joblib.dump(hmm,self.saveData+figTitle)
+            joblib.dump(hmm,self.saveData+figTitle+'_hmm')
             
     #        for i in range(2):
             records=[] # hold two recordi
@@ -138,7 +139,7 @@ class TrainModel():
             flagNot.append(flagSelect[i][1])            
         ReSelect=np.ones(len(X))
         for i2 in range(len(Nind)):    
-            hmm=joblib.load(self.saveData+str(Nind[i2]))
+            hmm=joblib.load(self.saveData+str(Nind[i2])+'_hmm')
             flagTem=hmm.predict(np.row_stack(X[:,Nind[i2]]))
             for i in range(len(flagNot[i2])):
                     ReSelect=ReSelect*(flagTem!=flagNot[i2][i])       
@@ -153,11 +154,42 @@ class TrainModel():
             flagOk.append(flagSelect[i][1])            
         ReSelect=np.zeros(len(X))
         for i2 in range(len(Nind)):    
-            hmm=joblib.load(self.saveData+str(Nind[i2]))
+            hmm=joblib.load(self.saveData+str(Nind[i2])+'_hmm')
             flagTem=hmm.predict(np.row_stack(X[:,Nind[i2]]))
             for i in range(len(flagOk[i2])):
                     ReSelect=ReSelect+(flagTem==flagOk[i2][i])    
         return ReSelect
+    
+    def xgbTrain(self,x_train,y_train,x_test,y_test):
+        x_train=x_train.copy()
+        x_test=x_test.copy()
+        y_train=y_train.copy()
+        y_test=y_test.copy()
+        recordPoint=[]
+        tem=np.linspace(0.06,-0.03,600,endpoint=0)
+        for i in tem:
+            recordPoint.append((y_train>i).sum())
+        recordPoint=np.array(recordPoint)
+        point1=tem[(recordPoint<=len(y_train)/3).sum()-1]
+        point2=tem[(recordPoint<=len(y_train)*2/3).sum()-1]
+        y_train[y_train>=point1]=2
+        y_train[(y_train>point2) * (y_train<point1)]=1
+        y_train[y_train<=point2]=0
+        y_test[y_test>=point1]=2
+        y_test[(y_test>point2) * (y_test<point1)]=1
+        y_test[y_test<=point2]=0
+        data_train=xgb.DMatrix(x_train,label=y_train)
+        data_test=xgb.DMatrix(x_test,label=y_test)
+        watch_list={(data_test,'eval'),(data_train,'train')}
+        param={'max_depth':2,'eta':0.03,'silent':1,'objective':'multi:softmax','num_class':3}
+        XGB=xgb.train(param,data_train,num_boost_round=1000,evals=watch_list)
+        joblib.dump(XGB,self.saveData+'_xgb')
+    
+    def xgbPredict(self,x_):
+        data_=xgb.DMatrix(x_,label=np.zeros(len(x_)))
+        XGB=joblib.load(self.saveData+'_xgb')
+        return XGB.predict(data_)
+        
     
     def ReFig(self,Re,figTitle):
         plt.figure(figsize=(15,8))

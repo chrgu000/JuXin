@@ -14,13 +14,12 @@ import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
 import numpy as np
 import pandas as pd
-import xgboost as xgb
-import pymysql,time
-import TrainModel
+import pymysql,time,TrainModel
+
 x1=time.clock()
 
 firstTime=0
-ReSet=0
+ReSet=1
 nameDB='Up2Down2' # should be set for create a new mode test;
 
 TM=TrainModel.TrainModel(nameDB)
@@ -105,21 +104,21 @@ if firstTime:
                      vols[i2-1]/vols[i2-2],\
                      vols[i2]/vols[i2-2],\
                      closes[i2-4:i2].std()/closes[i2-9:i2].std(),\
+                     highs[i2]/closes[i2-1],\
                      ud_7,\
-                     vols[i2-1]/vols[i2-3],\
                      opens[i2]/closes[i2-1],\
-                     pd.DataFrame([lows[i2-3],opens[i2-3],closes[i2-3],highs[i2-3]])[0].corr(pd.DataFrame([lows[i2],closes[i2],opens[i2],highs[i2]])[0]),\
+                     vols[i2-1]/vols[i2-3],\
+                     highs[i2]/lows[i2-1],\
                      vols[i2]/vols[i2-3],\
                      opens[i2]/opens[i2-1],\
+                     pd.DataFrame([lows[i2-3],opens[i2-3],closes[i2-3],highs[i2-3]])[0].corr(pd.DataFrame([lows[i2],closes[i2],opens[i2],highs[i2]])[0]),\
                      vols[i2]/vols[i2-1],\
                      highs[i2-4:i2].std()/highs[i2-9:i2].std(),\
                      vols[i2-2]/vols[i2-3],\
                      np.std([ closes[i2],opens[i2],highs[i2],lows[i2] ])/np.std([closes[i2-1],opens[i2-1],highs[i2-1],lows[i2-1]]),\
                      closes[i2]/closes[i2-1],\
                      opens[i2]/lows[i2-1],\
-                     highs[i2]/lows[i2-1],\
-                     highs[i2]/opens[i2-1],\
-                     highs[i2]/closes[i2-1] ]                
+                     highs[i2]/opens[i2-1] ]                
                 Matrix.append(tem)
                 if fig>0:
                     fig=fig-1
@@ -186,7 +185,7 @@ for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
     flagDi=[]
     for i2 in range(len(flagi)):
-        if flagi[i2]<0.45: #profitP<0.4%
+        if flagi[i2]<0.35: #profitP<0.4%
             flagDi.append(i2)
     if len(flagDi)>0:
         flagNot.append([colSelect[i],flagDi])
@@ -195,7 +194,7 @@ for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
     flagDi=[]
     for i2 in range(len(flagi)):
-        if flagi[i2]>0.8: #profitP>0.8%
+        if flagi[i2]>0.6: #profitP>0.8%
             flagDi.append(i2)
     if len(flagDi)>0:
         flagOk.append([colSelect[i],flagDi])
@@ -226,45 +225,33 @@ if sum(pointSelect)>0:
     TM.sortStatastic(week,ReSort,'selectNotOk--week')
     
     # sort according to xgboost;
-    MatrixXGB=Matrix[pointSelect,:];ReXGB=Re[pointSelect]
+    MatrixXGB=np.c_[dateAll[pointSelect],Matrix[pointSelect,:]];ReXGB=Re[pointSelect]
     x_train,x_test,y_train,y_test=train_test_split(MatrixXGB,ReXGB,random_state=0,test_size=0.4)
-    recordPoint=[]
-    tem=np.linspace(0.06,-0.03,600,endpoint=0)
-    for i in tem:
-        recordPoint.append((y_train>i).sum())
-    recordPoint=np.array(recordPoint)
-    point1=tem[(recordPoint<=len(y_train)/3).sum()-1]
-    point2=tem[(recordPoint<=len(y_train)*2/3).sum()-1]
-    y_train_raw=y_train.copy()
-    y_train[y_train_raw>=point1]=2
-    y_train[(y_train_raw>point2) * (y_train_raw<point1)]=1
-    y_train[y_train_raw<=point2]=0
-    y_test_raw=y_test.copy()
-    y_test[y_test_raw>=point1]=2
-    y_test[(y_test_raw>point2) * (y_test_raw<point1)]=1
-    y_test[y_test_raw<=point2]=0
-    data_train=xgb.DMatrix(x_train,label=y_train)
-    data_test=xgb.DMatrix(x_test,label=y_test)
-    watch_list={(data_test,'eval'),(data_train,'train')}
-    param={'max_depth':2,'eta':0.1,'silent':1,'objective':'multi:softmax','num_class':3}
-    bst=xgb.train(param,data_train,num_boost_round=2000,evals=watch_list)
-    
-    y_pre=bst.predict(data_train)
-    flags=np.unique(y_pre)
-    Rex=[];labelx=[]
-    for i in range(len(flags)):
-        tem=y_pre==flags[i]
-        Rex.append(y_train_raw[tem].tolist())
-        labelx.append('train'+str(flags[i]))
-    TM.ReFig(Rex,labelx)
-    y_pre=bst.predict(data_test)
-    flags=np.unique(y_pre)
-    Rex=[];labelx=[]
-    for i in range(len(flags)):
-        tem=y_pre==flags[i]
-        Rex.append(y_test_raw[tem].tolist())
-        labelx.append('test'+str(flags[i]))
-    TM.ReFig(Rex,labelx)
+    date_train=x_train[:,0];x_train=x_train[:,1:21];date_test=x_test[:,0];x_test=x_test[:,1:21]
+    TM.xgbTrain(x_train,y_train,x_test,y_test)
+    for i2 in range(2):
+        if i2==0:
+            x_=x_train
+            y_=y_train
+            labeli='train'
+            date_=date_train
+        else:
+            x_=x_test
+            y_=y_test
+            labeli='test'
+            date_=date_test
+        y_pre=TM.xgbPredict(x_)
+        flags=np.unique(y_pre)
+        Rex=[];labelx=[]
+        for i in range(len(flags)):
+            tem=y_pre==flags[i]
+            Rex.append(y_[tem].tolist())
+            labelx.append(labeli+str(flags[i]))
+        TM.ReFig(Rex,labelx)          
+#        wd=np.array([int(date_[i].strftime('%w')) for i in range(len(dateAll))]) #sort according to weekday but not nice;
+#        for i in range(2):
+#            tem=y_pre==i+1
+#            TM.sortStatastic(wd[tem],y_[tem],'flag:'+str(i+1)+'--weekday')
 
 # test this model by hands freely according to your free mind.
 flagTest=[ [0,[1]], ] # select flag 1 of column 0 
