@@ -181,7 +181,7 @@ class TrainModel():
         data_train=xgb.DMatrix(x_train,label=y_train)
         data_test=xgb.DMatrix(x_test,label=y_test)
         watch_list={(data_test,'eval'),(data_train,'train')}
-        param={'max_depth':2,'eta':0.03,'silent':1,'objective':'multi:softmax','num_class':3}
+        param={'max_depth':3,'eta':0.03,'early_stopping_rounds':3,'silent':1,'objective':'multi:softmax','num_class':3}
         XGB=xgb.train(param,data_train,num_boost_round=1000,evals=watch_list)
         joblib.dump(XGB,self.saveData+'_xgb')
     

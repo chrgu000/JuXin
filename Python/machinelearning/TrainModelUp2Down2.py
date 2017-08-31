@@ -19,7 +19,7 @@ import pymysql,time,TrainModel
 x1=time.clock()
 
 firstTime=0
-ReSet=1
+ReSet=0
 nameDB='Up2Down2' # should be set for create a new mode test;
 
 TM=TrainModel.TrainModel(nameDB)
@@ -110,7 +110,7 @@ if firstTime:
                      vols[i2-1]/vols[i2-3],\
                      highs[i2]/lows[i2-1],\
                      vols[i2]/vols[i2-3],\
-                     opens[i2]/opens[i2-1],\
+                     closes[i2]/np.mean(opens[i2-4:i2]),\
                      pd.DataFrame([lows[i2-3],opens[i2-3],closes[i2-3],highs[i2-3]])[0].corr(pd.DataFrame([lows[i2],closes[i2],opens[i2],highs[i2]])[0]),\
                      vols[i2]/vols[i2-1],\
                      highs[i2-4:i2].std()/highs[i2-9:i2].std(),\
@@ -198,12 +198,20 @@ for i in range(len(colSelect)):
             flagDi.append(i2)
     if len(flagDi)>0:
         flagOk.append([colSelect[i],flagDi])
-ReSelectNot=TM.hmmTestCertainNot(Matrix,flagNot)
+        
+ReSelectNot=[] #value is 0 or 1
+for i in range(len(Matrix)):
+    ReSelectNot.append(TM.hmmTestCertainNot(Matrix[[10,i],:],flagNot)[-1])
+ReSelectNot=np.array(ReSelectNot)
 if sum(ReSelectNot)>0:
     TM.ReFig([Re[ReSelectNot>0],],['SelectNot',])
-ReSelectOk=TM.hmmTestCertainOk(Matrix,flagOk)
+ReSelectOk=[] # value is 0 or 1 or 2 or ...
+for i in range(len(Matrix)):
+    ReSelectOk.append( TM.hmmTestCertainOk(Matrix[[10,i],:],flagOk)[-1] )
+ReSelectOk=np.array(ReSelectOk)
 if sum(ReSelectOk)>0:
     TM.ReFig([Re[ReSelectOk>0],],['SelectOk',]) # select how many flag is match by one Re
+
 pointSelect=(ReSelectOk>0)*(ReSelectNot>0) # draw final select figure;
 if sum(pointSelect)>0:
     TM.ReFig([Re,Re[pointSelect]],['RawRe','SelectOkNot']) 

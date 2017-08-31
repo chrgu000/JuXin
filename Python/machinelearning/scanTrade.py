@@ -10,7 +10,10 @@ import pickle,datetime,joblib,time,TrainModel
 
 t1=time.clock()
 firstTime=0 # control whether this is the first time to run this procedure;
+TradeDays='30' # how many days to use;
 
+Matrix_Up2Down2=[[0.972872,0.950418,1.02028,1.00532,0.996173,1.00868,0.975983,0.980353,0.98259,0.975983,],\
+                 [0.959691,0.933522,1.01598,0.999444,0.974175,0.991645,0.976331,0.964641,0.986546,0.972017]]
 Reload=1 # re-down load data;
 holdOrders=0 # record wether hold orders;
 tradeFlag=input('Please confirm trading or not [y/n]?')
@@ -25,7 +28,6 @@ if not firstTime:
     fileTem=open('scanTrade','rb')
     dataPKL=pickle.load(fileTem)
     fileTem.close()
-    Date=dataPKL['Date']
     stocks=dataPKL['stocks']    
     Opens=dataPKL['Opens']
     Closes=dataPKL['Closes']
@@ -41,16 +43,7 @@ if not firstTime:
     if len(dataTem.Data)>3:
         holdStocks=dataTem.Data[0]
         holdShares=dataTem.Data[3]   
-        holdOrders=1    
-    lastTradeDay=w.tdays('ED-1TD',today).Data[0][0]
-    if lastTradeDay==Date[-1]:
-        Opens=np.column_stack([np.row_stack(Opens),w.wsq(stocks,'rt_open').Data[0]])
-        Closes=np.column_stack([np.row_stack(Closes),w.wsq(stocks,'rt_latest').Data[0]])
-        Highs=np.column_stack([np.row_stack(Highs),w.wsq(stocks,'rt_high').Data[0]])
-        Lows=np.column_stack([np.row_stack(Lows),w.wsq(stocks,'rt_low').Data[0]])
-        Vols=np.column_stack([np.row_stack(Vols),w.wsq(stocks,'rt_vol').Data[0]])        
-    else:
-        Reload=1
+        holdOrders=1  
 if firstTime or Reload:
     dataTem=w.wset('SectorConstituent')
     stocks=dataTem.Data[1]
@@ -58,23 +51,21 @@ if firstTime or Reload:
     if firstTime:
         holdDays={}    
         dateStart={}
-
     while 1:
-        dataTem=w.wsd(stocks,'open','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F')
-        Date=dataTem.Times
-        Opens=dataTem.Data
-        Closes=w.wsd(stocks,'close','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
-        Highs=w.wsd(stocks,'high','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
-        Lows=w.wsd(stocks,'low','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
-        Vols=w.wsd(stocks,'volume','ED-20TD',yesterday,'Fill=Previous','PriceAdj=F').Data
+        Opens=w.wsd(stocks,'open','ED-'+TradeDays+'TD',yesterday,'Fill=Previous','PriceAdj=F').Data
+        Closes=w.wsd(stocks,'close','ED-'+TradeDays+'TD',yesterday,'Fill=Previous','PriceAdj=F').Data
+        Highs=w.wsd(stocks,'high','ED-'+TradeDays+'TD',yesterday,'Fill=Previous','PriceAdj=F').Data
+        Lows=w.wsd(stocks,'low','ED-'+TradeDays+'TD',yesterday,'Fill=Previous','PriceAdj=F').Data
+        Vols=w.wsd(stocks,'volume','ED-'+TradeDays+'TD',yesterday,'Fill=Previous','PriceAdj=F').Data
         if np.all([len(Opens)-1,len(Closes)-1,len(Highs)-1,len(Lows)-1,len(Vols)-1]):
-            dataPKL={'Date':Date,'Opens':Opens,'Closes':Closes,'Highs':Highs,'Lows':Lows,'Vols':Vols,'stocks':stocks}
-            Opens=np.column_stack([np.row_stack(Opens),w.wsq(stocks,'rt_open').Data[0]])
-            Closes=np.column_stack([np.row_stack(Closes),w.wsq(stocks,'rt_latest').Data[0]])
-            Highs=np.column_stack([np.row_stack(Highs),w.wsq(stocks,'rt_high').Data[0]])
-            Lows=np.column_stack([np.row_stack(Lows),w.wsq(stocks,'rt_low').Data[0]])
-            Vols=np.column_stack([np.row_stack(Vols),w.wsq(stocks,'rt_vol').Data[0]])
+            dataPKL={'Opens':Opens,'Closes':Closes,'Highs':Highs,'Lows':Lows,'Vols':Vols,'stocks':stocks}
             break
+
+Opens=np.column_stack([np.row_stack(Opens),w.wsq(stocks,'rt_open').Data[0]])
+Closes=np.column_stack([np.row_stack(Closes),w.wsq(stocks,'rt_latest').Data[0]])
+Highs=np.column_stack([np.row_stack(Highs),w.wsq(stocks,'rt_high').Data[0]])
+Lows=np.column_stack([np.row_stack(Lows),w.wsq(stocks,'rt_low').Data[0]])
+Vols=np.column_stack([np.row_stack(Vols),w.wsq(stocks,'rt_vol').Data[0]])        
         
 if holdOrders: # close orders or not
     for i in range(len(holdStocks)):
@@ -125,6 +116,8 @@ for i in range(Lstocks):
     if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
             highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]: #model 1
                 modelSelect.append(1)
+    if 0: #model2
+        pass
     
     if len(modelSelect)>0:
         max5near=max(closes[i2-4:i2+1]);max5far=max(closes[i2-9:i2-4]);
@@ -158,23 +151,41 @@ for i in range(Lstocks):
              highs[i2]/lows[i2-1],\
              vols[i2]/vols[i2-3] ]     
         
+        profiti2=[]# for one stocks fits more than 1 stock
+        stocksi2=[]
+        handsi2=[]
+        modeli2=[]
+        holdi2=[]
+        moneyi2=[]
+        
         if 1 in modelSelect: # model 1: Up2Down2, model number 1
             TM=TrainModel.TrainModel('Up2Down2')
-            flagNot=[[0, [0, 3]],[1, [0, 4]],[2, [0, 3]],[3, [2, 3]],[4, [1, 3, 4]],[6, [1, 2]]]
-            ReSelectNot=TM.hmmTestCertainNot([Matrix],flagNot)
-            flagOk=[[0, [2, 4]], [1, [1, 2]], [2, [1, 2, 4]], [3, [1]], [4, [0]], [6, [3, 4]]]
-            ReSelectOk=TM.hmmTestCertainOk([Matrix],flagOk)
-            if ReSelectNot[0]*ReSelectOk[0]:
-                flag=TM.xgbPredict([Matrix])
-                if flag[0]==2:
-                    profiti.append(4.1)
+            flagNot=[[0, [0, 2]], [1, [1, 4]], [2, [2]], [6, [1, 3]]]
+            ReSelectNot=TM.hmmTestCertainNot([Matrix_Up2Down2[0],Matrix_Up2Down2[1],Matrix],flagNot)
+            flagOk=[[0, [1, 4]], [1, [0, 3]], [2, [1, 3, 4]], [3, [0, 3]], [4, [3]], [6, [2, 4]]]
+            ReSelectOk=TM.hmmTestCertainOk([Matrix_Up2Down2[0],Matrix_Up2Down2[1],Matrix],flagOk)
+            if ReSelectNot[-1]*ReSelectOk[-1]:
+                flag=TM.xgbPredict(Matrix)
+                if flag==2:
+                    profiti2.append(2.7)
                 else:
                     continue
-                stocksi.append(stocks[i])
-                handsi.append(np.ceil(100/closes[-1])*100)
-                modeli.append(1)   # model number:1;
-                holdi.append(2)    # hold 2 days unless close[today]<close[yesterday]
-                moneyi.append(handsi[-1]*closes[-1])
+                stocksi2.append(stocks[i])
+                handsi2.append(np.ceil(100/closes[-1])*100)
+                modeli2.append('Up2Down2')   # model number:1;
+                holdi2.append(2)    # hold 2 days unless close[today]<close[yesterday]
+                moneyi2.append(handsi[-1]*closes[-1])
+        if 2 in modelSelect: # model 1: xxxxx, model number 2
+            pass
+        
+        if len(profiti2)>1:
+            tem=np.argsort(profiti2)
+            profiti.append(profiti2[tem]*1.5)
+            stocksi.append(stocksi2[tem])
+            handsi.append(handsi2[tem]*2)
+            modeli.append('&'.join(modeli2))
+            holdi.append(holdi2[tem])
+            moneyi.append(moneyi2[tem]*2)            
 
 indTem=np.argsort(-np.array(profiti))
 profiti=np.array(profiti)[indTem]
@@ -198,7 +209,7 @@ if Tem>0:
 
 Ltrade=len(profiti)
 for i in range(Ltrade):
-    print ('Buy %s: %d shares;use capital:%.f Yuan;profitPerOrder:%.2f,ModelNumber:%d;' %(stocksi[i],handsi[i],moneyi[i],profiti[i],modeli[i]),)
+    print ('Buy %s: %d shares;use capital:%.f Yuan;profitPerOrder:%.2f,Model:%s;' %(stocksi[i],handsi[i],moneyi[i],profiti[i],modeli[i]),)
     if tradeFlag:
         w.torder(stocksi[i], 'Buy', '0', handsi[i], 'OrderType=B5TC;'+'LogonID='+str(logId))
         print('send trade command!')

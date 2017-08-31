@@ -19,7 +19,7 @@ import pymysql,time,TrainModel
 x1=time.clock()
 
 firstTime=0
-ReSet=0
+ReSet=1
 nameDB='test' # should be set for create a new mode test;
 
 TM=TrainModel.TrainModel(nameDB)
@@ -69,6 +69,7 @@ if firstTime:
         for i2 in range(15,Lt-3):
             if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
             highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2] and closes[i2]/closes[i2-1]<1.095: #vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and 
+            
                 if closes[i2+1]>closes[i2]:
                     Re.append(closes[i2+2]/closes[i2]-1)
                 else:
@@ -110,7 +111,7 @@ if firstTime:
                      vols[i2-1]/vols[i2-3],\
                      highs[i2]/lows[i2-1],\
                      vols[i2]/vols[i2-3],\
-                     opens[i2]/opens[i2-1],\
+                     closes[i2]/np.mean(opens[i2-4:i2]),\
                      pd.DataFrame([lows[i2-3],opens[i2-3],closes[i2-3],highs[i2-3]])[0].corr(pd.DataFrame([lows[i2],closes[i2],opens[i2],highs[i2]])[0]),\
                      vols[i2]/vols[i2-1],\
                      highs[i2-4:i2].std()/highs[i2-9:i2].std(),\
