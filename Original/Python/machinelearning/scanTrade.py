@@ -168,11 +168,11 @@ for i in range(Lstocks):
             ReSelectOk=TM.hmmTestCertainOk([tem,Matrix],flagOk)        # value 0 or 1 or 2 or 2+
             print(ReSelectNot)
             print(ReSelectOk)
-            print(TM.xgbPredict(Matrix))
+            print(TM.xgbPredict(np.array([Matrix])))
             print('-'*100)
             if ReSelectNot[-1]*ReSelectOk[-1]:
-                flag=TM.xgbPredict(Matrix)
-                if flag==2:
+                flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
+                if flag[0]==2:
                     profiti2.append(2.7)
                 else:
                     continue

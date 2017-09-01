@@ -18,8 +18,8 @@ import pymysql,time,TrainModel
 
 x1=time.clock()
 
-firstTime=0
-ReSet=1
+firstTime=0 # spring seems nice;
+ReSet=0 
 nameDB='test' # should be set for create a new mode test;
 TradeScan=0 # 1 means match tradescan exactly but waste much time for this procedure and 0 means approxcimate but very fast;
 
@@ -61,12 +61,12 @@ if firstTime:
         Lt=len(opens)
         if Lt<20:
             continue        
-        ma5=pd.rolling_mean(closes,5)
-        ma10=pd.rolling_mean(closes,10)
-        ema5=pd.ewma(closes,5)
-        ema10=pd.ewma(closes,10)
+#        ma5=pd.rolling_mean(closes,5)
+#        ma10=pd.rolling_mean(closes,10)
+#        ema5=pd.ewma(closes,5)
+#        ema10=pd.ewma(closes,10)
         for i2 in range(15,Lt-3):
-            if ema5[i2-1]<ema10[i2-1]  and ema5[i2]>ema10[i2] and \
+            if closes[i2-1]<lows[i2-1]+(highs[i2-1]-lows[i2-1])/4  and closes[i2]>lows[i2]+(highs[i2]-lows[i2])*3/4  and \
             highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2] and closes[i2]/closes[i2-1]<1.095: #vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and 
 
                 max5near=max(closes[i2-4:i2+1]);max5far=max(closes[i2-9:i2-4]);
@@ -187,7 +187,7 @@ for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
     flagDi=[]
     for i2 in range(len(flagi)):
-        if flagi[i2]<0.35: #profitP<0.4%
+        if flagi[i2]<0.45: #profitP<0.4%
             flagDi.append(i2)
     if len(flagDi)>0:
         flagNot.append([colSelect[i],flagDi])
@@ -245,7 +245,7 @@ if sum(pointSelect)>0:
     # sort according to xgboost;
     MatrixXGB=np.c_[dateAll[pointSelect],Matrix[pointSelect,:]];ReXGB=Re[pointSelect]
     x_train,x_test,y_train,y_test=train_test_split(MatrixXGB,ReXGB,random_state=0,test_size=0.4)
-    date_train=x_train[:,0];x_train=x_train[:,1:21];date_test=x_test[:,0];x_test=x_test[:,1:21]
+    date_train=x_train[:,0];x_train=x_train[:,1:];date_test=x_test[:,0];x_test=x_test[:,1:]
     
     TM.xgbTrain(x_train,y_train,x_test,y_test)
     TM.gaussianNBtrain(x_train,y_train)

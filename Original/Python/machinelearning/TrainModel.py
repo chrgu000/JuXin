@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore")
 class TrainModel():
     def __init__(self,nameDB):
         self.nameDB=nameDB
-        self.saveData='D:\\Trade\\joblib\\'+nameDB
+        self.saveData='D:\\Trade\\Original\\joblib\\'+nameDB
     
     def hmmTestAll(self,Xraw,Reraw,figStart): # figStart: how many figs to show 0 means show all and Xcol mean show one (in all)
         Xshape=Xraw.shape
@@ -179,15 +179,15 @@ class TrainModel():
         y_test[y_test>=point1]=2
         y_test[(y_test>point2) * (y_test<point1)]=1
         y_test[y_test<=point2]=0
-        data_train=xgb.DMatrix(x_train,label=y_train)
-        data_test=xgb.DMatrix(x_test,label=y_test)
+        data_train=xgb.DMatrix(data=x_train,label=y_train)
+        data_test=xgb.DMatrix(data=x_test,label=y_test)
         watch_list={(data_test,'eval'),(data_train,'train')}
         param={'max_depth':3,'eta':0.03,'early_stopping_rounds':3,'silent':1,'objective':'multi:softmax','num_class':3}
         XGB=xgb.train(param,data_train,num_boost_round=1000,evals=watch_list)
         joblib.dump(XGB,self.saveData+'_xgb')
     
     def xgbPredict(self,x_):
-        data_=xgb.DMatrix(x_,label=np.zeros(len(x_)))
+        data_=xgb.DMatrix(data=x_)
         XGB=joblib.load(self.saveData+'_xgb')
         return XGB.predict(data_)
         
