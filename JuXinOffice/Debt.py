@@ -23,7 +23,7 @@ tem=np.min([len(p5)-np.isnan(p5).sum(),len(p10)-np.isnan(p10).sum()])
 times=times[-tem:]
 p5=p5[-tem:]
 p10=p10[-tem:]
-
+plt.figure(figsize=(15,8))
 plt.plot(p5-p10)
 tem=list(map(int,np.linspace(0,len(times),12,endpoint=0)))
 plt.xticks(tem,times[tem],rotation=60)

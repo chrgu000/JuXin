@@ -26,7 +26,7 @@ class TrainModel():
         Xrow=Xshape[0]
         Xcol=Xshape[1]
         if figStart!=Xcol:
-            Xraw,X0,Reraw,y0=train_test_split(Xraw,np.array(Reraw),random_state=0,test_size=0.0)
+            Xraw,X0,Reraw,y0=train_test_split(Xraw,np.array(Reraw),test_size=0.0) #random_state=1
         dispersity=[] # hold dispesity of each column but last one not for some one column but all;
         profitP=[] # hold each type's profit/per of each indicator column
         if figStart!=0:
@@ -183,7 +183,7 @@ class TrainModel():
         data_test=xgb.DMatrix(data=x_test,label=y_test)
         watch_list={(data_test,'eval'),(data_train,'train')}
         param={'max_depth':3,'eta':0.03,'early_stopping_rounds':3,'silent':1,'objective':'multi:softmax','num_class':3}
-        XGB=xgb.train(param,data_train,num_boost_round=1000,evals=watch_list)
+        XGB=xgb.train(param,data_train,num_boost_round=1000,evals=watch_list) #modeify 20000
         joblib.dump(XGB,self.saveData+'_xgb')
     
     def xgbPredict(self,x_):

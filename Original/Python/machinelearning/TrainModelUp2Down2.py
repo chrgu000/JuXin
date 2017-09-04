@@ -18,7 +18,7 @@ import pymysql,time,TrainModel
 
 x1=time.clock()
 
-firstTime=0
+firstTime=0; shuffleSample=0; #shuffle Matrix for sample points
 ReSet=0
 nameDB='Up2Down2' # should be set for create a new mode test;
 TradeScan=0 # 1 means match tradescan exactly but waste much time for this procedure and 0 means approxcimate but very fast;
@@ -172,13 +172,32 @@ else:
     dateAll=Matrix[:,0]
     Re=Matrix[:,1]
     Matrix=Matrix[:,2:]
-    cur.execute('select * from dispersity')
-    dispersity=np.column_stack(cur.fetchall())[0]
-    cur.execute('select * from profitP')
-    profitP=np.row_stack(cur.fetchall())
-    cur.close()
-    conn.close()
-    
+    if shuffleSample:
+        dispersity,profitP=TM.hmmTestAll(Matrix,Re,0)  
+        cur.execute('drop table dispersity')
+        cur.execute('create table dispersity(dis float)')
+        cur.executemany('insert into dispersity values(%s)',dispersity.tolist())
+        cur.execute('drop table profitP')
+        cur.execute('create table profitP(flag0 float,flag1 float,flag2 float,flag3 float,flag4 float)')
+        for i in range(len(profitP)):
+            if len(profitP[i])<5:
+                while 1:
+                    profitP[i].append(-1.0)
+                    if len(profitP[i])>4:
+                        break
+        cur.executemany('insert into profitP values(%s,%s,%s,%s,%s)',profitP)
+        profitP=np.row_stack(profitP)
+        conn.commit()
+        cur.close()
+        conn.close()
+    else:   
+        cur.execute('select * from dispersity')
+        dispersity=np.column_stack(cur.fetchall())[0]
+        cur.execute('select * from profitP')
+        profitP=np.row_stack(cur.fetchall())
+        cur.close()
+        conn.close()
+        
 dispersity=dispersity[:-1]
 colSelect=np.array(list(range(len(dispersity))))[dispersity>0.35] # -1 delete the last one wich is not for single but for all;
 flagNot=[]
@@ -213,10 +232,13 @@ else:
     ReSelectNot=TM.hmmTestCertainNot(Matrix,flagNot)
     ReSelectOk=TM.hmmTestCertainOk(Matrix,flagOk)
 
-if sum(ReSelectNot)>0:
+if (sum(ReSelectNot)>0) * (sum(ReSelectOk))>0 :
+    plt.figure(figsize=(15,8))
+    TM.ReFig([Re[ReSelectNot>0],Re[ReSelectOk>0]],['SelectNot','SelectOk'])
+elif sum(ReSelectNot)>0:
     plt.figure(figsize=(15,8))
     TM.ReFig([Re[ReSelectNot>0],],['SelectNot',])
-if sum(ReSelectOk)>0:
+else:
     plt.figure(figsize=(15,8))
     TM.ReFig([Re[ReSelectOk>0],],['SelectOk',]) # select how many flag is match by one Re
 
@@ -224,29 +246,32 @@ pointSelect=(ReSelectOk>0)*(ReSelectNot>0) # draw final select figure;
 if sum(pointSelect)>0:
     plt.figure(figsize=(15,8))
     TM.ReFig([Re,Re[pointSelect]],['RawRe','SelectOkNot']) 
-    dateSort=dateAll[pointSelect] # sort by time;
-    ReSort=Re[pointSelect]
-    Lt=len(dateSort)
-    month=[]
-    day=[]
-    week=[]
-    weekday=[]    
-    for i2 in range(Lt):
-        month.append(dateSort[i2].strftime('%m'))
-        day.append(dateSort[i2].strftime('%d'))
-        week.append(dateSort[i2].strftime('%W'))
-        weekday.append(dateSort[i2].strftime('%w'))
-    TM.sortStatastic(weekday,ReSort,'selectNotOk--weekday')
-    TM.sortStatastic(month,ReSort,'selectNotOk--month')
-    TM.sortStatastic(day,ReSort,'selectNotOk--day')
-    TM.sortStatastic(week,ReSort,'selectNotOk--week')
+# sort all by time;
+#    dateSort=dateAll[pointSelect]
+#    ReSort=Re[pointSelect]
+#    Lt=len(dateSort)
+#    month=[]
+#    day=[]
+#    week=[]
+#    weekday=[]    
+#    for i2 in range(Lt):
+#        month.append(dateSort[i2].strftime('%m'))
+#        day.append(dateSort[i2].strftime('%d'))
+#        week.append(dateSort[i2].strftime('%W'))
+#        weekday.append(dateSort[i2].strftime('%w'))
+#    TM.sortStatastic(weekday,ReSort,'selectNotOk--weekday')
+#    TM.sortStatastic(month,ReSort,'selectNotOk--month')
+#    TM.sortStatastic(day,ReSort,'selectNotOk--day')
+#    TM.sortStatastic(week,ReSort,'selectNotOk--week')
     
     # sort according to xgboost;
     MatrixXGB=np.c_[dateAll[pointSelect],Matrix[pointSelect,:]];ReXGB=Re[pointSelect]
-    x_train,x_test,y_train,y_test=train_test_split(MatrixXGB,ReXGB,random_state=0,test_size=0.4)
+    x_train,x_test,y_train,y_test=train_test_split(MatrixXGB,ReXGB,test_size=0.4) #random_state=0,
     date_train=x_train[:,0];x_train=x_train[:,1:21];date_test=x_test[:,0];x_test=x_test[:,1:21]
+    tem=int(len(x_test)/5)
+    x_validation=x_test[:tem,:];x_test=x_test[tem:,:];y_validation=y_test[:tem];y_test=y_test[tem:];date_test=date_test[tem:]
     
-    TM.xgbTrain(x_train,y_train,x_test,y_test)
+    TM.xgbTrain(x_train,y_train,x_validation,y_validation)
     TM.gaussianNBtrain(x_train,y_train)
     plt.figure(figsize=(25,12))
     for i2 in range(2):
@@ -262,6 +287,7 @@ if sum(pointSelect)>0:
             date_=date_test
         
         y_pre=TM.xgbPredict(x_)
+        y_pre1=y_pre
         flags=np.unique(y_pre)
         Rex=[];labelx=[]
         for i in range(len(flags)):
@@ -278,7 +304,24 @@ if sum(pointSelect)>0:
             Rex.append(y_[tem].tolist())
             labelx.append(labeli[1]+str(flags[i]))
         plt.subplot(2,2,i2+3)
-        TM.ReFig(Rex,labelx)          
+        TM.ReFig(Rex,labelx)  
+    tem=y_pre1==2
+    dateSort=date_test[tem] # sort by time;
+    ReSort=y_test[tem]
+    Lt=len(dateSort)
+    month=[]
+    day=[]
+    week=[]
+    weekday=[]    
+    for i2 in range(Lt):
+        month.append(dateSort[i2].strftime('%m'))
+        day.append(dateSort[i2].strftime('%d'))
+        week.append(dateSort[i2].strftime('%W'))
+        weekday.append(dateSort[i2].strftime('%w'))
+    TM.sortStatastic(weekday,ReSort,'selectNotOk--weekday')
+    TM.sortStatastic(month,ReSort,'selectNotOk--month')
+    TM.sortStatastic(day,ReSort,'selectNotOk--day')
+    TM.sortStatastic(week,ReSort,'selectNotOk--week')      
        
 #        wd=np.array([int(date_[i].strftime('%w')) for i in range(len(dateAll))]) #sort according to weekday but not nice;
 #        for i in range(2):

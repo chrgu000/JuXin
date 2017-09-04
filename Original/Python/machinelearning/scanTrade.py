@@ -66,7 +66,7 @@ Opens=np.column_stack([np.row_stack(Opens),w.wsq(stocks,'rt_open').Data[0]])
 Closes=np.column_stack([np.row_stack(Closes),w.wsq(stocks,'rt_latest').Data[0]])
 Highs=np.column_stack([np.row_stack(Highs),w.wsq(stocks,'rt_high').Data[0]])
 Lows=np.column_stack([np.row_stack(Lows),w.wsq(stocks,'rt_low').Data[0]])
-Vols=np.column_stack([np.row_stack(Vols),w.wsq(stocks,'rt_vol').Data[0]])        
+Vols=np.column_stack([np.row_stack(Vols),1.04*np.array(w.wsq(stocks,'rt_vol').Data[0])])        
         
 if holdOrders: # close orders or not
     for i in range(len(holdStocks)):
@@ -115,8 +115,8 @@ for i in range(Lstocks):
     
     modelSelect=[]
     if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
-            highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]: #model 1
-                modelSelect.append(1)
+            highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
+                modelSelect.append('Up2Down2')
     if 0: #model2
         pass
     
@@ -159,10 +159,10 @@ for i in range(Lstocks):
         holdi2=[]
         moneyi2=[]
         
-        if 1 in modelSelect: # model 1: Up2Down2, model number 1
+        if 'Up2Down2' in modelSelect: # model 1: Up2Down2, model number 1
             TM=TrainModel.TrainModel('Up2Down2')
-            flagNot=[[0, [0, 2]], [1, [1, 4]], [2, [2]], [6, [1, 3]]]
-            flagOk=[[0, [1, 4]], [1, [0, 3]], [2, [1, 3, 4]], [3, [0, 3]], [4, [3]], [6, [2, 4]]]
+            flagNot=[[0, [0, 3]], [1, [0, 3]], [4, [2, 3]], [5, [1]], [6, [2, 4]]]
+            flagOk=[[0, [1, 2]], [1, [2, 4]], [2, [2, 4]], [3, [0]], [4, [0]], [5, [4]], [6, [1, 3]]]
             tem=np.ones(len(Matrix)).tolist()
             ReSelectNot=TM.hmmTestCertainNot([tem,Matrix],flagNot)      # value 0 or 1      
             ReSelectOk=TM.hmmTestCertainOk([tem,Matrix],flagOk)        # value 0 or 1 or 2 or 2+
@@ -173,15 +173,18 @@ for i in range(Lstocks):
             if ReSelectNot[-1]*ReSelectOk[-1]:
                 flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                 if flag[0]==2:
-                    profiti2.append(2.7)
+                    profiti2.append(2.4)
                 else:
                     continue
                 stocksi2.append(stocks[i])
-                handsi2.append(np.ceil(100/closes[-1])*100)
+                if today.strftime('%w')=='4':
+                    handsi2.append(np.ceil(200/closes[-1])*100)
+                else:
+                    handsi2.append(np.ceil(100/closes[-1])*100)
                 modeli2.append('Up2Down2')   # model number:1;
                 holdi2.append(2)    # hold 2 days unless close[today]<close[yesterday]
-                moneyi2.append(handsi[-1]*closes[-1])
-        if 2 in modelSelect: # model 1: xxxxx, model number 2
+                moneyi2.append(handsi2[-1]*closes[-1])
+        if 'test' in modelSelect: 
             pass
         
         if len(profiti2)>1:
