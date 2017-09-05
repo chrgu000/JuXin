@@ -74,12 +74,12 @@ if firstTime:
                 if closes[i2+1]>closes[i2]:
                     Re.append(closes[i2+2]/closes[i2]-1)
                     if fig>0:
-                        figx=[i2,i2+2]
+                        figx=[-3,-1]
                         figy=[closes[i2],closes[i2+2]]
                 else:
                     Re.append(closes[i2+1]/closes[i2]-1)
                     if fig>0:
-                        figx=[i2,i2+1]
+                        figx=[-3,-2]
                         figy=[closes[i2],closes[i2+1]]
                 dateAll.append(dates[i2])
                 max5near=max(closes[i2-4:i2+1]);max5far=max(closes[i2-9:i2-4]);
@@ -133,7 +133,6 @@ if firstTime:
                 if fig>0:
                     fig=fig-1
                     plt.figure()
-                    plt.plot(figx,figy,color='r',linewidth='2')
                     candleData=[]
                     for i3 in range(i2-10,i2+3):
                         tem=(date2num(dates[i3]),opens[i3],highs[i3],lows[i3],closes[i3])
@@ -146,6 +145,7 @@ if firstTime:
                     plt.xlabel('Date')
                     plt.ylabel('Price')
                     mpf.candlestick_ohlc(ax,candleData,width=0.8,colorup='r',colordown='g')
+                    plt.plot([candleData[figx[0]][0],candleData[figx[1]][0]],figy,color='b',linewidth='2')
                     plt.grid()      
     
     conn.select_db(nameDB)
