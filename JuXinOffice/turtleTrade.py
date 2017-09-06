@@ -7,38 +7,56 @@ Created on Mon Sep  4 13:16:21 2017
 from WindPy import *
 from matplotlib.pylab import date2num
 from pylab import *  
+from plotly.offline import init_notebook_mode, plot
+import plotly.graph_objs as plygo
 import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
 import numpy as np
 import pymysql,datetime
+init_notebook_mode(connected=True)
 mpl.rcParams['font.sans-serif'] = ['SimHei']
 mpl.rcParams['axes.unicode_minus'] = False
 
-
 ordersLimit=4
 capital=10000000
-fig=5 # how many figures to be shown
+fig=1 # show figure to check or not
+dataAllDay=0
 
-loadData=0
+loadData=1
 minTick=0.5
 contractMulti=100
 nameFuture='I.DCE'
+
 #minTick=1
 #contractMulti=10
 #nameFuture='RB.SHF'
+
+#minTick=2
+#contractMulti=5
+#nameFuture='TA.CZC'
+
 
 yesterday=(datetime.date.today()-datetime.timedelta(days=1)).strftime('%Y-%m-%d')
 conn=pymysql.connect('localhost','caofa','caofa')
 cur=conn.cursor()
 if loadData:
     w.start()
-    data=w.wsi(nameFuture,'open,close,high,low','2014-9-5',yesterday,'BarSize=15')
-    dateMinute=np.array(data.Times)
-    dataMinute=np.column_stack(data.Data)
-    data=w.wsd(nameFuture,'open,close,high,low','2014-5-5',yesterday)
-    tem=data.Times
-    dateDay=np.array([tem[i].date() for i in range(len(tem))])
-    dataDay=np.column_stack(data.Data)
+    if dataAllDay:
+        data=w.wsd(nameFuture,'open,close,high,low','2009-5-1',yesterday)
+        dateMinute=np.array(data.Times)
+        dataMinute=np.column_stack(data.Data)
+        data=w.wsd(nameFuture,'open,close,high,low','2009-3-27',yesterday)
+        tem=data.Times
+        dateDay=np.array([tem[i].date() for i in range(len(tem))])
+        dataDay=np.column_stack(data.Data)
+    else:
+        data=w.wsi(nameFuture,'open,close,high,low','2014-9-5',yesterday,'BarSize=15')
+        dateMinute=np.array(data.Times)
+        dataMinute=np.column_stack(data.Data)
+        data=w.wsd(nameFuture,'open,close,high,low','2014-5-5',yesterday)
+        tem=data.Times
+        dateDay=np.array([tem[i].date() for i in range(len(tem))])
+        dataDay=np.column_stack(data.Data)
     
     cur.execute('drop database if exists turtleTrade')
     cur.execute('create database turtleTrade')
@@ -77,17 +95,17 @@ up10=[]
 down10=[]
 up20=[]
 down20=[]
-up55=[]
-down55=[]
+#up55=[]
+#down55=[]
 
 for i in range(len(dates)):
-    tem=(dateDay<dates[i]).sum()    
+    tem=(dateDay<dates[i]).sum()
     up10.append(highDay[tem-10:tem].max())
     down10.append(lowDay[tem-10:tem].min())
     up20.append(highDay[tem-20:tem].max())
     down20.append(lowDay[tem-20:tem].min())
-    up55.append(highDay[tem-55:tem].max())
-    down55.append(lowDay[tem-55:tem].min())
+#    up55.append(highDay[tem-55:tem].max())
+#    down55.append(lowDay[tem-55:tem].min())
 
 hold=0 # 0 means hold none;1 means hold long; -1 means hold short;
 stopLoss=0
@@ -98,10 +116,11 @@ capiDelta=[]
 capiDeltai=[]
 winR=0
 lossR=0
+trace=[]
 
 for i in range(len(dates)):
     holdCheck=hold
-    if hold==0: # no orders
+    if hold==0 : # no orders
         upOpen=up20[i]
         downOpen=down20[i]
 #        if len(capiDelta)==0:
@@ -193,17 +212,16 @@ for i in range(len(dates)):
                 else:
                     lossR=lossR+1
             capiDelta.append(tem)
-    if i==len(dateMinute)-1 and hold!=0:
+    if i==len(dates)-1 and hold!=0:
         tem=0
         for i2 in range(len(openPrice)):
             tem=tem+(openPrice[i2]-closes[i])*contractMulti*hands*hold
             capiDelta.append(tem)
     if holdCheck!=0 and hold==0:
-        if fig>0:
-            fig=fig-1
-            plt.figure(figsize=(30,8))
+        if fig:
+            plt.figure(figsize=(15,8))
             candleData=[]
-            datenum=[]
+            dateSelect=[]
             u10=[]
             d10=[]
             u20=[]
@@ -212,36 +230,43 @@ for i in range(len(dates)):
             if startK<0:
                 startK=0
             for i2 in range(i-openi[0]+10):
-                tem=date2num(times[startK+i2])
-                datenum.append(tem)
-                tem=(tem,opens[startK+i2],highs[startK+i2],lows[startK+i2],closes[startK+i2])
+                dateSelect.append(times[startK+i2]) ##
+                tem=[opens[startK+i2],highs[startK+i2],lows[startK+i2],closes[startK+i2]]
                 candleData.append(tem)
                 u10.append(up10[startK+i2])
                 d10.append(down10[startK+i2])
                 u20.append(up20[startK+i2])
                 d20.append(down20[startK+i2])
             ax=plt.subplot()
-            ax.xaxis_date()
             plt.xticks(rotation=45)
             plt.yticks()
             plt.xlabel('Date')
             plt.ylabel('Price')
-            mpf.candlestick_ohlc(ax,candleData,width=0.1,colorup='r',colordown='g')
+            candleData=np.column_stack([list(range(len(candleData))),candleData])
+            mpf.candlestick_ohlc(ax,candleData,width=0.5,colorup='r',colordown='g')
             plt.grid()
-            plt.plot(datenum,u10,color='y',linewidth='1')
-            plt.plot(datenum,d10,color='y',linewidth='1')
-            plt.plot(datenum,u20,color='r',linewidth='1')
-            plt.plot(datenum,d20,color='r',linewidth='1')         
+            plt.plot(u10,color='y',linewidth='1')
+            plt.plot(d10,color='y',linewidth='1')
+            plt.plot(u20,color='r',linewidth='1')
+            plt.plot(d20,color='r',linewidth='1')   #datenum,      
             for i2 in range(len(openPrice)):
-                x_=[date2num(times[openi[i2]]),date2num(times[i])]
+                x_=[dateSelect.index(times[openi[i2]]),dateSelect.index(times[i])]
                 y_=[openPrice[i2],stop12]
-                plt.plot(x_,y_,color='b',linewidth='2')     
-                
+                if (stop12-openPrice[i2])*holdCheck>0:
+                    tem='gold'
+#                    tem1='rgb(280, 100, 0)'
+                else:
+                    tem='gray'
+#                    tem1='gray'
+                plt.plot(x_,y_,color=tem,linewidth='2')     
+                trace.append(plygo.Scatter(x=[times[openi[i2]],times[i]], y=[openPrice[i2],stop12],\
+                            line = dict(color = (tem),width = 2,dash = 'dot')))
         openPrice=[]
         openi=[]
         
-    
-        
+trace.append(plygo.Candlestick(x=times,open=opens,high=highs,low=lows,close=closes))   
+#if fig:
+#    plot(trace, filename='backtest.html')          
     
 capiDeltai.insert(0,dateDay[0])
 capiDelta.insert(0,capital)
@@ -263,7 +288,7 @@ for i in range(1,len(Re)):
 winRatio=winR/(winR+lossR)
 
 fig=plt.figure(figsize=(12,8))
-plt.title(nameFuture+':'+'年化收益 %.2f%%;总获利 %.1f;最大损失 %.1f;最大回撤率 %.2f%%;胜率 %.3f%%' %(RePerYear,Re[-1]-Re[0],backMax,backMaxPer,winRatio*100),size=15)
+plt.title(nameFuture+':'+'复合年化收益 %.2f%%;总获利 %.1f;最大损失 %.1f;最大回撤率 %.2f%%;胜率 %.3f%%' %(RePerYear,Re[-1]-Re[0],backMax,backMaxPer,winRatio*100),size=15)
 ax1=fig.add_subplot(1,1,1)
 line1,=ax1.plot(closeDay,color='g')
 plt.grid()

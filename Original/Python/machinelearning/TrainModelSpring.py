@@ -224,7 +224,7 @@ for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
     flagDi=[]
     for i2 in range(len(flagi)):
-        if flagi[i2]>0.7: #profitP>0.8%
+        if flagi[i2]>0.65: #profitP>0.8%
             flagDi.append(i2)
     if len(flagDi)>0:
         flagOk.append([colSelect[i],flagDi])

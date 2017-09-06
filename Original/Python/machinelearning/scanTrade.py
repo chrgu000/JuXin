@@ -117,7 +117,10 @@ for i in range(Lstocks):
     if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
             highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
                 modelSelect.append('Up2Down2')
-    if 0: #model2
+    if closes[i2-1]<lows[i2-1]+(highs[i2-1]-lows[i2-1])/4  and closes[i2]>lows[i2]+(highs[i2]-lows[i2])*3/4  and \
+            highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]: 
+                modelSelect.append('Spring')
+    if 0: #next model
         pass
     
     if len(modelSelect)>0:
@@ -174,16 +177,39 @@ for i in range(Lstocks):
                 flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                 if flag[0]==2:
                     profiti2.append(2.4)
-                else:
-                    continue
-                stocksi2.append(stocks[i])
-                if today.strftime('%w')=='4':
-                    handsi2.append(np.ceil(200/closes[-1])*100)
-                else:
+                    stocksi2.append(stocks[i])
+                    if today.strftime('%w')=='4':
+                        handsi2.append(np.ceil(200/closes[-1])*100)
+                    else:
+                        handsi2.append(np.ceil(100/closes[-1])*100)
+                    modeli2.append('Up2Down2')   # model number:1;
+                    holdi2.append(2)    # hold 2 days unless close[today]<close[yesterday]
+                    moneyi2.append(handsi2[-1]*closes[-1])
+        if 'Spring' in modelSelect: # model 1: Up2Down2, model number 1
+            TM=TrainModel.TrainModel('Spring')
+            flagNot=[[1, [2, 4]], [6, [1, 4]]]
+            flagOk=[[1, [0, 1]], [6, [3]]]
+            tem=np.ones(len(Matrix)).tolist()
+            ReSelectNot=TM.hmmTestCertainNot([tem,Matrix],flagNot)      # value 0 or 1      
+            ReSelectOk=TM.hmmTestCertainOk([tem,Matrix],flagOk)        # value 0 or 1 or 2 or 2+
+            print(ReSelectNot)
+            print(ReSelectOk)
+            print(TM.xgbPredict(np.array([Matrix])))
+            print('-'*100)
+            if ReSelectNot[-1]*ReSelectOk[-1]:
+                flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
+                if flag[0]==2:
+                    tem=today.strftime('%w')
+                    if tem=='4' or tem=='5':
+                        profiti2.append(1.8)
+                    elif tem=='1':
+                        profiti2.append(1.4)                    
+                    stocksi2.append(stocks[i])
                     handsi2.append(np.ceil(100/closes[-1])*100)
-                modeli2.append('Up2Down2')   # model number:1;
-                holdi2.append(2)    # hold 2 days unless close[today]<close[yesterday]
-                moneyi2.append(handsi2[-1]*closes[-1])
+                    modeli2.append('Spring')   # model number:1;
+                    holdi2.append(2)    # hold 2 days unless close[today]<close[yesterday]
+                    moneyi2.append(handsi2[-1]*closes[-1])
+                
         if 'test' in modelSelect: 
             pass
         
