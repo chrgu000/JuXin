@@ -229,10 +229,14 @@ class TrainModel():
                     maxDraw=drawT
                     maxDrawi=i2
                     maxDrawValue=Recs[i2]
-            plt.plot(range(LT),Recs,label='%s ---- orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
+            try:
+                plt.plot(range(LT),Recs,label='%s ---- orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
                      %(figTitlei,LT,np.mean(Rei)/np.std(Rei),sum(Rei>0)/float(LT),np.mean(Rei[Rei>0])/-np.mean(Rei[Rei<0]),maxDraw*100,Recs[-1]/LT*100))  
+            except Exception as tem:
+                plt.plot(range(LT),Recs)
+                print(tem)
             plt.plot(maxDrawi,maxDrawValue,'r*')
-            plt.legend(loc='upper left')
+            plt.legend(loc='upper left',framealpha=0.3)
             plt.grid(1) 
         plt.title(' VS '.join(figTitle))
 

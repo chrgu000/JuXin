@@ -169,6 +169,7 @@ for i in range(Lstocks):
             tem=np.ones(len(Matrix)).tolist()
             ReSelectNot=TM.hmmTestCertainNot([tem,Matrix],flagNot)      # value 0 or 1      
             ReSelectOk=TM.hmmTestCertainOk([tem,Matrix],flagOk)        # value 0 or 1 or 2 or 2+
+            print('Up2Down2')
             print(ReSelectNot)
             print(ReSelectOk)
             print(TM.xgbPredict(np.array([Matrix])))
@@ -187,11 +188,12 @@ for i in range(Lstocks):
                     moneyi2.append(handsi2[-1]*closes[-1])
         if 'Spring' in modelSelect: # model 1: Up2Down2, model number 1
             TM=TrainModel.TrainModel('Spring')
-            flagNot=[[1, [2, 4]], [6, [1, 4]]]
-            flagOk=[[1, [0, 1]], [6, [3]]]
+            flagNot=[[1, [0, 2]], [6, [1, 3]]]
+            flagOk=[[1, [3, 4]], [6, [4]]]
             tem=np.ones(len(Matrix)).tolist()
             ReSelectNot=TM.hmmTestCertainNot([tem,Matrix],flagNot)      # value 0 or 1      
             ReSelectOk=TM.hmmTestCertainOk([tem,Matrix],flagOk)        # value 0 or 1 or 2 or 2+
+            print('Spring')
             print(ReSelectNot)
             print(ReSelectOk)
             print(TM.xgbPredict(np.array([Matrix])))

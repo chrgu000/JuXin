@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
 import numpy as np
 import pymysql,datetime
-init_notebook_mode(connected=True)
+#init_notebook_mode(connected=True)
 mpl.rcParams['font.sans-serif'] = ['SimHei']
 mpl.rcParams['axes.unicode_minus'] = False
 
@@ -23,17 +23,82 @@ fig=1 # show figure to check or not
 dataAllDay=0
 
 loadData=1
-minTick=0.5
-contractMulti=100
-nameFuture='I.DCE'
 
 #minTick=1
 #contractMulti=10
 #nameFuture='RB.SHF'
 
+#minTick=0.05
+#contractMulti=1000
+#nameFuture='AU.SHF'
+
+#minTick=10
+#contractMulti=5
+#nameFuture='CU.SHF'
+
+#minTick=5
+#contractMulti=10
+#nameFuture='RU.SHF'
+
+#minTick=0.2
+#contractMulti=300
+#nameFuture='IH.CFE'
+
+#minTick=0.2
+#contractMulti=200
+#nameFuture='IC.CFE'
+
+minTick=0.2
+contractMulti=300
+nameFuture='IF.CFE'
+
 #minTick=2
 #contractMulti=5
 #nameFuture='TA.CZC'
+
+#minTick=1
+#contractMulti=10
+#nameFuture='MA.CZC'
+
+#minTick=1
+#contractMulti=20
+#nameFuture='FG.CZC'
+
+#minTick=1
+#contractMulti=10
+#nameFuture='RM.CZC'
+
+#minTick=5
+#contractMulti=5
+#nameFuture='CF.CZC'
+
+#minTick=1
+#contractMulti=10
+#nameFuture='M.DCE'
+
+#minTick=1
+#contractMulti=10
+#nameFuture='A.DCE'
+
+#minTick=2
+#contractMulti=10
+#nameFuture='Y.DCE'
+
+#minTick=0.5
+#contractMulti=100
+#nameFuture='J.DCE'
+
+#minTick=5
+#contractMulti=5
+#nameFuture='V.DCE'
+
+#minTick=5
+#contractMulti=5
+#nameFuture='L.DCE'
+
+#minTick=0.5
+#contractMulti=100
+#nameFuture='I.DCE'
 
 
 yesterday=(datetime.date.today()-datetime.timedelta(days=1)).strftime('%Y-%m-%d')
@@ -42,21 +107,23 @@ cur=conn.cursor()
 if loadData:
     w.start()
     if dataAllDay:
-        data=w.wsd(nameFuture,'open,close,high,low','2009-5-1',yesterday)
-        dateMinute=np.array(data.Times)
-        dataMinute=np.column_stack(data.Data)
         data=w.wsd(nameFuture,'open,close,high,low','2009-3-27',yesterday)
-        tem=data.Times
+        ind=np.isnan(data.Data[0]).sum()
+        tem=np.array(data.Times)[ind:]
         dateDay=np.array([tem[i].date() for i in range(len(tem))])
-        dataDay=np.column_stack(data.Data)
-    else:
-        data=w.wsi(nameFuture,'open,close,high,low','2014-9-5',yesterday,'BarSize=15')
+        dataDay=np.column_stack(data.Data)[ind:,:]
+        dateMinute=dateDay[30:]
+        dataMinute=dataDay[30:,:]
+        
+    else:       
+        data=w.wsd(nameFuture,'open,close,high,low','2010-5-5',yesterday)
+        ind=np.isnan(data.Data[0]).sum()
+        tem=np.array(data.Times)[ind:]
+        dateDay=np.array([tem[i].date() for i in range(len(tem))])
+        dataDay=np.column_stack(data.Data)[ind:,:]
+        data=w.wsi(nameFuture,'open,close,high,low',dateDay[25].strftime('%Y-%m-%d'),yesterday,'BarSize=15')
         dateMinute=np.array(data.Times)
         dataMinute=np.column_stack(data.Data)
-        data=w.wsd(nameFuture,'open,close,high,low','2014-5-5',yesterday)
-        tem=data.Times
-        dateDay=np.array([tem[i].date() for i in range(len(tem))])
-        dataDay=np.column_stack(data.Data)
     
     cur.execute('drop database if exists turtleTrade')
     cur.execute('create database turtleTrade')
@@ -85,7 +152,10 @@ closeDay=dataDay[:,2]
 highDay=dataDay[:,3]
 lowDay=dataDay[:,4]
 times=dataMinute[:,0]
-dates=np.array([times[i].date() for i in range(len(times))])
+if dataAllDay:
+    dates=times
+else:
+    dates=np.array([times[i].date() for i in range(len(times))])
 opens=dataMinute[:,1]
 closes=dataMinute[:,2]
 highs=dataMinute[:,3]
@@ -288,7 +358,7 @@ for i in range(1,len(Re)):
 winRatio=winR/(winR+lossR)
 
 fig=plt.figure(figsize=(12,8))
-plt.title(nameFuture+':'+'复合年化收益 %.2f%%;总获利 %.1f;最大损失 %.1f;最大回撤率 %.2f%%;胜率 %.3f%%' %(RePerYear,Re[-1]-Re[0],backMax,backMaxPer,winRatio*100),size=15)
+plt.title(nameFuture+':'+'复合年化收益 %.2f%%;总获利 %.1f;最大损失 %.1f;最大回撤率 %.2f%%(%.2f%%);胜率 %.3f%%' %(RePerYear,Re[-1]-Re[0],backMax,backMax/capital,backMaxPer,winRatio*100),size=15)
 ax1=fig.add_subplot(1,1,1)
 line1,=ax1.plot(closeDay,color='g')
 plt.grid()

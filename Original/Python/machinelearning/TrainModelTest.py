@@ -19,7 +19,7 @@ import pymysql,time,TrainModel
 x1=time.clock()
 
 firstTime=0; shuffleSample=0; #shuffle Matrix for sample points
-ReSet=0
+ReSet=1
 nameDB='test' # should be set for create a new mode test;
 TradeScan=0 # 1 means match tradescan exactly but waste much time for this procedure and 0 means approxcimate but very fast;
 
@@ -68,6 +68,7 @@ if firstTime:
     #            maN[i2]=np.mean(closes[i2-3:i2+1])
     #            ma10[i2]=np.mean(closes[i2-10:i2+1])
         for i2 in range(15,Lt-3):
+#        for i2 in range(15,16):
             if closes[i2-1]<lows[i2-1]+(highs[i2-1]-lows[i2-1])/4  and closes[i2]>lows[i2]+(highs[i2]-lows[i2])*3/4  and \
             highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2] and closes[i2]/closes[i2-1]<1.095: #vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and 
                 if closes[i2+1]>closes[i2]:
@@ -132,7 +133,6 @@ if firstTime:
                 if fig>0:
                     fig=fig-1
                     plt.figure()
-                    plt.plot(figx,figy,color='r',linewidth='2')
                     candleData=[]
                     for i3 in range(i2-10,i2+3):
                         tem=(date2num(dates[i3]),opens[i3],highs[i3],lows[i3],closes[i3])
@@ -209,7 +209,7 @@ else:
         conn.close()
         
 dispersity=dispersity[:-1]
-colSelect=np.array(list(range(len(dispersity))))[dispersity>0.35] # -1 delete the last one wich is not for single but for all;
+colSelect=np.array(list(range(len(dispersity))))[dispersity>0.2] # -1 delete the last one wich is not for single but for all;
 flagNot=[]
 for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
@@ -224,7 +224,7 @@ for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
     flagDi=[]
     for i2 in range(len(flagi)):
-        if flagi[i2]>0.6: #profitP>0.8%
+        if flagi[i2]>0.65: #profitP>0.8%
             flagDi.append(i2)
     if len(flagDi)>0:
         flagOk.append([colSelect[i],flagDi])
@@ -339,8 +339,8 @@ if sum(pointSelect)>0:
 #            TM.sortStatastic(wd[tem],y_[tem],'flag:'+str(i+1)+'--weekday')
 
 # test this model by hands freely according to your free mind.
-flagOk1=[ [0,[1]], ] ;flagOk2=[ [1, [0, 3]], [2, [1, 3, 4]] ]  
-flagNot1=[ [0, [0, 2]] ] ;flagNot2=[ [2, [2]], [6, [1, 3]] ]  
+flagOk1=[ [1,[0]], ] ;flagOk2=[ [6, [3]] ]  
+flagNot1=[ [1, [1, 3]] ] ;flagNot2=[ [6, [2,4]] ]  
 ReOk1=TM.hmmTestCertainOk(Matrix,flagOk1)
 ReOk2=TM.hmmTestCertainOk(Matrix,flagOk2)
 ReNot1=TM.hmmTestCertainNot(Matrix,flagNot1)
