@@ -18,8 +18,8 @@ import pymysql,time,TrainModel
 
 x1=time.clock()
 
-firstTime=0; shuffleSample=1; #shuffle Matrix for sample points
-ReSet=1
+firstTime=0; shuffleSample=0; #shuffle Matrix for sample points
+ReSet=0
 nameDB='Spring' # should be set for create a new mode test;
 TradeScan=0 # 1 means match tradescan exactly but waste much time for this procedure and 0 means approxcimate but very fast;
 
@@ -315,7 +315,7 @@ if sum(pointSelect)>0:
             labelx.append(labeli[1]+str(flags[i]))
         plt.subplot(2,2,i2+3)
         TM.ReFig(Rex,labelx)  
-    tem=y_pre1==2
+    tem=y_pre1==1
     dateSort=date_test[tem] # sort by time;
     ReSort=y_test[tem]
     Lt=len(dateSort)
@@ -339,8 +339,8 @@ if sum(pointSelect)>0:
 #            TM.sortStatastic(wd[tem],y_[tem],'flag:'+str(i+1)+'--weekday')
 
 # test this model by hands freely according to your free mind.
-flagOk1=[ [1,[0]], ] ;flagOk2=[ [6, [3]] ]  
-flagNot1=[ [1, [1, 3]] ] ;flagNot2=[ [6, [2,4]] ]  
+flagOk1=[ [1,[0]], ] ;flagOk2=[ [6, [0]] ]  
+flagNot1=[ [1, [1, 3]] ] ;flagNot2=[ [6, [1,3]] ]  
 ReOk1=TM.hmmTestCertainOk(Matrix,flagOk1)
 ReOk2=TM.hmmTestCertainOk(Matrix,flagOk2)
 ReNot1=TM.hmmTestCertainNot(Matrix,flagNot1)
@@ -360,3 +360,18 @@ TM.ReFig([Re[(ReOk1>0)*(ReOk2>0)*(ReNot1>0)*(ReNot2)>0]], ['Ok1-Ok2-Not1-Not2'])
 x2=time.clock()
 print('time elapse:%.1f minutes' %((x2-x1)/60))
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

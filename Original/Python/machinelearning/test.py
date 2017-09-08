@@ -30,69 +30,77 @@
 #TM.ReFig(re,titleFig)
 
 
-from numpy import arange, sin, pi
-
-import matplotlib
-
-# uncomment the following to use wx rather than wxagg
-#matplotlib.use('WX')
-#from matplotlib.backends.backend_wx import FigureCanvasWx as FigureCanvas
-
-# comment out the following to use wx rather than wxagg
-matplotlib.use('WXAgg')
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx
-
-from matplotlib.figure import Figure
-
-import wx
-import wx.lib.mixins.inspection as WIT
-
-
-class CanvasFrame(wx.Frame):
-    def __init__(self):
-        wx.Frame.__init__(self, None, -1,
-                          'CanvasFrame', size=(550, 350))
-
-        self.figure = Figure()
+import sys
+from PyQt5 import QtWidgets
+ 
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5 import NavigationToolbar2QT as NavigationToolbar
+import matplotlib.pyplot as plt
+ 
+import random
+ 
+class Window(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+ 
+        self.figure = plt.figure()
         self.axes = self.figure.add_subplot(111)
-        t = arange(0.0, 3.0, 0.01)
-        s = sin(2 * pi * t)
-
-        self.axes.plot(t, s)
-        self.canvas = FigureCanvas(self, -1, self.figure)
-
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.EXPAND)
-        self.SetSizer(self.sizer)
-        self.Fit()
-
-        self.add_toolbar()  # comment this out for no toolbar
-
-    def add_toolbar(self):
-        self.toolbar = NavigationToolbar2Wx(self.canvas)
-        self.toolbar.Realize()
-        # By adding toolbar in sizer, we are able to put it at the bottom
-        # of the frame - so appearance is closer to GTK version.
-        self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
-        # update the axes menu on the toolbar
-        self.toolbar.update()
-
-
-# alternatively you could use
-#class App(wx.App):
-class App(WIT.InspectableApp):
-    def OnInit(self):
-        'Create the main window and insert the custom frame'
-        self.Init()
-        frame = CanvasFrame()
-        frame.Show(True)
-
-        return True
-
-app = App(0)
-app.MainLoop()
-
-
-
+        # We want the axes cleared every time plot() is called
+        self.axes.hold(False)
+        self.canvas = FigureCanvas(self.figure)
+ 
+         
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        self.toolbar.hide()
+ 
+        # Just some button 
+        self.button1 = QtWidgets.QPushButton('Plot')
+        self.button1.clicked.connect(self.plot)
+ 
+        self.button2 = QtWidgets.QPushButton('Zoom')
+        self.button2.clicked.connect(self.zoom)
+         
+        self.button3 = QtWidgets.QPushButton('Pan')
+        self.button3.clicked.connect(self.pan)
+         
+        self.button4 = QtWidgets.QPushButton('Home')
+        self.button4.clicked.connect(self.home)
+ 
+ 
+        # set the layout
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.toolbar)
+        layout.addWidget(self.canvas)
+        
+        btnlayout = QtWidgets.QHBoxLayout()
+        btnlayout.addWidget(self.button1)
+        btnlayout.addWidget(self.button2)
+        btnlayout.addWidget(self.button3)
+        btnlayout.addWidget(self.button4)
+        qw = QtWidgets.QWidget(self)
+        qw.setLayout(btnlayout)
+        layout.addWidget(qw)
+        
+        self.setLayout(layout)
+ 
+    def home(self):
+        self.toolbar.home()
+    def zoom(self):
+        self.toolbar.zoom()
+    def pan(self):
+        self.toolbar.pan()
+         
+    def plot(self):
+        ''' plot some random stuff '''
+        data = [random.random() for i in range(25)]
+        self.axes.plot(data, '*-')
+        self.canvas.draw()
+ 
+if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
+ 
+    main = Window()
+    main.setWindowTitle('Simple QTpy and MatplotLib example with Zoom/Pan')
+    main.show()
+ 
+    sys.exit(app.exec_())

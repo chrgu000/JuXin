@@ -20,7 +20,7 @@ mpl.rcParams['axes.unicode_minus'] = False
 ordersLimit=4
 capital=10000000
 fig=1 # show figure to check or not
-dataAllDay=0
+dataAllDay=1
 
 loadData=1
 
@@ -48,9 +48,9 @@ loadData=1
 #contractMulti=200
 #nameFuture='IC.CFE'
 
-minTick=0.2
-contractMulti=300
-nameFuture='IF.CFE'
+#minTick=0.2
+#contractMulti=300
+#nameFuture='IF.CFE'
 
 #minTick=2
 #contractMulti=5
@@ -300,7 +300,10 @@ for i in range(len(dates)):
             if startK<0:
                 startK=0
             for i2 in range(i-openi[0]+10):
-                dateSelect.append(times[startK+i2]) ##
+                try:
+                    dateSelect.append(times[startK+i2]) ##
+                except:
+                    continue
                 tem=[opens[startK+i2],highs[startK+i2],lows[startK+i2],closes[startK+i2]]
                 candleData.append(tem)
                 u10.append(up10[startK+i2])

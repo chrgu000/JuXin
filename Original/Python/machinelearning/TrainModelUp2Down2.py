@@ -205,7 +205,7 @@ for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
     flagDi=[]
     for i2 in range(len(flagi)):
-        if flagi[i2]<0.35: #profitP<0.4%
+        if flagi[i2]<0.15: #profitP<0.4%
             flagDi.append(i2)
     if len(flagDi)>0:
         flagNot.append([colSelect[i],flagDi])
@@ -214,7 +214,7 @@ for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
     flagDi=[]
     for i2 in range(len(flagi)):
-        if flagi[i2]>0.6: #profitP>0.8%
+        if flagi[i2]>0.5: #profitP>0.8%
             flagDi.append(i2)
     if len(flagDi)>0:
         flagOk.append([colSelect[i],flagDi])
@@ -305,7 +305,7 @@ if sum(pointSelect)>0:
             labelx.append(labeli[1]+str(flags[i]))
         plt.subplot(2,2,i2+3)
         TM.ReFig(Rex,labelx)  
-    tem=y_pre1==2
+    tem=y_pre1==1
     dateSort=date_test[tem] # sort by time;
     ReSort=y_test[tem]
     Lt=len(dateSort)
