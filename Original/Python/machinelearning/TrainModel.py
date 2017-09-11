@@ -77,7 +77,7 @@ class TrainModel():
             #            ma10[i2]=np.mean(closes[i2-10:i2+1])
                 for i2 in range(15,Lt-3):
         #        for i2 in range(15,16):
-                    if func(highs[i2-10:i2+1],lows[i2-10:i2+1],closes[i2-10:i2+1]):
+                    if func(opens[i2-10:i2+1],highs[i2-10:i2+1],lows[i2-10:i2+1],closes[i2-10:i2+1]):
                         if closes[i2+1]>closes[i2]:
                             Re.append(closes[i2+2]/closes[i2]-1)
                             if fig>0:

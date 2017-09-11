@@ -24,9 +24,9 @@ dataAllDay=1
 
 loadData=1
 
-#minTick=1
-#contractMulti=10
-#nameFuture='RB.SHF'
+minTick=1
+contractMulti=10
+nameFuture='RB.SHF'
 
 #minTick=0.05
 #contractMulti=1000
