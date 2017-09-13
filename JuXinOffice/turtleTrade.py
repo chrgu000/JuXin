@@ -24,10 +24,10 @@ dataAllDay=1
 
 loadData=1
 
-minTick=1
-contractMulti=10
-nameFuture='RB.SHF'
-margin=0.12
+#minTick=1
+#contractMulti=10
+#nameFuture='RB.SHF'
+#margin=0.12
 
 #minTick=0.05
 #contractMulti=1000
