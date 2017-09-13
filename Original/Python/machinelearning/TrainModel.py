@@ -135,6 +135,8 @@ class TrainModel():
                              opens[i2]/lows[i2-1],\
                              highs[i2]/opens[i2-1] ] 
                         if np.isnan(tem).sum():
+                            Re.pop()
+                            dateAll.pop()
                             continue
                         Matrix.append(tem)
                         if fig>0:
@@ -249,13 +251,13 @@ class TrainModel():
             ReSelectNot=self.hmmTestCertainNot(Matrix,flagNot)
             ReSelectOk=self.hmmTestCertainOk(Matrix,flagOk)
         
-        if (sum(ReSelectNot)>0) * (sum(ReSelectOk))>0 :
+        if (sum(ReSelectNot)) * (sum(ReSelectOk))>0 :
             plt.figure(figsize=(15,8))
             self.ReFig([Re[ReSelectNot>0],Re[ReSelectOk>0]],['SelectNot','SelectOk'])
         elif sum(ReSelectNot)>0:
             plt.figure(figsize=(15,8))
             self.ReFig([Re[ReSelectNot>0],],['SelectNot',])
-        else:
+        elif sum(ReSelectOk)>0:
             plt.figure(figsize=(15,8))
             self.ReFig([Re[ReSelectOk>0],],['SelectOk',]) # select how many flag is match by one Re
         

@@ -19,7 +19,7 @@ mpl.rcParams['axes.unicode_minus'] = False
 
 ordersLimit=4
 capital=10000000
-fig=1 # show figure to check or not
+fig=0 # show figure to check or not
 dataAllDay=1
 
 loadData=1
@@ -27,79 +27,99 @@ loadData=1
 minTick=1
 contractMulti=10
 nameFuture='RB.SHF'
+margin=0.12
 
 #minTick=0.05
 #contractMulti=1000
 #nameFuture='AU.SHF'
+#margin=0.09
 
 #minTick=10
 #contractMulti=5
 #nameFuture='CU.SHF'
+#margin=0.11
 
 #minTick=5
 #contractMulti=10
 #nameFuture='RU.SHF'
+#margin=0.12
 
 #minTick=0.2
 #contractMulti=300
 #nameFuture='IH.CFE'
+#margin=0.23
 
 #minTick=0.2
 #contractMulti=200
 #nameFuture='IC.CFE'
+#margin=0.32
 
 #minTick=0.2
 #contractMulti=300
 #nameFuture='IF.CFE'
+#margin=0.23
 
 #minTick=2
 #contractMulti=5
 #nameFuture='TA.CZC'
+#margin=0.09
 
 #minTick=1
 #contractMulti=10
 #nameFuture='MA.CZC'
+#margin=0.1
 
 #minTick=1
 #contractMulti=20
 #nameFuture='FG.CZC'
+#margin=0.10
+
 
 #minTick=1
 #contractMulti=10
 #nameFuture='RM.CZC'
+#margin=0.09
+
 
 #minTick=5
 #contractMulti=5
 #nameFuture='CF.CZC'
+#margin=0.1
 
 #minTick=1
 #contractMulti=10
 #nameFuture='M.DCE'
+#margin=0.1
 
 #minTick=1
 #contractMulti=10
 #nameFuture='A.DCE'
+#margin=0.1
 
 #minTick=2
 #contractMulti=10
 #nameFuture='Y.DCE'
+#margin=0.1
 
 #minTick=0.5
 #contractMulti=100
 #nameFuture='J.DCE'
+#margin=0.15
 
 #minTick=5
 #contractMulti=5
 #nameFuture='V.DCE'
+#margin=0.1
 
 #minTick=5
 #contractMulti=5
 #nameFuture='L.DCE'
+#margin=0.1
 
 #minTick=0.5
 #contractMulti=100
 #nameFuture='I.DCE'
-
+#margin=0.13
 
 yesterday=(datetime.date.today()-datetime.timedelta(days=1)).strftime('%Y-%m-%d')
 conn=pymysql.connect('localhost','caofa','caofa')
@@ -187,6 +207,8 @@ capiDeltai=[]
 winR=0
 lossR=0
 trace=[]
+ordersAll=0
+maxCapital=0
 
 for i in range(len(dates)):
     holdCheck=hold
@@ -237,6 +259,9 @@ for i in range(len(dates)):
             openi.append(i)
             stopLoss=openPrice[-1]-2*ATR
         elif stop1 + stop2: # close orders
+            tem=closes[i]*contractMulti*4*margin*1.2
+            if tem>maxCapital:
+                maxCapital=tem                
             hold=0
             capiDeltai.append(dates[i])
             if stop1 * stop2:
@@ -246,6 +271,7 @@ for i in range(len(dates)):
             else:
                 stop12=down10[i]
             tem=0
+            ordersAll+=len(openPrice)
             for i2 in range(len(openPrice)):
                 tem1=(stop12-openPrice[i2])*contractMulti*hands
                 tem=tem+tem1
@@ -265,6 +291,9 @@ for i in range(len(dates)):
             openi.append(i)
             stopLoss=openPrice[-1]+2*ATR
         elif stop1 + stop2: # close orders
+            tem=closes[i]*contractMulti*4*margin*1.2
+            if tem>maxCapital:
+                maxCapital=tem
             hold=0
             capiDeltai.append(dates[i])
             if stop1 * stop2:
@@ -274,6 +303,7 @@ for i in range(len(dates)):
             else:
                 stop12=up10[i]
             tem=0
+            ordersAll+=len(openPrice)
             for i2 in range(len(openPrice)):
                 tem1=(openPrice[i2]-stop12)*contractMulti*hands
                 tem=tem+tem1
@@ -360,8 +390,21 @@ for i in range(1,len(Re)):
         backMaxPer=tem
 winRatio=winR/(winR+lossR)
 
+sharpPoints=[]
+Rlast=Re[0]
+peridSharp=180
+for i in range((times[-1]-times[0]).days//peridSharp):    
+    Rnow=Re[(times<times[0]+timedelta((i+1)*peridSharp)).sum()]
+    sharpPoints.append(Rnow/Rlast-1)
+    Rlast=Rnow
+daysLast=(times[-1]-(times[0]+timedelta((i+1)*peridSharp))).days
+if daysLast>peridSharp*2/3:
+    sharpPoints.append((Re[-1]/Rlast-1)*peridSharp/daysLast)
+sharpValue=(mean(sharpPoints)-0.015/2)/std(sharpPoints)*pow(360/peridSharp,1/2)                   
+
 fig=plt.figure(figsize=(12,8))
-plt.title(nameFuture+':'+'复合年化收益 %.2f%%;总获利 %.1f;最大损失 %.1f;最大回撤率 %.2f%%(%.2f%%);胜率 %.3f%%' %(RePerYear,Re[-1]-Re[0],backMax,backMax/capital,backMaxPer,winRatio*100),size=15)
+plt.title(nameFuture+':'+'Sharp:%.2f;复合年化收益 %.2f%%;开仓频率 %.1f单/年;所需最小资金 %.2f万元;\n最大回撤率 %.2f%%(%.2f%%);胜率 %.3f%%,成本所占比例：%.4f%%'\
+          %(sharpValue,RePerYear,ordersAll//((times[-1]-times[0]).days/360),maxCapital/10000,backMax/capital,backMaxPer,winRatio*100,ordersAll*minTick*contractMulti*100/capital),size=15)
 ax1=fig.add_subplot(1,1,1)
 line1,=ax1.plot(closeDay,color='g')
 plt.grid()

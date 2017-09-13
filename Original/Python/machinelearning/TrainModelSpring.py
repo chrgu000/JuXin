@@ -242,13 +242,13 @@ else:
     ReSelectNot=TM.hmmTestCertainNot(Matrix,flagNot)
     ReSelectOk=TM.hmmTestCertainOk(Matrix,flagOk)
 
-if (sum(ReSelectNot)>0) * (sum(ReSelectOk))>0 :
+if (sum(ReSelectNot)) * (sum(ReSelectOk))>0 :
     plt.figure(figsize=(15,8))
     TM.ReFig([Re[ReSelectNot>0],Re[ReSelectOk>0]],['SelectNot','SelectOk'])
 elif sum(ReSelectNot)>0:
     plt.figure(figsize=(15,8))
     TM.ReFig([Re[ReSelectNot>0],],['SelectNot',])
-else:
+elif sum(ReSelectOk)>0:
     plt.figure(figsize=(15,8))
     TM.ReFig([Re[ReSelectOk>0],],['SelectOk',]) # select how many flag is match by one Re
 

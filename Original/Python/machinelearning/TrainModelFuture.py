@@ -33,7 +33,11 @@ class TrainModel():
             self.profitNot=args[6]
             self.profitOk=args[7]
             self.future=args[8]
-            self.barSize=args[9]
+            self.minTick=args[9]
+            self.longshort=args[10]
+            self.barSize=args[11]
+            
+            
         
     def __call__(self,func):
         if self.ReGetPoints:
@@ -49,7 +53,7 @@ class TrainModel():
             w.start()
             today=datetime.date.today()
             data=w.wsi(self.future,'open,high,low,close,volume',today-timedelta(days=3*370),today,'BarSize='+str(self.barSize))
-            Times=data.Times
+            Times=np.array(data.Times)
             Dates=np.array([i.date() for i in Times])
             DatesU=np.unique(Dates)
             dataAll=np.array(data.Data)
@@ -60,11 +64,11 @@ class TrainModel():
                 print(i.strftime('%Y-%m-%d'),end=';')
                 tem=Dates==i
                 times=Times[tem]
-                opens=dataAll[tem,0]
-                highs=dataAll[tem,1]
-                lows=dataAll[tem,2]
-                closes=dataAll[tem,3]
-                vols=dataAll[tem,4]
+                opens=dataAll[0][tem]
+                highs=dataAll[1][tem]
+                lows=dataAll[2][tem]
+                closes=dataAll[3][tem]
+                vols=dataAll[4][tem]
                
                 Lt=len(opens)
                 if Lt<20:
@@ -77,13 +81,13 @@ class TrainModel():
                 for i2 in range(15,Lt-3):
         #        for i2 in range(15,16):
                     if func(opens[i2-10:i2+1],highs[i2-10:i2+1],lows[i2-10:i2+1],closes[i2-10:i2+1]):
-                        if closes[i2+1]>closes[i2]:
-                            Re.append(closes[i2+2]/closes[i2]-1)
+                        if self.longshort*(closes[i2+1]>closes[i2]):
+                            Re.append((self.longshort*(closes[i2+2]-closes[i2])-self.minTick)/closes[i2])
                             if fig>0:
                                 figx=[-3,-1]
                                 figy=[closes[i2],closes[i2+2]]
                         else:
-                            Re.append(closes[i2+1]/closes[i2]-1)
+                            Re.append((self.longshort*(closes[i2+1]-closes[i2])-self.minTick)/closes[i2])
                             if fig>0:
                                 figx=[-3,-2]
                                 figy=[closes[i2],closes[i2+1]]
@@ -134,6 +138,8 @@ class TrainModel():
                              opens[i2]/lows[i2-1],\
                              highs[i2]/opens[i2-1] ] 
                         if np.isnan(tem).sum():
+                            Re.pop()
+                            dateAll.pop()
                             continue
                         Matrix.append(tem)
                         if fig>0:
@@ -141,10 +147,9 @@ class TrainModel():
                             plt.figure()
                             candleData=[]
                             for i3 in range(i2-10,i2+3):
-                                tem=(date2num(times[i3]),opens[i3],highs[i3],lows[i3],closes[i3])
+                                tem=(i3,opens[i3],highs[i3],lows[i3],closes[i3])
                                 candleData.append(tem)
                             ax=plt.subplot()
-                            ax.xaxis_date()
                             plt.xticks(rotation=45)
                             plt.yticks()
                             plt.title(times[0].strftime('%Y-%m-%d'))
@@ -153,7 +158,9 @@ class TrainModel():
                             mpf.candlestick_ohlc(ax,candleData,width=0.8,colorup='r',colordown='g')
                             plt.plot([candleData[figx[0]][0],candleData[figx[1]][0]],figy,color='b',linewidth='2')
                             plt.grid()      
-            
+            conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
+            cur=conn.cursor()
+            cur.execute('create database if not exists '+self.nameDB) # create database;        
             conn.select_db(self.nameDB)
             Matrix=np.row_stack(Matrix)
             Matrix=np.column_stack((dateAll,Re,Matrix))
@@ -416,8 +423,12 @@ class TrainModel():
                     xi.append(maxDrawi)
                     yi.append(maxDrawValue)  
                     recordi.append([LT,np.mean(ReT)/np.std(ReT),ReTcs[-1]/LT*100])
-                    plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
-                             %(i2,LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))  
+                    try:
+                        plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
+                                 %(i2,LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))  
+                    except:
+                        plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;some calculation error' %(i2,LT))  
+                            
                 records.append(recordi)
                 plt.plot(xi,yi,'r*')
                 plt.title(figTitle,fontsize=16)

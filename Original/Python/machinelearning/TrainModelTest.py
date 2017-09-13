@@ -8,22 +8,26 @@ import matplotlib.pyplot as plt
 import time,TrainModel,TrainModelFuture
 
 x1=time.clock()
-nameDB='Futuretest' # should be set for create a new mode test;
-firstTime=1
+nameDB='test' # should be set for create a new mode test;
+firstTime=0
 shufflePoints=0
-ReGetPoints=0
+ReGetPoints=1
 TradeScan=0
 
 dispersity=0.2
-profitNot=0.45
-profitOk=0.65
+profitNot=0.40
+profitOk=0.60
+
 future='I.DCE'
+minTick=0.0
+longshort=-1 # 1 means long; and -1 means short
 barSize=5
+
 
 if nameDB[:6].lower()!='future':
     TM=TrainModel.TrainModel(nameDB,firstTime,shufflePoints,ReGetPoints,TradeScan,dispersity,profitNot,profitOk) #should be in turn; stocks
 else:
-    TM=TrainModelFuture.TrainModel(nameDB,firstTime,shufflePoints,ReGetPoints,TradeScan,dispersity,profitNot,profitOk,future,barSize) #should be in turn; futures
+    TM=TrainModelFuture.TrainModel(nameDB,firstTime,shufflePoints,ReGetPoints,TradeScan,dispersity,profitNot,profitOk,future,minTick,longshort,barSize) #should be in turn; futures
 @TM
 def ModelX(opens,highs,lows,closes):
     if closes[-2]<lows[-2]+(highs[-2]-lows[-2])/4  and closes[-1]>lows[-1]+(highs[-1]-lows[-1])*3/4  and \

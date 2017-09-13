@@ -108,7 +108,7 @@ cur=conn.cursor()
 if loadData:
     w.start()
     if dataAllDay:
-        data=w.wsd(nameFuture,'open,close,high,low','2016-3-27',yesterday)
+        data=w.wsd(nameFuture,'open,close,high,low','2009-3-27',yesterday)
         ind=np.isnan(data.Data[0]).sum()
         tem=np.array(data.Times)[ind:]
         dateDay=np.array([tem[i].date() for i in range(len(tem))])
@@ -349,7 +349,7 @@ lines.append([list(range(Lt)),up10,'y'])
 lines.append([list(range(Lt)),down10,'y'])
 lines.append([list(range(Lt)),up20,'r'])
 lines.append([list(range(Lt)),down20,'r'])
-candleQt.candle([candles,lines])
+#candleQt.candle([candles,lines])
     
 capiDeltai.insert(0,dateDay[0])
 capiDelta.insert(0,capital)
