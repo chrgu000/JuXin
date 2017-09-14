@@ -8,7 +8,7 @@ import pandas as pd
 import datetime,TrainModel
 
 obj='000001.sh'
-nClusters=9
+nClusters=7
 
 TM=TrainModel.TrainModel('neighborMean')
 yesterday=datetime.date.today()-timedelta(days=1)
@@ -35,7 +35,8 @@ dates=dates[tem];MatrixRaw=MatrixRaw[tem,:]
 pca=PCA(n_components=0.98)
 newMatrix=pca.fit_transform(Matrix) 
 kmean=KMeans(n_clusters=nClusters)
-kmean.fit(newMatrix)
+#kmean.fit(newMatrix)
+kmean.fit(Matrix[:,[0,3]])
 labels=kmean.labels_
 labelsU=np.unique(labels)
 Rlist=[];titles=[];

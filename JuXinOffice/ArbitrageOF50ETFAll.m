@@ -3,10 +3,10 @@ tic;
 sw0=0;% show two trading targets' difference for history price;50etf-50index
 sw1=0;% show all options-future K lines which are trading in the "date";
 sw2=0;% get all options-future data in history; 
-sw3=1;% show Pictures;
+sw3=0;% show Pictures;
 sw4=0;% code for draw principle figures;
-sw5=0;% Bald eagle Strategy;
-sw5x=0;% Modify sw5 and let it more flexible;
+sw5=0;% Bald eagle Strategy;sw5x
+sw6=1;% short absolutely near expire date;
 test=0;% test odd portfolio;
 %% show two trading targets' difference for history price;50etf-50index
 if sw0
@@ -781,9 +781,13 @@ if sw5
     end    
     opX=[ReDelta,Delta];
 end
+%% short abosultely near expire date
+if sw6
+    
+end
 
 %% Bald eagle Strategy modified;
-if sw5x
+if 0%sw5x
     stepBaldEagle=2;% gas between _1 and 1;
     w=windmatlab;
     loops=ceil((today-datenum(2015,2,9))/29);

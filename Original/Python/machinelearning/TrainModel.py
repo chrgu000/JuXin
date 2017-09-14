@@ -41,7 +41,7 @@ class TrainModel():
             conn.close()
             self.firstTime=1
         if self.firstTime:
-            fig=10 # how many figures ploted to show the confirmed model;
+            fig=1 # how many figures ploted to show the confirmed model;
             conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
             cur=conn.cursor()
             cur.execute('create database if not exists '+self.nameDB) # create database;        
@@ -78,16 +78,38 @@ class TrainModel():
                 for i2 in range(15,Lt-3):
         #        for i2 in range(15,16):
                     if func(opens[i2-10:i2+1],highs[i2-10:i2+1],lows[i2-10:i2+1],closes[i2-10:i2+1]):
-                        if closes[i2+1]>closes[i2]:
-                            Re.append(closes[i2+2]/closes[i2]-1)
-                            if fig>0:
-                                figx=[-3,-1]
-                                figy=[closes[i2],closes[i2+2]]
-                        else:
+                        if closes[i2+1]<=closes[i2]:
                             Re.append(closes[i2+1]/closes[i2]-1)
+#                            Re.append(opens[i2+2]/opens[i2+1]-1)
                             if fig>0:
-                                figx=[-3,-2]
+                                figx=[-6,-5]
                                 figy=[closes[i2],closes[i2+1]]
+                        else:#elif closes[i2+2]<=closes[i2+1]:
+                            Re.append(closes[i2+2]/closes[i2]-1)
+#                            Re.append(closes[i2+2]/opens[i2+1]-1)
+                            if fig>0:
+                                figx=[-6,-4]
+                                figy=[closes[i2],closes[i2+2]]
+#                        elif closes[i2+3]<=closes[i2+2] :
+#                            Re.append(closes[i2+3]/closes[i2]-1)
+##                            Re.append(closes[i2+2]/opens[i2+1]-1)
+#                            if fig>0:
+#                                figx=[-6,-3]
+#                                figy=[closes[i2],closes[i2+3]]
+#                        elif closes[i2+4]<=closes[i2+3] :
+#                            Re.append(closes[i2+4]/closes[i2]-1)
+##                            Re.append(closes[i2+2]/opens[i2+1]-1)
+#                            if fig>0:
+#                                figx=[-6,-2]
+#                                figy=[closes[i2],closes[i2+4]]
+#                        else:
+#                            Re.append(closes[i2+5]/closes[i2]-1)
+##                            Re.append(closes[i2+2]/opens[i2+1]-1)
+#                            if fig>0:
+#                                figx=[-6,-1]
+#                                figy=[closes[i2],closes[i2+5]]
+                                
+                            
                         dateAll.append(dates[i2])
                         max5near=max(closes[i2-4:i2+1]);max5far=max(closes[i2-9:i2-4]);
                         min5near=min(closes[i2-4:i2+1]);min5far=min(closes[i2-9:i2-4]);
@@ -143,7 +165,7 @@ class TrainModel():
                             fig=fig-1
                             plt.figure()
                             candleData=[]
-                            for i3 in range(i2-10,i2+3):
+                            for i3 in range(i2-10,i2+6):
                                 tem=(date2num(dates[i3]),opens[i3],highs[i3],lows[i3],closes[i3])
                                 candleData.append(tem)
                             ax=plt.subplot()
