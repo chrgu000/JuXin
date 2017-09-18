@@ -38,6 +38,7 @@ kmean=KMeans(n_clusters=nClusters)
 #kmean.fit(newMatrix)
 kmean.fit(Matrix[:,[0,3]])
 labels=kmean.labels_
+
 labelsU=np.unique(labels)
 Rlist=[];titles=[];
 for i in range(len(labelsU)):

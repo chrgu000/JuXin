@@ -10,13 +10,13 @@ import time,TrainModel,TrainModelFuture
 x1=time.clock()
 nameDB='test' # should be set for create a new mode test; if future should be 'futuretest'
 firstTime=0
-shufflePoints=0
-ReGetPoints=1
+shufflePoints=1
+ReGetPoints=0
 TradeScan=0
 
 dispersity=0.2
 profitNot=0.1
-profitOk=0.3
+profitOk=0.2
 
 future='I.DCE'
 minTick=0.0

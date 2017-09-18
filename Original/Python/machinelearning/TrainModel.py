@@ -5,11 +5,11 @@ Created on Wed Aug 23 11:12:35 2017
 @author: Administrator
 """
 
-from hmmlearn.hmm import GaussianHMM
 from sklearn.cross_validation import train_test_split
 from sklearn.naive_bayes import GaussianNB
 import matplotlib.finance as mpf
 from matplotlib.pylab import date2num
+from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -78,18 +78,18 @@ class TrainModel():
                 for i2 in range(15,Lt-3):
         #        for i2 in range(15,16):
                     if func(opens[i2-10:i2+1],highs[i2-10:i2+1],lows[i2-10:i2+1],closes[i2-10:i2+1]):
-                        if closes[i2+1]<=closes[i2]:
-                            Re.append(closes[i2+1]/closes[i2]-1)
+                        if closes[i2+1]>=closes[i2]:
+                            Re.append(closes[i2+2]/opens[i2+1]-1.003)
 #                            Re.append(opens[i2+2]/opens[i2+1]-1)
                             if fig>0:
-                                figx=[-6,-5]
-                                figy=[closes[i2],closes[i2+1]]
+                                figx=[-5,-4]
+                                figy=[opens[i2+1],closes[i2+2]]
                         else:#elif closes[i2+2]<=closes[i2+1]:
-                            Re.append(closes[i2+2]/closes[i2]-1)
+                            Re.append(opens[i2+2]/opens[i2+1]-1.003)
 #                            Re.append(closes[i2+2]/opens[i2+1]-1)
                             if fig>0:
-                                figx=[-6,-4]
-                                figy=[closes[i2],closes[i2+2]]
+                                figx=[-5,-4]
+                                figy=[opens[i2+1],opens[i2+2]]
 #                        elif closes[i2+3]<=closes[i2+2] :
 #                            Re.append(closes[i2+3]/closes[i2]-1)
 ##                            Re.append(closes[i2+2]/opens[i2+1]-1)
@@ -110,7 +110,7 @@ class TrainModel():
 #                                figy=[closes[i2],closes[i2+5]]
                                 
                             
-                        dateAll.append(dates[i2])
+                        dateAll.append(dates[i2+1])
                         max5near=max(closes[i2-4:i2+1]);max5far=max(closes[i2-9:i2-4]);
                         min5near=min(closes[i2-4:i2+1]);min5far=min(closes[i2-9:i2-4]);
                         max_7near=max(highs[i2-6:i2+1]);max_7far=max(highs[i2-13:i2-6]);
@@ -190,7 +190,7 @@ class TrainModel():
             dateAll=Matrix[:,0]
             Re=Matrix[:,1]
             Matrix=Matrix[:,2:]
-            dispersity,profitP=self.hmmTestAll(Matrix,Re,0)  
+            dispersity,profitP=self.kmeanTestAll(Matrix,Re,0)  
             cur.execute('create table dispersity(dis float)')
             cur.executemany('insert into dispersity values(%s)',dispersity.tolist())
             cur.execute('create table profitP(flag0 float,flag1 float,flag2 float,flag3 float,flag4 float)')
@@ -214,7 +214,7 @@ class TrainModel():
             Re=Matrix[:,1]
             Matrix=Matrix[:,2:]
             if self.shufflePoints:
-                dispersity,profitP=self.hmmTestAll(Matrix,Re,0)  
+                dispersity,profitP=self.kmeanTestAll(Matrix,Re,0)  
                 cur.execute('drop table dispersity')
                 cur.execute('create table dispersity(dis float)')
                 cur.executemany('insert into dispersity values(%s)',dispersity.tolist())
@@ -263,15 +263,15 @@ class TrainModel():
             ReSelectNot=[] #value is 0 or 1
             tem=np.ones(len(Matrix[0]))
             for i in range(len(Matrix)):
-                ReSelectNot.append(self.hmmTestCertainNot([tem.tolist(),Matrix[i].tolist()],flagNot)[-1])
+                ReSelectNot.append(self.kmeanTestCertainNot([tem.tolist(),Matrix[i].tolist()],flagNot)[-1])
             ReSelectOk=[] # value is 0 or 1 or 2 or ...
             for i in range(len(Matrix)):
-                ReSelectOk.append( self.hmmTestCertainOk([tem.tolist(),Matrix[i].tolist()],flagOk)[-1] )
+                ReSelectOk.append( self.kmeanTestCertainOk([tem.tolist(),Matrix[i].tolist()],flagOk)[-1] )
             ReSelectNot=np.array(ReSelectNot)
             ReSelectOk=np.array(ReSelectOk)
         else:    
-            ReSelectNot=self.hmmTestCertainNot(Matrix,flagNot)
-            ReSelectOk=self.hmmTestCertainOk(Matrix,flagOk)
+            ReSelectNot=self.kmeanTestCertainNot(Matrix,flagNot)
+            ReSelectOk=self.kmeanTestCertainOk(Matrix,flagOk)
         
         if (sum(ReSelectNot)) * (sum(ReSelectOk))>0 :
             plt.figure(figsize=(15,8))
@@ -308,7 +308,9 @@ class TrainModel():
             # sort according to xgboost;
             MatrixXGB=np.c_[dateAll[pointSelect],Matrix[pointSelect,:]];ReXGB=Re[pointSelect]
             x_train,x_test,y_train,y_test=train_test_split(MatrixXGB,ReXGB,test_size=0.4) #random_state=0,
-            date_train=x_train[:,0];x_train=x_train[:,1:21];date_test=x_test[:,0];x_test=x_test[:,1:21]
+            tem=np.array(list(range(len(dispersity))))[dispersity>0.1]+1 
+            print(tem)
+            date_train=x_train[:,0];x_train=x_train[:,tem];date_test=x_test[:,0];x_test=x_test[:,tem]
             tem=int(len(x_test)/5)
             x_validation=x_test[:tem,:];x_test=x_test[tem:,:];y_validation=y_test[:tem];y_test=y_test[tem:];date_test=date_test[tem:]
             
@@ -365,7 +367,7 @@ class TrainModel():
             self.sortStatastic(week,ReSort,'selectNotOk--week')           
         return flagNot,flagOk,Matrix,Re
     
-    def hmmTestAll(self,Xraw,Reraw,figStart): # figStart: how many figs to show 0 means show all and Xcol mean show one (in all)
+    def kmeanTestAll(self,Xraw,Reraw,figStart): # figStart: how many figs to show 0 means show all and Xcol mean show one (in all)
         Xshape=Xraw.shape
         Xrow=Xshape[0]
         Xcol=Xshape[1]
@@ -399,14 +401,12 @@ class TrainModel():
                 Xtest=X
                 Retest=Reraw
                 figTitle=str(figStart)
-    
-            hmm=GaussianHMM(n_components=5,covariance_type='diag',n_iter=10000).fit(np.row_stack(Xtrain)) #spherical,diag,full,tied 
-            joblib.dump(hmm,self.saveData+figTitle+'_hmm')
-            
-    #        for i in range(2):
+
+            kmean=KMeans(n_clusters=5).fit(np.row_stack(Xtrain))
+            joblib.dump(kmean,self.saveData+figTitle+'_kmean')
+
             records=[] # hold two recordi
             for i in range(2):
-                
                 if i==0:
                     Xtem=Xtrain
                     Retem=Retrain
@@ -414,12 +414,12 @@ class TrainModel():
                     Xtem=Xtest
                     Retem=Retest
                     
-                flag=hmm.predict(np.row_stack(Xtem))
+                flag=kmean.predict(np.row_stack(Xtem))
                 plt.figure(figsize=(15,8))
                 xi=[]
                 yi=[]
                 recordi=[] # record number of total orders, IR,winratio,ratioWL,profitP
-                for i2 in range(hmm.n_components):
+                for i2 in range(kmean.n_clusters):
                     state=(flag==i2)
                     ReT=Retem[state]
                     ReTcs=ReT.cumsum()
@@ -475,7 +475,7 @@ class TrainModel():
             dispersity=np.array(dispersity)
             return dispersity,profitP
        
-    def hmmTestCertainNot(self,Matrix,flagSelect):
+    def kmeanTestCertainNot(self,Matrix,flagSelect):
         X=np.row_stack(Matrix)  
         Nind=[]
         flagNot=[]
@@ -484,13 +484,13 @@ class TrainModel():
             flagNot.append(flagSelect[i][1])            
         ReSelect=np.ones(len(X))
         for i2 in range(len(Nind)):    
-            hmm=joblib.load(self.saveData+str(Nind[i2])+'_hmm')
-            flagTem=hmm.predict(np.row_stack(X[:,Nind[i2]]))
+            kmean=joblib.load(self.saveData+str(Nind[i2])+'_kmean')
+            flagTem=kmean.predict(np.row_stack(X[:,Nind[i2]]))
             for i in range(len(flagNot[i2])):
                     ReSelect=ReSelect*(flagTem!=flagNot[i2][i])       
         return ReSelect
     
-    def hmmTestCertainOk(self,Matrix,flagSelect):
+    def kmeanTestCertainOk(self,Matrix,flagSelect):
         X=np.row_stack(Matrix)  
         Nind=[]
         flagOk=[]
@@ -499,8 +499,8 @@ class TrainModel():
             flagOk.append(flagSelect[i][1])            
         ReSelect=np.zeros(len(X))
         for i2 in range(len(Nind)):    
-            hmm=joblib.load(self.saveData+str(Nind[i2])+'_hmm')
-            flagTem=hmm.predict(np.row_stack(X[:,Nind[i2]]))
+            kmean=joblib.load(self.saveData+str(Nind[i2])+'_kmean')
+            flagTem=kmean.predict(np.row_stack(X[:,Nind[i2]]))
             for i in range(len(flagOk[i2])):
                     ReSelect=ReSelect+(flagTem==flagOk[i2][i])    
         return ReSelect
@@ -549,10 +549,10 @@ class TrainModel():
         x_test=x_test.copy()
         y_train=y_train.copy()
         y_test=y_test.copy()        
-        y_train[y_train>=0.003]=1
-        y_train[y_train<=0.003]=0
-        y_test[y_test>=0.003]=1
-        y_test[y_test<0.003]=0
+        y_train[y_train>=0.001]=1
+        y_train[y_train<=0.001]=0
+        y_test[y_test>=0.001]=1
+        y_test[y_test<0.001]=0
         
         data_train=xgb.DMatrix(data=x_train,label=y_train)
         data_test=xgb.DMatrix(data=x_test,label=y_test)
@@ -568,8 +568,8 @@ class TrainModel():
         
     def gaussianNBtrain(self,x_,y_):
         y_train=y_.copy()
-        y_train[y_train>=0.003]=1
-        y_train[y_train<0.003]=0        
+        y_train[y_train>=0.001]=1
+        y_train[y_train<0.001]=0        
         gauNB=GaussianNB().fit(x_.tolist(),y_train.tolist())
         joblib.dump(gauNB,self.saveData+'_gauNB')
         

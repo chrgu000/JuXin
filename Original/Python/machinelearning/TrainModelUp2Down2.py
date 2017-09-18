@@ -71,10 +71,10 @@ if firstTime:
             if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
             highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2] and closes[i2]/closes[i2-1]<1.095: #vols[i2-2:i2].min()>vols[[i2-3,i2]].max() and 
                 if closes[i2+1]>closes[i2]:
-                    Re.append(closes[i2+2]/closes[i2]-1)
+                    Re.append(closes[i2+2]/closes[i2]-1.003)
                 else:
-                    Re.append(closes[i2+1]/closes[i2]-1)
-                dateAll.append(dates[i2])
+                    Re.append(closes[i2+1]/closes[i2]-1.003)
+                dateAll.append(dates[i2+1])
                 max5near=max(closes[i2-4:i2+1]);max5far=max(closes[i2-9:i2-4]);
                 min5near=min(closes[i2-4:i2+1]);min5far=min(closes[i2-9:i2-4]);
                 max_7near=max(highs[i2-6:i2+1]);max_7far=max(highs[i2-13:i2-6]);
@@ -205,7 +205,7 @@ for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
     flagDi=[]
     for i2 in range(len(flagi)):
-        if flagi[i2]<0.15: #profitP<0.4%
+        if flagi[i2]<0.0: #profitP<0.4%
             flagDi.append(i2)
     if len(flagDi)>0:
         flagNot.append([colSelect[i],flagDi])
@@ -214,7 +214,7 @@ for i in range(len(colSelect)):
     flagi=profitP[colSelect[i]]
     flagDi=[]
     for i2 in range(len(flagi)):
-        if flagi[i2]>0.5: #profitP>0.8%
+        if flagi[i2]>0.2: #profitP>0.8%
             flagDi.append(i2)
     if len(flagDi)>0:
         flagOk.append([colSelect[i],flagDi])
