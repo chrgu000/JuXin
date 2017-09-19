@@ -9,12 +9,12 @@ import time,TrainModel,TrainModelFuture
 
 x1=time.clock()
 nameDB='test' # should be set for create a new mode test; if future should be 'futuretest'
-firstTime=0
-shufflePoints=1
+firstTime=1
+shufflePoints=0
 ReGetPoints=0
 TradeScan=0
 
-dispersity=0.2
+dispersity=0.6
 profitNot=0.1
 profitOk=0.2
 
@@ -30,7 +30,8 @@ else:
     TM=TrainModelFuture.TrainModel(nameDB,firstTime,shufflePoints,ReGetPoints,TradeScan,dispersity,profitNot,profitOk,future,minTick,longshort,barSize) #should be in turn; futures
 @TM
 def ModelX(opens,highs,lows,closes):
-    if closes[-2]<lows[-3] and closes[-1]>highs[-2] and \
+#    if closes[-2]<lows[-2]+(highs[-2]-lows[-2])/4 and closes[-1]>highs[-2] and \
+    if closes[-2]<lows[-3] and closes[-1]>highs[-2] and closes[-2]>=lows[-2]+(highs[-2]-lows[-2])/4 and\
     highs[-4]>lows[-4] and highs[-3]>lows[-3]and highs[-2]>lows[-2]and highs[-1]>lows[-1] and closes[-1]/closes[-2]<1.095: #vols[i2-2:i
         R=1
     else:

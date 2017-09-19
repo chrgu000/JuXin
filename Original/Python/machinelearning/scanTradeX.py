@@ -6,6 +6,7 @@ Created on Tue Jul 18 08:59:37 2017
 """
 from WindPy import *
 import numpy as np
+import pandas as pd
 import pickle,datetime,time,TrainModel
 
 t1=time.clock()
@@ -15,7 +16,7 @@ today=datetime.date.today()
 yesterday=today-datetime.timedelta(days=1)
 Hour=int(time.strftime('%H'))
 hourMinute=time.strftime('%H-%M')
-tradeFlag=input('Please confirm trading or not [y/n]?')
+tradeFlag=input('Please confirm trading or not(just preparing for trading) [y/n]?')
 tradeFlag=tradeFlag.lower()=='y' 
 w.start()
 Tem=w.tlogon('0000', '0', 'W115294100301', '*********', 'SHSZ')
@@ -85,7 +86,6 @@ else:
             indi=stocks.index(stocksHold[i])
             if len(w.tdays(datei,dateEnd).Data[0])>=2 or Closes[indi][-1]<Closes[indi][-2]:
                 informTrade.append([stocksHold[i],-sharesHold[i],priceHold[i]*sharesHold[i],'close',10])
-                dateStart.pop(stocksHold[i])
     
     Lstocks=len(stocks)
     stocksi=[] # name of stocks;
@@ -179,44 +179,46 @@ else:
             
             if 'Up2Down2' in modelSelect: # model 1: Up2Down2, model number 1
                 TM=TrainModel.TrainModel('Up2Down2')
-                flagNot=[[0, [2, 3]], [1, [1, 4]], [4, [4]], [6, [2, 3]]]
-                flagOk=[[0, [1, 4]], [1, [0, 2, 3]], [2, [3, 4]], [3, [0, 1, 3]], [4, [0]], [5, [0, 2, 4]], [6, [0, 1, 4]]]
+                flagNot=[[0, [1, 4]], [1, [2, 3]], [6, [1, 3]], [15, [0, 3, 4]]]
+                flagOk=[[0, [0, 3]], [1, [1, 4]], [6, [0, 2, 4]], [15, [1, 2]]]
                 tem=np.ones(len(Matrix)).tolist()
-                ReSelectNot=TM.hmmTestCertainNot([tem,Matrix],flagNot)      # value 0 or 1      
-                ReSelectOk=TM.hmmTestCertainOk([tem,Matrix],flagOk)        # value 0 or 1 or 2 or 2+
+                ReSelectNot=TM.kmeanTestCertainNot([tem,Matrix],flagNot)      # value 0 or 1      
+                ReSelectOk=TM.kmeanTestCertainOk([tem,Matrix],flagOk)        # value 0 or 1 or 2 or 2+
                 if ReSelectNot[-1]*ReSelectOk[-1]:
                     flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                     if flag[0]==1:
                         if wd=='5':
-                            profiti2.append(3.66)
-                        elif wd=='2':
-                            profiti2.append(2.28)
+                            profiti2.append(3.73)
                         elif wd=='1':
-                            profiti2.append(1.95)
+                            profiti2.append(2.39)
+                        elif wd=='2':
+                            profiti2.append(2.16)
                         elif wd=='3':
-                            profiti2.append(1.57)
+                            profiti2.append(2.11)
                         else:
-                            profiti2.append(1.36)                        
+                            profiti2.append(2.06)                        
                         stocksi2.append(stocks[i])
                         handsi2.append(np.ceil(100/closes[-1])*100)
                         modeli2.append('Up2Down2')   # model number:1;
                         moneyi2.append(handsi2[-1]*closes[-1])
             if 'Spring' in modelSelect: # model 1: Up2Down2, model number 1
                 TM=TrainModel.TrainModel('Spring')
-                flagNot=[[1, [2, 3]], [6, [0, 4]], [9, [1, 3]], [28, [3]]]
-                flagOk= [[1, [1, 4]], [6, [3]], [9, [0, 4]]]
+                flagNot=[[1, [0, 1, 3]], [6, [1, 2, 3]]]
+                flagOk= [[1, [2, 4]], [6, [4]]]
                 tem=np.ones(len(Matrix)).tolist()
-                ReSelectNot=TM.hmmTestCertainNot([tem,Matrix],flagNot)      # value 0 or 1      
-                ReSelectOk=TM.hmmTestCertainOk([tem,Matrix],flagOk)        # value 0 or 1 or 2 or 2+
+                ReSelectNot=TM.kmeanTestCertainNot([tem,Matrix],flagNot)      # value 0 or 1      
+                ReSelectOk=TM.kmeanTestCertainOk([tem,Matrix],flagOk)        # value 0 or 1 or 2 or 2+
                 if ReSelectNot[-1]*ReSelectOk[-1]:
                     flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                     if flag[0]==1:
                         if wd=='1':
-                            profiti2.append(1.71)
+                            profiti2.append(1.65)
                         elif wd=='5':
-                            profiti2.append(1.38)
-                        elif wd=='2' or wd=='3':
-                            profiti2.append(1.00)
+                            profiti2.append(1.47)
+                        elif wd=='2':
+                            profiti2.append(1.41)
+                        elif wd=='3':
+                            profiti2.append(1.28)
                         if wd!='4':
                             stocksi2.append(stocks[i])
                             handsi2.append(np.ceil(100/closes[-1])*100)
@@ -262,27 +264,35 @@ else:
         modeli=modeli[:-Tem]
         moneyi=moneyi[:-Tem]
     
+    if tradingDay:
+        if Hour<15:
+            dateFor=today
+        else:
+            dateFor=w.tdays(today,today+timedelta(days=12)).Data[0][1].date()
+    else:
+        dateFor=w.tdays(today,today+timedelta(days=12)).Data[0][0].date()
+    dataPKL['dateTrade']=dateFor
+    
     Ltrade=len(profiti)
     dateStarti={}
     for i in range(Ltrade):
         informTrade.append([stocksi[i],handsi[i],moneyi[i],modeli[i],profiti[i]])
-        dateStarti[stocksi[i]]=today
+        dateStarti[stocksi[i]]=dateFor
     w.tlogout(str(logId))
-
     dateStart=dict(dateStart,**dateStarti)
     dataPKL['dateStart']=dateStart
-    dataPKL['informTrade']=informTrade
-    if tradingDay:
-        if Hour<15:
-            dataPKL['dateTrade']=today
-        else:
-            dataPKL['dateTrade']=w.tdays(today,today+timedelta(days=12)).Data[0][1].date()
-    else:
-        dataPKL['dateTrade']=w.tdays(today,today+timedelta(days=12)).Data[0][0].date()
+    dataPKL['informTrade']=informTrade    
         
     fileTem=open('scanTrade','wb')
     pickle.dump(dataPKL,fileTem)
     fileTem.close()
+    
+    for i in range(len(informTrade)):
+        informi=informTrade[i]
+        if informi[1]>0:
+            print('Buy %s %d shares, occupy money %.1f; Model %s, Expect %.2f%%.' %(informi[0],informi[1],informi[2],informi[3],informi[4]))        
+        else:
+            print('Close %s %d shares, free money %.1f. ' %(informi[0],informi[1],informi[2]))
 
 t2=time.clock()
 print('time elapses:%.1f minute' %((t2-t1)/60))

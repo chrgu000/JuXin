@@ -44,7 +44,8 @@ class TrainModel():
             fig=1 # how many figures ploted to show the confirmed model;
             conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
             cur=conn.cursor()
-            cur.execute('create database if not exists '+self.nameDB) # create database;        
+            cur.execute('drop database if exists '+self.nameDB) # create database;   
+            cur.execute('create database '+self.nameDB) # create database;        
             conn.select_db('pythonStocks')     
             Lstocks=cur.execute('select number from stocks') # select name from stocks: get stocks' name;
             Number=np.insert(np.cumsum(cur.fetchall()),0,0)
@@ -202,9 +203,7 @@ class TrainModel():
                             break
             cur.executemany('insert into profitP values(%s,%s,%s,%s,%s)',profitP)
             profitP=np.row_stack(profitP)
-            conn.commit()
-            cur.close()
-            conn.close()
+            
         else:
             conn=pymysql.connect('localhost','caofa','caofa',self.nameDB)
             cur=conn.cursor()
@@ -215,10 +214,10 @@ class TrainModel():
             Matrix=Matrix[:,2:]
             if self.shufflePoints:
                 dispersity,profitP=self.kmeanTestAll(Matrix,Re,0)  
-                cur.execute('drop table dispersity')
+                cur.execute('drop table if exists dispersity')
                 cur.execute('create table dispersity(dis float)')
                 cur.executemany('insert into dispersity values(%s)',dispersity.tolist())
-                cur.execute('drop table profitP')
+                cur.execute('drop table if exists profitP')
                 cur.execute('create table profitP(flag0 float,flag1 float,flag2 float,flag3 float,flag4 float)')
                 for i in range(len(profitP)):
                     if len(profitP[i])<5:
@@ -228,19 +227,34 @@ class TrainModel():
                                 break
                 cur.executemany('insert into profitP values(%s,%s,%s,%s,%s)',profitP)
                 profitP=np.row_stack(profitP)
-                conn.commit()
-                cur.close()
-                conn.close()
+                
             else:   
                 cur.execute('select * from dispersity')
                 dispersity=np.column_stack(cur.fetchall())[0]
                 cur.execute('select * from profitP')
                 profitP=np.row_stack(cur.fetchall())
-                cur.close()
-                conn.close()
+
                 
         dispersity=dispersity[:-1]
         colSelect=np.array(list(range(len(dispersity))))[dispersity>self.dispersityX] # -1 delete the last one wich is not for single but for all;
+        tem=input('please select which colume(1,2,3 like this) for OkNot:')
+        if len(tem)>0:
+            colSelect=np.array(list(map(int,tem.split(','))))
+        colXGB=np.array(list(range(len(dispersity))))[dispersity>0.2]
+        tem=input('please select which colume(1,2,3 like this) for XGB:')
+        if len(tem)>0:
+            colXGB=np.array(list(map(int,tem.split(','))))
+        
+        cur.execute('drop table if exists colOkNOt') # for tradeScan
+        cur.execute('create table colOkNOt(dis tinyint)')
+        cur.executemany('insert into colOkNot values(%s)',colSelect.tolist())
+        cur.execute('drop table if exists colXGB') # for tradeScan
+        cur.execute('create table colXGB(dis tinyint)')
+        cur.executemany('insert into colXGB values(%s)',colXGB.tolist())
+        conn.commit()
+        cur.close()
+        conn.close()
+            
         flagNot=[]
         for i in range(len(colSelect)):
             flagi=profitP[colSelect[i]]
@@ -307,19 +321,18 @@ class TrainModel():
             
             # sort according to xgboost;
             MatrixXGB=np.c_[dateAll[pointSelect],Matrix[pointSelect,:]];ReXGB=Re[pointSelect]
-            x_train,x_test,y_train,y_test=train_test_split(MatrixXGB,ReXGB,test_size=0.4) #random_state=0,
-            tem=np.array(list(range(len(dispersity))))[dispersity>0.1]+1 
-            print(tem)
-            date_train=x_train[:,0];x_train=x_train[:,tem];date_test=x_test[:,0];x_test=x_test[:,tem]
+            X_train,X_test,y_train,y_test=train_test_split(MatrixXGB,ReXGB,test_size=0.4) #random_state=0,
+                    
+            date_train=X_train[:,0];x_train=X_train[:,colXGB+1];date_test=X_test[:,0];x_test=X_test[:,1:]
             tem=int(len(x_test)/5)
-            x_validation=x_test[:tem,:];x_test=x_test[tem:,:];y_validation=y_test[:tem];y_test=y_test[tem:];date_test=date_test[tem:]
+            x_validation=x_test[:tem,:][:,colXGB];x_test=x_test[tem:,:];y_validation=y_test[:tem];y_test=y_test[tem:];date_test=date_test[tem:]
             
             self.xgbTrain(x_train,y_train,x_validation,y_validation)
             self.gaussianNBtrain(x_train,y_train)
             plt.figure(figsize=(25,12))
             for i2 in range(2):
                 if i2==0:
-                    x_=x_train
+                    x_=X_train[:,1:]
                     y_=y_train
                     labeli=['xgbTrain','gaussianTrain']
                     date_=date_train
@@ -441,23 +454,28 @@ class TrainModel():
                     xi.append(maxDrawi)
                     yi.append(maxDrawValue)  
                     recordi.append([LT,np.mean(ReT)/np.std(ReT),ReTcs[-1]/LT*100])
-                    plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
+                    try:
+                        plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
                              %(i2,LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))  
+                    except:
+                        plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%s);maxDraw:%.2f%%;profitP:%.4f%%;'\
+                             %(i2,LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),'error',maxDraw*100,ReTcs[-1]/LT*100))
                 records.append(recordi)
                 plt.plot(xi,yi,'r*')
                 plt.title(figTitle,fontsize=16)
                 
                 if i==1:
+                    if lp<Xcol:
+                        tem=np.sort(Xtem)
+                        pointsTem=tem[[list(map(int,np.linspace(0,len(tem),6)))[1:-1]]]
+                        tem=np.array([np.mean(Retem[Xtem<=pointsTem[0]]),np.mean(Retem[(Xtem>pointsTem[0]) * (Xtem<=pointsTem[1])]),np.mean(Retem[(Xtem>pointsTem[1])*(Xtem<=pointsTem[2])]),\
+                            np.mean(Retem[(Xtem>pointsTem[2])*(Xtem<=pointsTem[3])]),np.mean(Retem[Xtem>pointsTem[3]])])
+                        tem=(tem/max(tem)).std()
+                    else:
+                        tem=0                    
                     rec1=np.row_stack(records[0])
                     rec2=np.row_stack(records[1])
                     profitP.append(rec2[:,2].tolist())
-                    orders=rec2[:,0]
-                    tem=orders>rec2.max()/4
-                    if tem.sum()>1:
-                        orders=orders[tem]
-                        tem=rec2[:,2][tem].std()*np.sqrt(tem.sum())/(np.std(orders/orders.max())+1)
-                    else:
-                        tem=0
                     dispersity.append(tem)
                     if tem>0.2:
                         plt.xlabel( 'indicator column %d, correlative of train and test: %.10f, dispesity:%.10f'\
@@ -562,21 +580,32 @@ class TrainModel():
         joblib.dump(XGB,self.saveData+'_xgb')
     
     def xgbPredict(self,x_):
-        data_=xgb.DMatrix(data=x_)
+        conn = pymysql.connect('localhost','caofa','caofa',self.nameDB)
+        cur=conn.cursor()
+        cur.execute('select * from colXGB') # select name from sto
+        colXGB=np.r_[cur.fetchall()]
+        data_=xgb.DMatrix(data=x_[:,colXGB])
+        cur.close()
+        conn.close()
         XGB=joblib.load(self.saveData+'_xgb')
         return XGB.predict(data_)
         
     def gaussianNBtrain(self,x_,y_):
         y_train=y_.copy()
         y_train[y_train>=0.001]=1
-        y_train[y_train<0.001]=0        
+        y_train[y_train<0.001]=0      
         gauNB=GaussianNB().fit(x_.tolist(),y_train.tolist())
         joblib.dump(gauNB,self.saveData+'_gauNB')
         
     def gaussianNBpredict(self,x_):
         gauNB=joblib.load(self.saveData+'_gauNB')
-        return gauNB.predict(x_)
-        
+        conn = pymysql.connect('localhost','caofa','caofa',self.nameDB)
+        cur=conn.cursor()
+        cur.execute('select * from colXGB') # select name from sto
+        colXGB=np.r_[cur.fetchall()]
+        cur.close()
+        conn.close()  
+        return gauNB.predict(x_[:,colXGB])        
     
     def ReFig(self,Re,figTitle):
         for i in range(len(figTitle)):
