@@ -78,8 +78,10 @@ else:
     Lows=w.wsd(stocks,'low','ED-'+TradeDays+'TD',dateEnd,'Fill=Previous','PriceAdj=F').Data
     Vols=w.wsd(stocks,'volume','ED-'+TradeDays+'TD',dateEnd,'Fill=Previous','PriceAdj=F').Data
     
-    tem=w.tquery('Position', 'LogonId='+str(logId))
-    stocksHold=tem.Data[0];sharesHold=tem.Data[3];priceHold=tem.Data[11]
+    dataTem=w.tquery('Position', 'LogonId='+str(logId))
+    sharesHold=np.array(dataTem.Data[7]);
+    tem=sharesHold>0;sharesHold=sharesHold[tem];
+    priceHold=np.array(dataTem.Data[11])[tem];stocksHold=np.array(dataTem.Data[0])[tem]
     Lt=len(stocksHold)
     if Lt>0:
         fileTem=open('scanTrade','rb')
@@ -101,6 +103,7 @@ else:
     profiti=[] # expected profit of this trading;
     indicators=[] 
     for i in range(Lstocks):
+        print(i,end=',')        
         opens=Opens[i]
         closes=Closes[i]
         highs=Highs[i]
@@ -192,10 +195,9 @@ else:
                 TM=TrainModel.TrainModel(modelTem)
                 flagNot=[[1, [1]], [15, [3, 4]]]
                 flagOk=[[1, [0, 2, 3, 4]], [15, [0, 1, 2]]]
-                tem=np.ones(len(Matrix)).tolist()
-                ReSelectNot=TM.kmeanTestCertainNot([tem,Matrix],flagNot)      # value 0 or 1      
-                ReSelectOk=TM.kmeanTestCertainOk([tem,Matrix],flagOk)        # value 0 or 1 or 2 or 2+
-                if ReSelectNot[-1]*ReSelectOk[-1]:
+                ReSelectNot=TM.kmeanTestCertainNot([Matrix],flagNot)      # value 0 or 1      
+                ReSelectOk=TM.kmeanTestCertainOk([Matrix],flagOk)        # value 0 or 1 or 2 or 2+
+                if ReSelectNot*ReSelectOk:
                     flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                     if flag[0]==1:
                         if wd=='5':
@@ -216,10 +218,9 @@ else:
                 TM=TrainModel.TrainModel(modelTem)
                 flagNot=[[1, [1, 3, 4]], [6, [0, 1, 4]]]
                 flagOk= [[1, [0]], [6, [3]]]
-                tem=np.ones(len(Matrix)).tolist()
-                ReSelectNot=TM.kmeanTestCertainNot([tem,Matrix],flagNot)      # value 0 or 1      
-                ReSelectOk=TM.kmeanTestCertainOk([tem,Matrix],flagOk)        # value 0 or 1 or 2 or 2+
-                if ReSelectNot[-1]*ReSelectOk[-1]:
+                ReSelectNot=TM.kmeanTestCertainNot([Matrix],flagNot)      # value 0 or 1      
+                ReSelectOk=TM.kmeanTestCertainOk([Matrix],flagOk)        # value 0 or 1 or 2 or 2+
+                if ReSelectNot*ReSelectOk:
                     flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                     if flag[0]==1:
                         if wd=='1':
@@ -240,10 +241,9 @@ else:
                 TM=TrainModel.TrainModel(modelTem)
                 flagNot=[[3, [3, 4]], [4, [2]], [5, [2]], [19, [4]], [20, [4]]]
                 flagOk= [[3, [0]], [5, [0, 4]], [10, [3]], [19, [0, 1, 3]], [20, [0, 3]]]
-                tem=np.ones(len(Matrix)).tolist()
-                ReSelectNot=TM.kmeanTestCertainNot([tem,Matrix],flagNot)      # value 0 or 1      
-                ReSelectOk=TM.kmeanTestCertainOk([tem,Matrix],flagOk)        # value 0 or 1 or 2 or 2+
-                if ReSelectNot[-1]*ReSelectOk[-1]:
+                ReSelectNot=TM.kmeanTestCertainNot([Matrix],flagNot)      # value 0 or 1      
+                ReSelectOk=TM.kmeanTestCertainOk([Matrix],flagOk)        # value 0 or 1 or 2 or 2+
+                if ReSelectNot*ReSelectOk:
                     flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                     if flag[0]==1:
                         if wd=='1':
