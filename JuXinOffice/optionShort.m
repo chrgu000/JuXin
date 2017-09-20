@@ -253,7 +253,7 @@
         priceTem=w.wsd(optioni,'close',tradeDay{1},endi,'priceAdj=U');
         priceStop=priceTem(end);
         for i2=2:length(priceTem)
-            if priceTem(i2)>=priceTem(1)*1.05
+            if priceTem(i2)>=priceTem(1)*2
                 priceStop=priceTem(i2);
             end
         end

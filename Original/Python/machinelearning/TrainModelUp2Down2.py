@@ -14,7 +14,7 @@ shufflePoints=0
 ReGetPoints=0
 TradeScan=0
 
-dispersity=0.4
+dispersity=0.38
 profitNot=0.2
 profitOk=0.3
 

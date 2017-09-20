@@ -492,6 +492,61 @@ class TrainModel():
         else:
             dispersity=np.array(dispersity)
             return dispersity,profitP
+        
+    def kmeanSortFigure(self,Matrix,Re):
+        cols=Matrix.shape[1]
+        records=[] # hold two recordi
+        for i in range(cols):
+            figTitle='kmean sort according to Column: '+str(i)
+            Xtem=Matrix[:,i]
+            kmean=joblib.load(self.saveData+str(i)+'_kmean')                
+            flag=kmean.predict(np.row_stack(Xtem))
+            plt.figure(figsize=(15,8))
+            xi=[]
+            yi=[]
+            recordi=[] # record number of total orders, IR,winratio,ratioWL,profitP
+            for i2 in range(kmean.n_clusters):
+                state=(flag==i2)
+                ReT=Re[state]
+                ReTcs=ReT.cumsum()
+                LT=len(ReT)
+                if LT<2:
+                    continue
+                maxDraw=0
+                maxDrawi=0
+                maxDrawValue=0
+                i2High=0
+                for i3 in range(LT):
+                    if ReTcs[i3]>i2High:
+                        i2High=ReTcs[i3]
+                    drawT=i2High-ReTcs[i3]
+                    if maxDraw<drawT:
+                        maxDraw=drawT
+                        maxDrawi=i3
+                        maxDrawValue=ReTcs[i3]
+                xi.append(maxDrawi)
+                yi.append(maxDrawValue)  
+                recordi.append([LT,np.mean(ReT)/np.std(ReT),ReTcs[-1]/LT*100])
+                try:
+                    plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%.2f);maxDraw:%.2f%%;profitP:%.4f%%;'\
+                         %(i2,LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),np.mean(ReT[ReT>0])/-np.mean(ReT[ReT<0]),maxDraw*100,ReTcs[-1]/LT*100))  
+                except:
+                    plt.plot(range(LT),ReTcs,label='latent_state %d;orders:%d;IR:%.4f;winratio(ratioWL):%.2f%%(%s);maxDraw:%.2f%%;profitP:%.4f%%;'\
+                         %(i2,LT,np.mean(ReT)/np.std(ReT),sum(ReT>0)/float(LT),'error',maxDraw*100,ReTcs[-1]/LT*100))
+            records.append(recordi)
+            dispTem=np.sort(Xtem)
+            pointsTem=dispTem[[list(map(int,np.linspace(0,len(dispTem),6)))[1:-1]]]
+            dispTem=np.array([np.mean(Re[Xtem<=pointsTem[0]]),np.mean(Re[(Xtem>pointsTem[0]) * (Xtem<=pointsTem[1])]),np.mean(Re[(Xtem>pointsTem[1])*(Xtem<=pointsTem[2])]),\
+                np.mean(Re[(Xtem>pointsTem[2])*(Xtem<=pointsTem[3])]),np.mean(Re[Xtem>pointsTem[3]])])
+            dispTem=(dispTem/max(dispTem)).std()
+            if dispTem>0.2:
+                plt.xlabel( 'indicator column %d, dispesity:%.10f'  %(i,dispTem ),color='r')
+            else:
+                plt.xlabel( 'indicator column %d, dispesity:%.10f'  %(lp,dispTem ),color='gray')           
+            plt.plot(xi,yi,'r*')
+            plt.title(figTitle,fontsize=16)
+            plt.legend(loc='upper left')
+            plt.grid(1)
        
     def kmeanTestCertainNot(self,Matrix,flagSelect):
         X=np.row_stack(Matrix)  

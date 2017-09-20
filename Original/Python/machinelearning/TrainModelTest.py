@@ -39,6 +39,8 @@ def ModelX(opens,highs,lows,closes):
     return R
                  
 flagNot,flagOk,Matrix,Re=ModelX
+if 0: #show kmeansort figure
+    TM.kmeanSortFigure(Matrix,Re)
 if 0: # open averageSort
     Pvalues=TM.averageSort(Matrix,Re)
 if 0:

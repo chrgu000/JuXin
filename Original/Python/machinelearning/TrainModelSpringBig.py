@@ -15,9 +15,9 @@ shufflePoints=0
 ReGetPoints=0
 TradeScan=0
 
-dispersity=0.65
-profitNot=0.1
-profitOk=0.2
+dispersity=0.75
+profitNot=-0.15
+profitOk=0.1
 
 future='I.DCE'
 minTick=0.0
