@@ -30,6 +30,8 @@ class TrainModel():
             self.dispersityX=args[5]
             self.profitNot=args[6]
             self.profitOk=args[7]
+        else:
+            self.kmean=joblib.load(self.saveData+'ratioOpen_kmean')
         
     def __call__(self,func):
         if self.ReGetPoints:
@@ -56,6 +58,8 @@ class TrainModel():
             Re=[]
             dateAll=[]
             Matrix=[]
+            labelMarket=[]
+            ratioOpen=[]
             for i in range(Lstocks):
                 print('%s:%d' %(stocks[i][0],i+1),end=' ',flush=True) #print(i, sep=' ', end=' ', flush=True)
                 startT=Number[i]
@@ -145,6 +149,7 @@ class TrainModel():
                              highs[i2]/closes[i2-1],\
                              ud_7,\
                              opens[i2]/closes[i2-1],\
+                             (highs[i2]-lows[i2])/(highs[i2-1]-lows[i2-1]),\
                              vols[i2-1]/vols[i2-3],\
                              highs[i2]/lows[i2-1],\
                              vols[i2]/vols[i2-3],\
@@ -161,6 +166,8 @@ class TrainModel():
                             Re.pop()
                             dateAll.pop()
                             continue
+                        labelMarket.append(int(stocks[i][0][0]))
+                        ratioOpen.append(opens[i2+1]/closes[i2]-1)
                         Matrix.append(tem)
                         if fig>0:
                             fig=fig-1
@@ -182,15 +189,17 @@ class TrainModel():
             
             conn.select_db(self.nameDB)
             Matrix=np.row_stack(Matrix)
-            Matrix=np.column_stack((dateAll,Re,Matrix))
+            Matrix=np.column_stack((dateAll,Re,labelMarket,ratioOpen,Matrix))
             cur.execute('create table indicators(date date,Re float,ind1 float,ind2 float,ind3 float,ind4 float,ind5 float,ind6 float,ind7 float,ind8 float,\
             ind9 float,ind10 float,ind11 float,ind12 float,ind13 float,ind14 float,ind15 float,ind16 float,ind17 float,ind18 float,ind19 float,ind20 float,ind21 float,ind22 float,\
-            ind23 float,ind24 float,ind25 float,ind26 float,ind27 float,ind28 float,ind29 float)')
-            cur.executemany('insert into indicators values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', Matrix.tolist()) 
+            ind23 float,ind24 float,ind25 float,ind26 float,ind27 float,ind28 float,ind29 float,ind30 float,ind31 float,ind32 float)')
+            cur.executemany('insert into indicators values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', Matrix.tolist()) 
             
             dateAll=Matrix[:,0]
             Re=Matrix[:,1]
-            Matrix=Matrix[:,2:]
+            labelMarket=Matrix[:,2]
+            ratioOpen=Matrix[:,3]
+            Matrix=Matrix[:,4:]
             dispersity,profitP=self.kmeanTestAll(Matrix,Re,0)  
             cur.execute('create table dispersity(dis float)')
             cur.executemany('insert into dispersity values(%s)',dispersity.tolist())
@@ -211,7 +220,9 @@ class TrainModel():
             Matrix=np.row_stack(cur.fetchall())
             dateAll=Matrix[:,0]
             Re=Matrix[:,1]
-            Matrix=Matrix[:,2:]
+            labelMarket=Matrix[:,2]
+            ratioOpen=Matrix[:,3]
+            Matrix=Matrix[:,4:]
             if self.shufflePoints:
                 dispersity,profitP=self.kmeanTestAll(Matrix,Re,0)  
                 cur.execute('drop table if exists dispersity')
@@ -320,27 +331,33 @@ class TrainModel():
         #    self.sortStatastic(week,ReSort,'selectNotOk--week')
             
             # sort according to xgboost;
-            MatrixXGB=np.c_[dateAll[pointSelect],Matrix[pointSelect,:]];ReXGB=Re[pointSelect]
+            MatrixXGB=np.c_[dateAll[pointSelect],labelMarket[pointSelect],ratioOpen[pointSelect],Matrix[pointSelect,:]];ReXGB=Re[pointSelect]
             X_train,X_test,y_train,y_test=train_test_split(MatrixXGB,ReXGB,test_size=0.4) #random_state=0,
                     
-            date_train=X_train[:,0];x_train=X_train[:,colXGB+1];date_test=X_test[:,0];x_test=X_test[:,1:]
+            date_train=X_train[:,0];labelMarket_train=X_train[:,1];ratioOpen_train=X_train[:,2];x_train=X_train[:,colXGB+3];
+            date_test=X_test[:,0];labelMarket_test=X_test[:,1];ratioOpen_test=X_test[:,2];x_test=X_test[:,3:]
             tem=int(len(x_test)/5)
             x_validation=x_test[:tem,:][:,colXGB];x_test=x_test[tem:,:];y_validation=y_test[:tem];y_test=y_test[tem:];date_test=date_test[tem:]
+            labelMarket_test=labelMarket_test[tem:];ratioOpen_test=ratioOpen_test[tem:]
             
             self.xgbTrain(x_train,y_train,x_validation,y_validation)
             self.gaussianNBtrain(x_train,y_train)
-            plt.figure(figsize=(25,12))
+            plt.figure(figsize=(25,24))
             for i2 in range(2):
                 if i2==0:
-                    x_=X_train[:,1:]
+                    x_=X_train[:,3:]
                     y_=y_train
-                    labeli=['xgbTrain','gaussianTrain']
+                    labeli=['xgbTrain','gaussianTrain','labelMarket','ratioOpen']
                     date_=date_train
+                    labelMarket_=labelMarket_train
+                    ratioOpen_=ratioOpen_train
                 else:
                     x_=x_test
                     y_=y_test
-                    labeli=['xgbTest','gaussianTest']
+                    labeli=['xgbTest','gaussianTest','labelMarket','ratioOpen']
                     date_=date_test
+                    labelMarket_=labelMarket_test
+                    ratioOpen_=ratioOpen_test
                 
                 y_pre=self.xgbPredict(x_)
                 y_pre1=y_pre
@@ -350,8 +367,40 @@ class TrainModel():
                     tem=y_pre==flags[i]
                     Rex.append(y_[tem].tolist())
                     labelx.append(labeli[0]+str(flags[i]))
-                plt.subplot(2,2,i2+1)
-                self.ReFig(Rex,labelx)   
+                plt.subplot(4,2,i2+1)
+                self.ReFig(Rex,labelx)  
+                
+                tem=y_pre1==1
+                y_pre=labelMarket_[tem]
+                y_tem=y_[tem]
+                flags=np.unique(y_pre)
+                Rex=[];labelx=[]
+                for i in range(len(flags)):
+                    tem=y_pre==flags[i]
+                    Rex.append(y_tem[tem].tolist())
+                    labelx.append(labeli[2]+str(flags[i]))
+                plt.subplot(4,2,i2+3)
+                self.ReFig(Rex,labelx)  
+                
+                tem=y_pre1==1
+                y_pre=ratioOpen_[tem]
+                y_tem=y_[tem]
+                if i2==0:
+                    kmean=KMeans(n_clusters=5).fit(np.row_stack(y_pre))
+                    joblib.dump(kmean,self.saveData+'ratioOpen_kmean')
+                    y_pre=kmean.labels_
+                else:
+                    kmean=joblib.load(self.saveData+'ratioOpen_kmean')
+                    y_pre=kmean.predict(np.row_stack(y_pre))
+                flags=np.unique(y_pre)
+                Rex=[];labelx=[]
+                for i in range(len(flags)):
+                    tem=y_pre==flags[i]
+                    Rex.append(y_tem[tem].tolist())
+                    labelx.append(labeli[3]+str(flags[i]))
+                plt.subplot(4,2,i2+5)
+                self.ReFig(Rex,labelx)    
+                
                 y_pre=self.gaussianNBpredict(x_)
                 flags=np.unique(y_pre)
                 Rex=[];labelx=[]
@@ -359,7 +408,7 @@ class TrainModel():
                     tem=y_pre==flags[i]
                     Rex.append(y_[tem].tolist())
                     labelx.append(labeli[1]+str(flags[i]))
-                plt.subplot(2,2,i2+3)
+                plt.subplot(4,2,i2+7)
                 self.ReFig(Rex,labelx)  
             tem=y_pre1==1
             dateSort=date_test[tem] # sort by time;
@@ -735,6 +784,23 @@ class TrainModel():
         plt.title(Title)
         plt.grid(1)
     
+
+    
+
+
+
+    
+
+
+
+
+
+
+
+    
+
+
+
 
     
 

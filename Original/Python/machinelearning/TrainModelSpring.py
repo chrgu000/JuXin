@@ -10,7 +10,7 @@ import time,TrainModel,TrainModelFuture
 
 x1=time.clock()
 nameDB='Spring' # should be set for create a new mode test; if future should be 'futuretest'
-firstTime=0
+firstTime=1
 shufflePoints=0
 ReGetPoints=0
 TradeScan=0

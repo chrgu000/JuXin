@@ -288,7 +288,7 @@
 function optionShort
     stepShort=2; % gas between current value and void value;
     holdDays=15; % trading days from "short" to expire date;
-    stopRatio=1.2;
+    stopRatio=2;
     dateFrom='2014/5/1';
     dateFrom=year(datenum(dateFrom))*100+month(datenum(dateFrom));
     w=windmatlab;

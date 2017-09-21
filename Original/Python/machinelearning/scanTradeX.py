@@ -22,6 +22,9 @@ w.start()
 Tem=w.tlogon('0000', '0', 'W115294100301', '*********', 'SHSZ')
 logId=Tem.Data[0][0]
 tradingDay=len(w.tdays(today,today).Data[0])>0
+dataTem=w.tquery('Capital', 'LogonId='+str(logId))
+availableFun=dataTem.Data[1]
+assetNow=dataTem.Data[5]
 try:
     fileTem=open('scanTrade','rb')
     dataPKL=pickle.load(fileTem)
@@ -32,8 +35,36 @@ try:
 except:
     dataPKL={}
     dateStart={}
+    dateTrade=0
     
 if tradeFlag:
+    profitTable={
+            'Spring':{0:1.21,1:1.33,2:2.31,3:1.08,4:0.47},
+            'SpringBig':{0:1.25,1:5.00,2:1.05,3:1.75,4:1.24},
+            'Up2Down2':{0:1.34,1:3.41,2:2.60,3:-2.81,4:2.34},
+            }
+    informTrade=np.array(informTrade)
+    tem=informTrade[:,1]>0
+    informOpen=informTrade[tem,:]
+    informClose=informTrade[~tem,:]
+    closeTem=np.array(w.wss(informOpen[:,0],'close','tradeDate='+yesterday.strftime('%Y-%m-%d'),'priceAdj=F','cycle=D').Data[0])
+    openTem=np.array(w.wsq(informOpen[:,0],'rt_open').Data[0])
+    ratioOpen=openTem/closeTem-1    
+    for i in range(len(informOpen)):
+        tem=TrainModel.TrainModel(informOpen[i][3]).kmean.predict(ratioOpen[i])[0]
+        tem=max(profitTable[informOpen[i][0]][tem],informOpen[i][4])      
+        informOpen[i][4]=tem
+        if tem>3.0:
+            informOpen[i][1]=informOpen[i][1]*2
+            informOpen[i][2]=informOpen[i][2]*2
+    
+    indTem=np.argsort(-informOpen[:,4])
+    informOpen=informOpen[indTem,:]
+    moneyCS=np.cumsum(informOpen[:,2])
+    tem=sum(moneyCS>availableFun)
+    informOpen=informOpen[:-tem,:]
+    informTrade=np.concatenate(informOpen,informClose)
+
     if dateTrade==today:
         if hourMinute in ['09-30','09-31']:
             tradingTem=1
@@ -48,8 +79,7 @@ if tradeFlag:
                            %(informTrade[i][0],informTrade[i][1],informTrade[i][2],informTrade[i][3],informTrade[i][4]))
                 else:
                     w.torder(informTrade[i][0], 'Sell', '0', -informTrade[i][1], 'OrderType=B5TC;'+'LogonID='+str(logId))
-                    print ('Close %s: %d shares;use capital:%.f Yuan;Model:%s;profitPerOrder:%.2f;' \
-                           %(informTrade[i][0],-informTrade[i][1],informTrade[i][2],informTrade[i][3],informTrade[i][4]))
+                    print ('Close %s: %d shares;free capital:%.f Yuan;' %(informTrade[i][0],-informTrade[i][1],informTrade[i][2]))
                     try:
                         dateStart.pop(informTrade[i][0])
                     except KeyError as e:
@@ -171,6 +201,7 @@ else:
                  highs[i2]/closes[i2-1],\
                  ud_7,\
                  opens[i2]/closes[i2-1],\
+                 (highs[i2]-lows[i2])/(highs[i2-1]-lows[i2-1]),\
                  vols[i2-1]/vols[i2-3],\
                  highs[i2]/lows[i2-1],\
                  vols[i2]/vols[i2-3],\
@@ -182,7 +213,7 @@ else:
                  np.std([ closes[i2],opens[i2],highs[i2],lows[i2] ])/np.std([closes[i2-1],opens[i2-1],highs[i2-1],lows[i2-1]]),\
                  closes[i2]/closes[i2-1],\
                  opens[i2]/lows[i2-1],\
-                 highs[i2]/opens[i2-1] ]      
+                 highs[i2]/opens[i2-1] ] 
             
             profiti2=[]# for one stocks fits more than 1 stock
             stocksi2=[]
@@ -193,111 +224,89 @@ else:
             modelTem='Up2Down2'
             if modelTem in modelSelect: # model 1: Up2Down2, model number 1
                 TM=TrainModel.TrainModel(modelTem)
-                flagNot=[[1, [1]], [15, [3, 4]]]
-                flagOk=[[1, [0, 2, 3, 4]], [15, [0, 1, 2]]]
+                flagNot=[[1, [2]], [15, [3, 4]]]
+                flagOk=[[1, [0, 1, 3, 4]], [15, [0, 1, 2]]]
                 ReSelectNot=TM.kmeanTestCertainNot([Matrix],flagNot)      # value 0 or 1      
                 ReSelectOk=TM.kmeanTestCertainOk([Matrix],flagOk)        # value 0 or 1 or 2 or 2+
                 if ReSelectNot*ReSelectOk:
                     flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                     if flag[0]==1:
-                        if wd=='5':
-                            profiti2.append(2.42)
-                        elif wd=='3':
-                            profiti2.append(2.24)
-                        elif wd=='2':
-                            profiti2.append(1.82)
+                        if wd=='3':
+                            profiti2.append(2.32)
+                        elif wd=='5':
+                            profiti2.append(2.23)
                         elif wd=='4':
-                            profiti2.append(1.61)
-                        if wd!='1':
-                            stocksi2.append(stocks[i])
-                            handsi2.append(np.ceil(100/closes[-1])*100)
-                            modeli2.append(modelTem)   # model number:1;
-                            moneyi2.append(handsi2[-1]*closes[-1])
+                            profiti2.append(1.90)
+                        elif wd=='2':
+                            profiti2.append(1.85)
+                        else:
+                            profiti2.append(1.06)
+                        stocksi2.append(stocks[i])
+                        handsi2.append(np.ceil(100/closes[-1])*100)
+                        modeli2.append(modelTem)   # model number:1;
+                        moneyi2.append(handsi2[-1]*closes[-1])
             modelTem='Spring'
             if modelTem in modelSelect: # model 1: Up2Down2, model number 1
                 TM=TrainModel.TrainModel(modelTem)
-                flagNot=[[1, [1, 3, 4]], [6, [0, 1, 4]]]
-                flagOk= [[1, [0]], [6, [3]]]
+                flagNot=[[1, [1, 2, 4]], [6, [2, 3, 4]]]
+                flagOk= [[1, [0, 3]], [6, [1]]]
                 ReSelectNot=TM.kmeanTestCertainNot([Matrix],flagNot)      # value 0 or 1      
                 ReSelectOk=TM.kmeanTestCertainOk([Matrix],flagOk)        # value 0 or 1 or 2 or 2+
                 if ReSelectNot*ReSelectOk:
                     flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                     if flag[0]==1:
                         if wd=='1':
-                            profiti2.append(1.76)
+                            profiti2.append(1.67)
                         elif wd=='5':
-                            profiti2.append(1.28)
+                            profiti2.append(1.33)
                         elif wd=='2':
-                            profiti2.append(1.19)
+                            profiti2.append(1.27)
                         elif wd=='3':
-                            profiti2.append(1.1)
-                        if wd!='4':
-                            stocksi2.append(stocks[i])
-                            handsi2.append(np.ceil(100/closes[-1])*100)
-                            modeli2.append(modelTem)   # model number:1;
-                            moneyi2.append(handsi2[-1]*closes[-1])
+                            profiti2.append(1.09)
+                        else:
+                            profiti2.append(0.56)
+                        stocksi2.append(stocks[i])
+                        handsi2.append(np.ceil(100/closes[-1])*100)
+                        modeli2.append(modelTem)   # model number:1;
+                        moneyi2.append(handsi2[-1]*closes[-1])
             modelTem='SpringBig'
             if modelTem in modelSelect: # model 1: Up2Down2, model number 1
                 TM=TrainModel.TrainModel(modelTem)
-                flagNot=[[3, [3, 4]], [4, [2]], [5, [2]], [19, [4]], [20, [4]]]
-                flagOk= [[3, [0]], [5, [0, 4]], [10, [3]], [19, [0, 1, 3]], [20, [0, 3]]]
+                flagNot=[[4, [4]], [5, [2, 3]], [12, [3]], [14, [0]], [21, [0]]]
+                flagOk= [[0, [3]], [5, [4]], [10, [1, 3]], [14, [1, 4]], [20, [4]], [21, [3, 4]], [23, [2]], [27, [1, 3]]]
                 ReSelectNot=TM.kmeanTestCertainNot([Matrix],flagNot)      # value 0 or 1      
                 ReSelectOk=TM.kmeanTestCertainOk([Matrix],flagOk)        # value 0 or 1 or 2 or 2+
                 if ReSelectNot*ReSelectOk:
                     flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                     if flag[0]==1:
                         if wd=='1':
-                            profiti2.append(1.85)
+                            profiti2.append(2.55)
                         elif wd=='2':
-                            profiti2.append(1.82)
-                        elif wd=='5':
-                            profiti2.append(1.62)
+                            profiti2.append(1.93)
                         elif wd=='3':
-                            profiti2.append(1.2)
-                        if wd!='4':
-                            stocksi2.append(stocks[i])
-                            handsi2.append(np.ceil(100/closes[-1])*100)
-                            modeli2.append(modelTem)   # model number:1;
-                            moneyi2.append(handsi2[-1]*closes[-1])
+                            profiti2.append(1.56)
+                        elif wd=='5':
+                            profiti2.append(1.32)
+                        else:
+                            profiti2.append(0.11)
+                        stocksi2.append(stocks[i])
+                        handsi2.append(np.ceil(100/closes[-1])*100)
+                        modeli2.append(modelTem)   # model number:1;
+                        moneyi2.append(handsi2[-1]*closes[-1])
                             
             if 'test' in modelSelect: 
                 pass
             
             lenSelect=len(profiti2)
-            if lenSelect==1:
-                profiti.append(profiti2[0])
+            if lenSelect>0:
                 stocksi.append(stocksi2[0])
                 handsi.append(handsi2[0])
-                modeli.append('&'.join(modeli2))
                 moneyi.append(moneyi2[0]) 
-            elif lenSelect>1:
-                profiti.append(max(profiti2)*1.5)
-                if profiti[-1]>3.0:
-                    mult=2
-                else:
-                    mult=1
-                stocksi.append(stocksi2[0])
-                handsi.append(handsi2[0]*mult)
                 modeli.append('&'.join(modeli2))
-                moneyi.append(moneyi2[0]*mult)             
-    
-    indTem=np.argsort(-np.array(profiti))
-    profiti=np.array(profiti)[indTem]
-    stocksi=np.array(stocksi)[indTem]
-    handsi=np.array(handsi)[indTem]
-    modeli=np.array(modeli)[indTem]
-    moneyi=np.array(moneyi)[indTem]
-    dataTem=w.tquery('Capital', 'LogonId='+str(logId))
-    availableFun=dataTem.Data[1]
-    assetNow=dataTem.Data[5]
-    moneyCS=np.cumsum(moneyi)
-    Tem=sum(moneyCS>availableFun)
-    if Tem>0:
-        profiti=profiti[:-Tem]
-        stocksi=stocksi[:-Tem]
-        handsi=handsi[:-Tem]
-        modeli=modeli[:-Tem]
-        moneyi=moneyi[:-Tem]
+                if lenSelect==1:
+                    profiti.append(profiti2[0])    
+                else:
+                    profiti.append(max(profiti2)*1.5)     
     
     if tradingDay:
         if Hour<15:
@@ -306,6 +315,9 @@ else:
             dateFor=w.tdays(today,today+timedelta(days=12)).Data[0][1].date()
     else:
         dateFor=w.tdays(today,today+timedelta(days=12)).Data[0][0].date()
+
+    if dateTrade!=dateFor:
+        dataPKL['asset']=assetNow        
     dataPKL['dateTrade']=dateFor
     
     Ltrade=len(profiti)
@@ -322,6 +334,7 @@ else:
     pickle.dump(dataPKL,fileTem)
     fileTem.close()
     
+    print('')
     for i in range(len(informTrade)):
         informi=informTrade[i]
         if informi[1]>0:

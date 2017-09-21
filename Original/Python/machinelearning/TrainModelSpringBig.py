@@ -10,13 +10,13 @@ import time,TrainModel,TrainModelFuture
 
 x1=time.clock()
 nameDB='SpringBig' # should be set for create a new mode test; if future should be 'futuretest'
-firstTime=0
+firstTime=1
 shufflePoints=0
 ReGetPoints=0
 TradeScan=0
 
-dispersity=0.75
-profitNot=-0.15
+dispersity=0.77
+profitNot=-0.18
 profitOk=0.1
 
 future='I.DCE'
