@@ -23,7 +23,6 @@ Tem=w.tlogon('0000', '0', 'W115294100301', '*********', 'SHSZ')
 logId=Tem.Data[0][0]
 tradingDay=len(w.tdays(today,today).Data[0])>0
 dataTem=w.tquery('Capital', 'LogonId='+str(logId))
-availableFun=dataTem.Data[1]
 assetNow=dataTem.Data[5]
 try:
     fileTem=open('scanTrade','rb')
@@ -32,67 +31,85 @@ try:
     dateStart=dataPKL['dateStart']
     informTrade=dataPKL['informTrade']
     dateTrade=dataPKL['dateTrade']
+    assets=dataPKL['assets']
 except:
     dataPKL={}
     dateStart={}
+    assets=[]
     dateTrade=0
     
 if tradeFlag:
+    tradeOrNot=0
     profitTable={
             'Spring':{0:1.21,1:1.33,2:2.31,3:1.08,4:0.47},
             'SpringBig':{0:1.25,1:5.00,2:1.05,3:1.75,4:1.24},
             'Up2Down2':{0:1.34,1:3.41,2:2.60,3:-2.81,4:2.34},
             }
-    informTrade=np.array(informTrade)
-    tem=informTrade[:,1]>0
-    informOpen=informTrade[tem,:]
-    informClose=informTrade[~tem,:]
-    closeTem=np.array(w.wss(informOpen[:,0],'close','tradeDate='+yesterday.strftime('%Y-%m-%d'),'priceAdj=F','cycle=D').Data[0])
-    openTem=np.array(w.wsq(informOpen[:,0],'rt_open').Data[0])
-    ratioOpen=openTem/closeTem-1    
-    for i in range(len(informOpen)):
-        tem=TrainModel.TrainModel(informOpen[i][3]).kmean.predict(ratioOpen[i])[0]
-        tem=max(profitTable[informOpen[i][0]][tem],informOpen[i][4])      
-        informOpen[i][4]=tem
-        if tem>3.0:
-            informOpen[i][1]=informOpen[i][1]*2
-            informOpen[i][2]=informOpen[i][2]*2
-    
-    indTem=np.argsort(-informOpen[:,4])
-    informOpen=informOpen[indTem,:]
-    moneyCS=np.cumsum(informOpen[:,2])
-    tem=sum(moneyCS>availableFun)
-    informOpen=informOpen[:-tem,:]
-    informTrade=np.concatenate(informOpen,informClose)
-
+    informTrade=pd.DataFrame(informTrade)
+    tem=informTrade[1]>0
+    informOpen=informTrade.loc[tem,:]
+    informClose=informTrade.loc[~tem,:]
+    informTrade=informClose
     if dateTrade==today:
         if hourMinute in ['09-30','09-31']:
             tradingTem=1
         else:
-            tem=input('out of good trading opportunity, still trade [y/n]?')
+            tem=input('out of good trading opportunity, still close orders [y/n]?')
             tradingTem=tem.lower()=='y'
         if tradingTem:
+            tradeOrNo=1
             for i in range(len(informTrade)):
-                if informTrade[i][1]>0:
-                    w.torder(informTrade[i][0], 'Buy', '0', informTrade[i][1], 'OrderType=B5TC;'+'LogonID='+str(logId))
-                    print ('Buy %s: %d shares;use capital:%.f Yuan;Model:%s;profitPerOrder:%.2f;' \
-                           %(informTrade[i][0],informTrade[i][1],informTrade[i][2],informTrade[i][3],informTrade[i][4]))
-                else:
-                    w.torder(informTrade[i][0], 'Sell', '0', -informTrade[i][1], 'OrderType=B5TC;'+'LogonID='+str(logId))
-                    print ('Close %s: %d shares;free capital:%.f Yuan;' %(informTrade[i][0],-informTrade[i][1],informTrade[i][2]))
-                    try:
-                        dateStart.pop(informTrade[i][0])
-                    except KeyError as e:
-                        print(e)
-                            
-            dataPKL['dateStart']=dateStart
-            dataPKL['informTrade']=informTrade
-            dataPKL['dateTrade']=0
-            fileTem=open('scanTrade','wb')
-            pickle.dump(dataPKL,fileTem)
-            fileTem.close()
+                w.torder(informTrade.iloc[i,0], 'Sell', '0', -informTrade.iloc[i,1], 'OrderType=B5TC;'+'LogonID='+str(logId))
+                print ('Close %s: %d shares;free capital:%.f Yuan;' %(informTrade.iloc[i,0],-informTrade.iloc[i,1],informTrade.iloc[i,2]))
+                try:
+                    dateStart.pop(informTrade.iloc[i,0])
+                except KeyError as e:
+                    print(e)
+    else:
+        print('trading information is not for today, please prepare trading information again and check it!')    
+    
+    closeTem=np.array(w.wss(informOpen[0].tolist(),'close','tradeDate='+yesterday.strftime('%Y-%m-%d'),'priceAdj=F','cycle=D').Data[0])
+    openTem=np.array(w.wsq(informOpen[0].tolist(),'rt_open').Data[0])
+    ratioOpen=openTem/closeTem-1    
+    for i in range(len(informOpen)):
+        tem=TrainModel.TrainModel(informOpen.iloc[i,3]).kmean.predict(ratioOpen[i])[0]
+        tem=max(profitTable[informOpen.iloc[i,3]][tem],informOpen.iloc[i,4])      
+        informOpen.iloc[i,4]=tem
+        if tem>3.0:
+            informOpen.iloc[i,1]=informOpen.iloc[i,1]*2
+            informOpen.iloc[i,2]=informOpen.iloc[i,1]*2
+    indTem=(-informOpen[4]).argsort()
+    informOpen=informOpen.loc[indTem]
+    informOpen=informOpen.loc[informOpen[4]>1.3]
+    moneyCS=informOpen[2].cumsum()
+    dataTem=w.tquery('Capital', 'LogonId='+str(logId))
+    availableFun=dataTem.Data[1]
+    tem=sum(moneyCS<availableFun)
+    informOpen=informOpen.iloc[:tem]
+    informTrade=informOpen    
+    if dateTrade==today:
+        if hourMinute in ['09-30','09-31']:
+            tradingTem=1
+        else:
+            tem=input('out of good trading opportunity, still open orders [y/n]?')
+            tradingTem=tem.lower()=='y'
+        if tradingTem:
+            tradeOrNo=1
+            for i in range(len(informTrade)):
+                w.torder(informTrade.iloc[i,0], 'Buy', '0', informTrade.iloc[i,1], 'OrderType=B5TC;'+'LogonID='+str(logId))
+                print ('Buy %s: %d shares;use capital:%.f Yuan;Model:%s;profitPerOrder:%.2f;' \
+                       %(informTrade.iloc[i,0],informTrade.iloc[i,1],informTrade.iloc[i,2],informTrade.iloc[i,3],informTrade.iloc[i,4]))
     else:
         print('trading information is not for today, please prepare trading information again and check it!')
+    
+    if tradeOrNot:
+        dataPKL['dateStart']=dateStart
+        dataPKL['assets']=assets
+        dataPKL['informTrade']=0
+        dataPKL['dateTrade']=0
+        fileTem=open('scanTrade','wb')
+        pickle.dump(dataPKL,fileTem)
+        fileTem.close()
         
 else:
     informTrade=[]
@@ -118,7 +135,6 @@ else:
         dataPKL=pickle.load(fileTem)
         fileTem.close()
         dateStart=dataPKL['dateStart']
-        informTrade=[]
         for i in range(Lt):
             datei=dateStart[stocksHold[i]]
             indi=stocks.index(stocksHold[i])
@@ -317,7 +333,9 @@ else:
         dateFor=w.tdays(today,today+timedelta(days=12)).Data[0][0].date()
 
     if dateTrade!=dateFor:
-        dataPKL['asset']=assetNow        
+        assets.append(assetNow)
+        
+    dataPKL['assets']=assets
     dataPKL['dateTrade']=dateFor
     
     Ltrade=len(profiti)

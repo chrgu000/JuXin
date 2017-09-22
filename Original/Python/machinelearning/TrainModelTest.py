@@ -6,18 +6,18 @@ Created on Tue Sep 19 13:52:46 2017
 """
 
 import matplotlib.pyplot as plt
-import time,TrainModelLab,TrainModelFuture
+import time,TrainModel,TrainModelFuture
 
 x1=time.clock()
 nameDB='test' # should be set for create a new mode test; if future should be 'futuretest'
-firstTime=1
+firstTime=0
 shufflePoints=0
 ReGetPoints=0
 TradeScan=0
 
-dispersity=0.55
-profitNot=0.2
-profitOk=0.3
+dispersity=0.3
+profitNot=0.5
+profitOk=0.68
 
 future='I.DCE'
 minTick=0.0
@@ -26,7 +26,7 @@ barSize=5
 
 
 if nameDB[:6].lower()!='future':
-    TM=TrainModelLab.TrainModel(nameDB,firstTime,shufflePoints,ReGetPoints,TradeScan,dispersity,profitNot,profitOk) #should be in turn; stocks
+    TM=TrainModel.TrainModel(nameDB,firstTime,shufflePoints,ReGetPoints,TradeScan,dispersity,profitNot,profitOk) #should be in turn; stocks
 else:
     TM=TrainModelFuture.TrainModel(nameDB,firstTime,shufflePoints,ReGetPoints,TradeScan,dispersity,profitNot,profitOk,future,minTick,longshort,barSize) #should be in turn; futures
 @TM

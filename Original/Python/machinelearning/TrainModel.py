@@ -95,6 +95,21 @@ class TrainModel():
                             if fig>0:
                                 figx=[-5,-4]
                                 figy=[opens[i2+1],opens[i2+2]]
+                                
+#                        if min(lows[i2+1:i2+3])>=lows[i2]:
+#                            Re.append(closes[i2+2]/opens[i2+1]-1.003)
+##                            Re.append(opens[i2+2]/opens[i2+1]-1)
+#                            if fig>0:
+#                                figx=[-5,-4]
+#                                figy=[opens[i2+1],closes[i2+2]]
+#                        else:#elif closes[i2+2]<=closes[i2+1]:
+#                            Re.append(opens[i2+2]/opens[i2+1]-1.003)
+##                            Re.append(closes[i2+2]/opens[i2+1]-1)
+#                            if fig>0:
+#                                figx=[-5,-4]
+#                                figy=[opens[i2+1],opens[i2+2]]
+                        
+                        
 #                        elif closes[i2+3]<=closes[i2+2] :
 #                            Re.append(closes[i2+3]/closes[i2]-1)
 ##                            Re.append(closes[i2+2]/opens[i2+1]-1)
@@ -591,7 +606,7 @@ class TrainModel():
             if dispTem>0.2:
                 plt.xlabel( 'indicator column %d, dispesity:%.10f'  %(i,dispTem ),color='r')
             else:
-                plt.xlabel( 'indicator column %d, dispesity:%.10f'  %(lp,dispTem ),color='gray')           
+                plt.xlabel( 'indicator column %d, dispesity:%.10f'  %(i,dispTem ),color='gray')           
             plt.plot(xi,yi,'r*')
             plt.title(figTitle,fontsize=16)
             plt.legend(loc='upper left')

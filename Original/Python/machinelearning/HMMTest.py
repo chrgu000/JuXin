@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import datetime,joblib
 
 w.start()
-objectTrade='000016.sh'
+objectTrade='600234.sh'
 
 startDate='2005-06-01'
 endDate='2012-10-04'
