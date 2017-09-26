@@ -15,6 +15,7 @@ TradeDays='30' # how many days to use;
 today=datetime.date.today()
 yesterday=today-datetime.timedelta(days=1)
 Hour=int(time.strftime('%H'))
+Minute=int(time.strftime('%M'))
 hourMinute=time.strftime('%H-%M')
 tradeFlag=input('Please confirm trading or not(just preparing for trading) [y/n]?')
 tradeFlag=tradeFlag.lower()=='y' 
@@ -72,8 +73,11 @@ if tradeFlag:
     openTem=np.array(w.wsq(informOpen[0].tolist(),'rt_open').Data[0])
     ratioOpen=openTem/closeTem-1    
     for i in range(len(informOpen)):
-        tem=TrainModel.TrainModel(informOpen.iloc[i,3]).kmean.predict(ratioOpen[i])[0]
-        tem=max(profitTable[informOpen.iloc[i,3]][tem],informOpen.iloc[i,4])      
+        if '&' in informOpen.iloc[i,3]:
+            tem=informOpen.iloc[i,4]
+        else:
+            tem=TrainModel.TrainModel(informOpen.iloc[i,3]).kmean.predict(ratioOpen[i])[0]
+            tem=max(profitTable[informOpen.iloc[i,3]][tem],informOpen.iloc[i,4])      
         informOpen.iloc[i,4]=tem
         if tem>3.0:
             informOpen.iloc[i,1]=informOpen.iloc[i,1]*2
@@ -113,7 +117,7 @@ if tradeFlag:
         
 else:
     informTrade=[]
-    if Hour>=15:
+    if Hour*100+Minute>=930:
         dateEnd=today
     else:
         dateEnd=yesterday

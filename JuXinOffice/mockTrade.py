@@ -12,6 +12,8 @@ import time
 objTrade=['RB.SHF','I.DCE']
 
 w.start()
+Tem=w.tlogon('0000', '0', 'W115294100302', '*********', 'CZC') # CZC:郑商所；SHF:上期所；DCE:大商所；CFE：中金所
+logId=Tem.Data[0][0]
 tem=np.zeros(len(objTrade))
 hands=tem;stopLoss=tem.copy();
 up20=tem.copy();down20=tem.copy();up10=tem.copy();down10=tem.copy();openPrice=tem.copy();ATR=tem.copy();holds=tem.copy()
@@ -31,11 +33,14 @@ def myCallback(indata):
             up10[i]=max(price20[0][:10])
             down10[i]=min(price20[1][:10])
     
-    
-    x=indata.Codes
+    Codes=indata.Codes
+    Li=len(Codes)
+    for i in len(Li):
+        obji=objTrade.index(Codes[i])
+        if hold[obji]==0:
+            
+        print(indata)
     print(x)
-    print(x=='I.DCE')
-    print(x[0]=='I.DCE')
     
 #    for i in range(loops):
 #        holdi=holds[i];handi=hands[i];stopLossi=stopLoss[i];up20i=up20[i];down20i=down20[i];

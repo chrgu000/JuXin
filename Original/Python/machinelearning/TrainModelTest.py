@@ -6,7 +6,8 @@ Created on Tue Sep 19 13:52:46 2017
 """
 
 import matplotlib.pyplot as plt
-import time,TrainModel,TrainModelFuture
+import numpy as np
+import time,TrainModel,TrainModelFuture,pdb
 
 x1=time.clock()
 nameDB='test' # should be set for create a new mode test; if future should be 'futuretest'
@@ -15,9 +16,9 @@ shufflePoints=0
 ReGetPoints=0
 TradeScan=0
 
-dispersity=0.3
-profitNot=0.5
-profitOk=0.68
+dispersity=0.6
+profitNot=-0.2
+profitOk=0.18
 
 future='I.DCE'
 minTick=0.0
@@ -31,11 +32,20 @@ else:
     TM=TrainModelFuture.TrainModel(nameDB,firstTime,shufflePoints,ReGetPoints,TradeScan,dispersity,profitNot,profitOk,future,minTick,longshort,barSize) #should be in turn; futures
 @TM
 def ModelX(opens,highs,lows,closes):
-    if closes[-2]<lows[-2]+(highs[-2]-lows[-2])/4  and closes[-1]>lows[-1]+(highs[-1]-lows[-1])*3/4  and \
-            highs[-4]>lows[-4] and highs[-3]>lows[-3] and highs[-2]>lows[-2] and highs[-1]>lows[-1] and closes[-1]/closes[-2]<1.095:
-        R=1
-    else:
-        R=0
+    R=0
+    for i in range(3,10):
+        highBar=int(np.where(highs==max(highs[-i:]))[0][-1])
+        if highBar==len(opens)-1:
+            highTem=[highs[highBar],highs[highBar]]
+        else:
+            highTem=highs[highBar:]
+        lowTem=lows[highBar:-1]
+        if len(lowTem)<2:
+            lowTem=[lows[-1],lows[-1]]
+        if min(lows[-(i+4):-1])==lows[-i] and abs(max(highTem)+lows[-i]-2*lows[-1])<=0.03 and lows[-1]<min(lowTem) \
+        and np.all(highs[-i-4:-1]-lows[-i-4:-1]) and closes[-1]/closes[-2]<1.095:
+            R=1
+            break
     return R
                  
 flagNot,flagOk,Matrix,Re=ModelX

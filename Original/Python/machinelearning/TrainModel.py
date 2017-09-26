@@ -43,7 +43,7 @@ class TrainModel():
             conn.close()
             self.firstTime=1
         if self.firstTime:
-            fig=1 # how many figures ploted to show the confirmed model;
+            fig=5 # how many figures ploted to show the confirmed model;
             conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
             cur=conn.cursor()
             cur.execute('drop database if exists '+self.nameDB) # create database;   
@@ -82,7 +82,7 @@ class TrainModel():
             #            ma10[i2]=np.mean(closes[i2-10:i2+1])
                 for i2 in range(15,Lt-3):
         #        for i2 in range(15,16):
-                    if func(opens[i2-10:i2+1],highs[i2-10:i2+1],lows[i2-10:i2+1],closes[i2-10:i2+1]):
+                    if func(opens[i2-15:i2+1],highs[i2-15:i2+1],lows[i2-15:i2+1],closes[i2-15:i2+1]):
                         if closes[i2+1]>=closes[i2]:
                             Re.append(closes[i2+2]/opens[i2+1]-1.003)
 #                            Re.append(opens[i2+2]/opens[i2+1]-1)
