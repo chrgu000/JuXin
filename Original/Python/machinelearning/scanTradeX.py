@@ -52,7 +52,7 @@ if tradeFlag:
     informClose=informTrade.loc[~tem,:]
     informTrade=informClose
     if dateTrade==today:
-        if hourMinute in ['09-30','09-31']:
+        if hourMinute in ['09-29','09-30','09-31']:
             tradingTem=1
         else:
             tem=input('out of good trading opportunity, still close orders [y/n]?')
@@ -82,15 +82,14 @@ if tradeFlag:
         if tem>3.0:
             informOpen.iloc[i,1]=informOpen.iloc[i,1]*2
             informOpen.iloc[i,2]=informOpen.iloc[i,1]*2
-    indTem=(-informOpen[4]).argsort()
-    informOpen=informOpen.loc[indTem]
-    informOpen=informOpen.loc[informOpen[4]>1.3]
+            
+    informOpen=informOpen.sort_index(by=[4],ascending=False).reset_index(drop=True)   
+    informOpen=informOpen.loc[informOpen[4]>1.5]
     moneyCS=informOpen[2].cumsum()
     dataTem=w.tquery('Capital', 'LogonId='+str(logId))
     availableFun=dataTem.Data[1]
     tem=sum(moneyCS<availableFun)
-    informOpen=informOpen.iloc[:tem]
-    informTrade=informOpen    
+    informTrade=informOpen.iloc[:tem] 
     if dateTrade==today:
         if hourMinute in ['09-30','09-31']:
             tradingTem=1
@@ -259,12 +258,11 @@ else:
                             profiti2.append(1.90)
                         elif wd=='2':
                             profiti2.append(1.85)
-                        else:
-                            profiti2.append(1.06)
-                        stocksi2.append(stocks[i])
-                        handsi2.append(np.ceil(100/closes[-1])*100)
-                        modeli2.append(modelTem)   # model number:1;
-                        moneyi2.append(handsi2[-1]*closes[-1])
+                        if wd!='1':
+                            stocksi2.append(stocks[i])
+                            handsi2.append(np.ceil(100/closes[-1])*100)
+                            modeli2.append(modelTem)   # model number:1;
+                            moneyi2.append(handsi2[-1]*closes[-1])
             modelTem='Spring'
             if modelTem in modelSelect: # model 1: Up2Down2, model number 1
                 TM=TrainModel.TrainModel(modelTem)
@@ -281,14 +279,11 @@ else:
                             profiti2.append(1.33)
                         elif wd=='2':
                             profiti2.append(1.27)
-                        elif wd=='3':
-                            profiti2.append(1.09)
-                        else:
-                            profiti2.append(0.56)
-                        stocksi2.append(stocks[i])
-                        handsi2.append(np.ceil(100/closes[-1])*100)
-                        modeli2.append(modelTem)   # model number:1;
-                        moneyi2.append(handsi2[-1]*closes[-1])
+                        if wd not in ['3','4']:
+                            stocksi2.append(stocks[i])
+                            handsi2.append(np.ceil(100/closes[-1])*100)
+                            modeli2.append(modelTem)   # model number:1;
+                            moneyi2.append(handsi2[-1]*closes[-1])
             modelTem='SpringBig'
             if modelTem in modelSelect: # model 1: Up2Down2, model number 1
                 TM=TrainModel.TrainModel(modelTem)
@@ -307,12 +302,11 @@ else:
                             profiti2.append(1.56)
                         elif wd=='5':
                             profiti2.append(1.32)
-                        else:
-                            profiti2.append(0.11)
-                        stocksi2.append(stocks[i])
-                        handsi2.append(np.ceil(100/closes[-1])*100)
-                        modeli2.append(modelTem)   # model number:1;
-                        moneyi2.append(handsi2[-1]*closes[-1])
+                        if wd!='4':
+                            stocksi2.append(stocks[i])
+                            handsi2.append(np.ceil(100/closes[-1])*100)
+                            modeli2.append(modelTem)   # model number:1;
+                            moneyi2.append(handsi2[-1]*closes[-1])
                             
             if 'test' in modelSelect: 
                 pass

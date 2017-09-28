@@ -3,10 +3,10 @@ tic;
 sw0=0;% show two trading targets' difference for history price;50etf-50index
 sw1=0;% show all options-future K lines which are trading in the "date";
 sw2=0;% get all options-future data in history; 
-sw3=0;% show Pictures;
+sw3=1;% show Pictures;
 sw4=0;% code for draw principle figures;
 sw5=0;% Bald eagle Strategy;sw5x
-sw6=1;% short absolutely near expire date;
+sw6=0;% short absolutely near expire date;
 test=0;% test odd portfolio;
 %% show two trading targets' difference for history price;50etf-50index
 if sw0
@@ -142,7 +142,7 @@ if sw0
     hold on;
     text(L+1,0,'y2-OÏß');
     
-    files=dir('D:\Trade\OptionFuture\*.mat');
+    files=dir('D:\Trade\Original\OptionFuture\*.mat');
     files={files.name};
     L=length(files);
     monthSw0=[dateTest(3:4),'00'];
@@ -150,7 +150,7 @@ if sw0
     y2={};
     legends={};
     for i=1:L
-        load(['D:\Trade\OptionFuture\',files{i}]);    
+        load(['D:\Trade\Original\OptionFuture\',files{i}]);    
         if size(IH,1)<30
             continue;
         end
@@ -431,19 +431,19 @@ if sw2
         index50=index50(ind5,:); 
         Time=floor(Time); 
         titleName=[future(1:6),'-',num2str(price)];    
-        tem=['D:\Trade\OptionFuture\',titleName,'.mat'];
+        tem=['D:\Trade\Original\OptionFuture\',titleName,'.mat'];
         save(tem,'price','OP1','OP2','IH','etf50','index50','Time','titleName','option1','option2');
         display(['i=',num2str(i),'/',LoptStr,' --',titleName,': ',num2str(toc),' seconds.']);
     end
 end
 %% show Pictures;
 if sw3
-    files=dir('D:\Trade\OptionFuture\*.mat');
+    files=dir('D:\Trade\Original\OptionFuture\*.mat');
     files={files.name};
     L=length(files);
     fi=1;
     for i=1:L
-        load(['D:\Trade\OptionFuture\',files{i}]);    
+        load(['D:\Trade\Original\OptionFuture\',files{i}]);    
         IH=IH(:,1:2)*300;
 %         OP=(price+OP1(:,1:2)-OP2(:,1:2)-(etf50-index50/1000))*300000;
         OP=(price+OP1(:,1:2)-OP2(:,1:2))*300000;
@@ -1215,7 +1215,7 @@ if test
     text(length(Data3(:,1))+3,min(Data3(:,2)),datestr(Date3(end),'yyyy-mm-dd'));
     grid on;
     subplot(2,2,4);
-    load(['D:\Trade\OptionFuture\',portfolio]);    
+    load(['D:\Trade\Original\OptionFuture\',portfolio]);    
     IH=IH*300;
     OP=(price+OP1-OP2)*300000;
     diffOpen=OP(:,1)-IH(:,1);
