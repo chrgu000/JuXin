@@ -7,7 +7,7 @@ Created on Tue Jul 18 08:59:37 2017
 from WindPy import *
 import numpy as np
 import pandas as pd
-import pickle,datetime,time,TrainModel
+import pickle,datetime,time,TrainModel,pdb
 
 t1=time.clock()
 
@@ -22,7 +22,7 @@ tradeFlag=tradeFlag.lower()=='y'
 w.start()
 Tem=w.tlogon('0000', '0', 'W115294100301', '*********', 'SHSZ')
 logId=Tem.Data[0][0]
-tradingDay=len(w.tdays(today,today).Data[0])>0
+tradingDay=len(w.tdays(today,today).Data)>0
 dataTem=w.tquery('Capital', 'LogonId='+str(logId))
 assetNow=dataTem.Data[5]
 try:
@@ -47,6 +47,7 @@ if tradeFlag:
             'Up2Down2':{0:1.34,1:3.41,2:2.60,3:-2.81,4:2.34},
             }
     informTrade=pd.DataFrame(informTrade)
+    informTradeCopy=informTrade.copy()
     tem=informTrade[1]>0
     informOpen=informTrade.loc[tem,:]
     informClose=informTrade.loc[~tem,:]
@@ -77,7 +78,7 @@ if tradeFlag:
             tem=informOpen.iloc[i,4]
         else:
             tem=TrainModel.TrainModel(informOpen.iloc[i,3]).kmean.predict(ratioOpen[i])[0]
-            tem=max(profitTable[informOpen.iloc[i,3]][tem],informOpen.iloc[i,4])      
+            tem=min(profitTable[informOpen.iloc[i,3]][tem],informOpen.iloc[i,4])      
         informOpen.iloc[i,4]=tem
         if tem>3.0:
             informOpen.iloc[i,1]=informOpen.iloc[i,1]*2
@@ -86,12 +87,13 @@ if tradeFlag:
     informOpen=informOpen.sort_index(by=[4],ascending=False).reset_index(drop=True)   
     informOpen=informOpen.loc[informOpen[4]>1.5]
     moneyCS=informOpen[2].cumsum()
+    time.sleep(5)
     dataTem=w.tquery('Capital', 'LogonId='+str(logId))
     availableFun=dataTem.Data[1]
     tem=sum(moneyCS<availableFun)
     informTrade=informOpen.iloc[:tem] 
     if dateTrade==today:
-        if hourMinute in ['09-30','09-31']:
+        if hourMinute in ['09-29','09-30','09-31']:
             tradingTem=1
         else:
             tem=input('out of good trading opportunity, still open orders [y/n]?')
@@ -108,7 +110,7 @@ if tradeFlag:
     if tradeOrNot:
         dataPKL['dateStart']=dateStart
         dataPKL['assets']=assets
-        dataPKL['informTrade']=0
+        dataPKL['informTrade']=informTradeCopy
         dataPKL['dateTrade']=0
         fileTem=open('scanTrade','wb')
         pickle.dump(dataPKL,fileTem)
@@ -172,6 +174,10 @@ else:
             continue
         i2=len(opens)-1        
         modelSelect=[]
+        
+        if stocks[i]=='300029.SZ':
+            pdb.set_trace()
+            
         if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
         highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
             modelSelect.append('Up2Down2')

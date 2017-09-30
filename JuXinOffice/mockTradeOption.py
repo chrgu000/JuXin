@@ -20,10 +20,9 @@ logId=Tem.Data[0][0]
 
 #define the callback function
 def myCallback(indata):
-    if hold==0:
-        return
-    
     global objTrade,hands,openPrice,stopLoss,hold
+    if hold==0:
+        return    
     if indata.ErrorCode!=0:
         print('error code:'+str(indata.ErrorCode)+'\n')
         return()

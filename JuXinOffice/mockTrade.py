@@ -37,10 +37,11 @@ def myCallback(indata):
     Li=len(Codes)
     for i in len(Li):
         obji=objTrade.index(Codes[i])
-        if hold[obji]==0:
+        if holds[obji]==0:
+            if indata.Data[0][i] > up20[i]:
+                w.torder(objTrade[i], 'Buy', indata.Data[0][0]+0.002, hands, 'OrderType=LMT;LogonID='+str(logId))
             
-        print(indata)
-    print(x)
+
     
 #    for i in range(loops):
 #        holdi=holds[i];handi=hands[i];stopLossi=stopLoss[i];up20i=up20[i];down20i=down20[i];
