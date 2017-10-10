@@ -347,11 +347,11 @@ class TrainModel():
             
             # sort according to xgboost;
             MatrixXGB=np.c_[dateAll[pointSelect],labelMarket[pointSelect],ratioOpen[pointSelect],Matrix[pointSelect,:]];ReXGB=Re[pointSelect]
-            X_train,X_test,y_train,y_test=train_test_split(MatrixXGB,ReXGB,test_size=0.4) #random_state=0,
+            X_train,X_test,y_train,y_test=train_test_split(MatrixXGB,ReXGB,test_size=0.5) #random_state=0,
                     
             date_train=X_train[:,0];labelMarket_train=X_train[:,1];ratioOpen_train=X_train[:,2];x_train=X_train[:,colXGB+3];
             date_test=X_test[:,0];labelMarket_test=X_test[:,1];ratioOpen_test=X_test[:,2];x_test=X_test[:,3:]
-            tem=int(len(x_test)/5)
+            tem=int(len(x_test)/10)
             x_validation=x_test[:tem,:][:,colXGB];x_test=x_test[tem:,:];y_validation=y_test[:tem];y_test=y_test[tem:];date_test=date_test[tem:]
             labelMarket_test=labelMarket_test[tem:];ratioOpen_test=ratioOpen_test[tem:]
             
@@ -695,7 +695,7 @@ class TrainModel():
         data_test=xgb.DMatrix(data=x_test,label=y_test)
         watch_list={(data_test,'eval'),(data_train,'train')}
         param={'max_depth':3,'eta':0.03,'early_stopping_rounds':3,'silent':1,'objective':'multi:softmax','num_class':2}
-        XGB=xgb.train(param,data_train,num_boost_round=1000,evals=watch_list) #modeify 20000
+        XGB=xgb.train(param,data_train,num_boost_round=5000,evals=watch_list) #modeify 20000
         joblib.dump(XGB,self.saveData+'_xgb')
     
     def xgbPredict(self,x_):

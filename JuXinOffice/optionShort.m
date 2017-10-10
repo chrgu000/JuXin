@@ -461,6 +461,7 @@ function optionShort
     options=options(indTem);
     
     Re=[];
+    ReC=[];
     records=[];
     recordOptions={};
     optionsRec={};

@@ -78,14 +78,19 @@ if tradeFlag:
             tem=informOpen.iloc[i,4]
         else:
             tem=TrainModel.TrainModel(informOpen.iloc[i,3]).kmean.predict(ratioOpen[i])[0]
-            tem=min(profitTable[informOpen.iloc[i,3]][tem],informOpen.iloc[i,4])      
+            tem=profitTable[informOpen.iloc[i,3]][tem]
+            if tem>1.5:
+                tem=max(tem,informOpen.iloc[i,4])      
+            else:
+                tem=min(tem,informOpen.iloc[i,4])
         informOpen.iloc[i,4]=tem
         if tem>3.0:
             informOpen.iloc[i,1]=informOpen.iloc[i,1]*2
             informOpen.iloc[i,2]=informOpen.iloc[i,1]*2
-            
+#    pdb.set_trace()
+    
     informOpen=informOpen.sort_index(by=[4],ascending=False).reset_index(drop=True)   
-    informOpen=informOpen.loc[informOpen[4]>1.5]
+    informOpen=informOpen.loc[informOpen[4]>1.3]
     moneyCS=informOpen[2].cumsum()
     time.sleep(5)
     dataTem=w.tquery('Capital', 'LogonId='+str(logId))
@@ -154,7 +159,7 @@ else:
     profiti=[] # expected profit of this trading;
     indicators=[] 
     for i in range(Lstocks):
-        print(i,end=',')        
+#        print(i,end=',')        
         opens=Opens[i]
         closes=Closes[i]
         highs=Highs[i]
@@ -175,8 +180,8 @@ else:
         i2=len(opens)-1        
         modelSelect=[]
         
-        if stocks[i]=='300029.SZ':
-            pdb.set_trace()
+#        if stocks[i]=='300029.SZ':
+#            pdb.set_trace()
             
         if lows[i2-3]<=min(lows[i2-5:i2+1]) and highs[i2-2]>highs[i2-3] and highs[i2-1]>highs[i2] and lows[i2-1]>lows[i2] and \
         highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]:
@@ -256,19 +261,26 @@ else:
                 if ReSelectNot*ReSelectOk:
                     flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                     if flag[0]==1:
+                        if stocks[i][0]=='0':
+                            ratioTem=1.030
+                        elif stocks[i][0]=='3':
+                            ratioTem=1.197
+                        else:
+                            ratioTem=0.915                 
                         if wd=='3':
-                            profiti2.append(2.32)
+                            profiti2.append(2.32*ratioTem)
                         elif wd=='5':
-                            profiti2.append(2.23)
+                            profiti2.append(2.23*ratioTem)
                         elif wd=='4':
-                            profiti2.append(1.90)
+                            profiti2.append(1.90*ratioTem)
                         elif wd=='2':
-                            profiti2.append(1.85)
+                            profiti2.append(1.85*ratioTem)
                         if wd!='1':
                             stocksi2.append(stocks[i])
                             handsi2.append(np.ceil(100/closes[-1])*100)
                             modeli2.append(modelTem)   # model number:1;
                             moneyi2.append(handsi2[-1]*closes[-1])
+           
             modelTem='Spring'
             if modelTem in modelSelect: # model 1: Up2Down2, model number 1
                 TM=TrainModel.TrainModel(modelTem)
@@ -279,12 +291,19 @@ else:
                 if ReSelectNot*ReSelectOk:
                     flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                     if flag[0]==1:
+                        if stocks[i][0]=='0':
+                            ratioTem=1.012
+                        elif stocks[i][0]=='3':
+                            ratioTem=1.089
+                        else:
+                            ratioTem=0.963                         
                         if wd=='1':
-                            profiti2.append(1.67)
+                            profiti2.append(1.67*ratioTem)
                         elif wd=='5':
-                            profiti2.append(1.33)
+                            profiti2.append(1.33*ratioTem)
                         elif wd=='2':
-                            profiti2.append(1.27)
+                            profiti2.append(1.27*ratioTem)
+                        
                         if wd not in ['3','4']:
                             stocksi2.append(stocks[i])
                             handsi2.append(np.ceil(100/closes[-1])*100)
@@ -300,14 +319,20 @@ else:
                 if ReSelectNot*ReSelectOk:
                     flag=TM.xgbPredict(np.array([Matrix])) # should np.array([Matrix]) or there is something wrong;
                     if flag[0]==1:
+                        if stocks[i][0]=='0':
+                            ratioTem=1.079
+                        elif stocks[i][0]=='3':
+                            ratioTem=0.764
+                        else:
+                            ratioTem=0.984
                         if wd=='1':
-                            profiti2.append(2.55)
+                            profiti2.append(2.55*ratioTem)
                         elif wd=='2':
-                            profiti2.append(1.93)
+                            profiti2.append(1.93*ratioTem)
                         elif wd=='3':
-                            profiti2.append(1.56)
+                            profiti2.append(1.56*ratioTem)
                         elif wd=='5':
-                            profiti2.append(1.32)
+                            profiti2.append(1.32*ratioTem)
                         if wd!='4':
                             stocksi2.append(stocks[i])
                             handsi2.append(np.ceil(100/closes[-1])*100)
@@ -341,6 +366,13 @@ else:
         
     dataPKL['assets']=assets
     dataPKL['dateTrade']=dateFor
+    
+    tem=np.argsort(profiti)[::-1]
+    profiti=np.array(profiti)[tem]
+    stocksi=np.array(stocksi)[tem]
+    handsi=np.array(handsi)[tem]
+    moneyi=np.array(moneyi)[tem]
+    modeli=np.array(modeli)[tem]
     
     Ltrade=len(profiti)
     dateStarti={}
