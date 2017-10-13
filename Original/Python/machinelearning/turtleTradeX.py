@@ -20,10 +20,10 @@ mpl.rcParams['axes.unicode_minus'] = False
 
 ordersLimit=4
 capital=10000000
-fig=1 # show figure to check or not
-dataAllDay=1
+fig=0 # show figure to check or not
+dataAllDay=0
 
-loadData=1
+loadData=0
 
 minTick=1
 contractMulti=10
@@ -108,7 +108,7 @@ cur=conn.cursor()
 if loadData:
     w.start()
     if dataAllDay:
-        data=w.wsd(nameFuture,'open,close,high,low','2009-3-27',yesterday)
+        data=w.wsd(nameFuture,'open,close,high,low','2009-10-13',yesterday)
         ind=np.isnan(data.Data[0]).sum()
         tem=np.array(data.Times)[ind:]
         dateDay=np.array([tem[i].date() for i in range(len(tem))])
@@ -117,7 +117,7 @@ if loadData:
         dataMinute=dataDay[30:,:]
         
     else:       
-        data=w.wsd(nameFuture,'open,close,high,low','2010-5-5',yesterday)
+        data=w.wsd(nameFuture,'open,close,high,low','2014-10-13',yesterday)
         ind=np.isnan(data.Data[0]).sum()
         tem=np.array(data.Times)[ind:]
         dateDay=np.array([tem[i].date() for i in range(len(tem))])
@@ -171,8 +171,8 @@ down20=[]
 
 for i in range(len(dates)):
     tem=(dateDay<dates[i]).sum()
-    up10.append(highDay[tem-10:tem].max())
-    down10.append(lowDay[tem-10:tem].min())
+    up10.append(highDay[tem-7:tem].max())
+    down10.append(lowDay[tem-7:tem].min())
     up20.append(highDay[tem-20:tem].max())
     down20.append(lowDay[tem-20:tem].min())
 #    up55.append(highDay[tem-55:tem].max())
@@ -371,7 +371,7 @@ for i in range(1,len(Re)):
 winRatio=winR/(winR+lossR)
 
 fig=plt.figure(figsize=(12,8))
-plt.title(nameFuture+':'+'复合年化收益 %.2f%%;总获利 %.1f;最大损失 %.1f;最大回撤率 %.2f%%(%.2f%%);胜率 %.3f%%' %(RePerYear,Re[-1]-Re[0],backMax,backMax/capital,backMaxPer,winRatio*100),size=15)
+plt.title(nameFuture+'(%d):复合年化收益 %.2f%%;总获利 %.1f;最大损失 %.1f;最大回撤率 %.2f%%(%.2f%%);胜率 %.3f%%' %(len(capiDelta),RePerYear*100,Re[-1]-Re[0],backMax,backMax*100/capital,backMaxPer*100,winRatio*100),size=15)
 ax1=fig.add_subplot(1,1,1)
 line1,=ax1.plot(closeDay,color='g')
 plt.grid()

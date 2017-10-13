@@ -7,10 +7,10 @@ sw3A='WH.CZC';
 sw3B='RI.CZC';
 %% real procedure
 sw1=0; % get data and save it in 'D:\Trading\HedgeAB.txt'
-sw2=0; % show back-test performance pictures by sort from better ones;
-sw3=1; % test sw3A and sw3B to confirm back-text result;
+sw2=1; % show back-test performance pictures by sort from better ones;
+sw3=0; % test sw3A and sw3B to confirm back-text result;
 if sw1
-    delete HedgeAB.txt % reprocessing data;
+    delete('D:\Trade\Original\HedgeAB.txt\HedgeAB.txt') % reprocessing data;
 %     delete HedgeAB.mat %re-load data;
     try 
         load HedgeAB;
@@ -139,7 +139,7 @@ if sw1
         end       
     end
 elseif sw2
-    data=importdata('HedgeAB.txt');
+    data=importdata('D:\Trade\Original\HedgeAB.txt');
     L=length(data);
     dataTem=regexp(data(1:2:L),',','split');
     wk1=[];

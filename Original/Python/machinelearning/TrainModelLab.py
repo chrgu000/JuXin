@@ -83,19 +83,15 @@ class TrainModel():
             #            ma10[i2]=np.mean(closes[i2-10:i2+1])
                 for i2 in range(15,Lt-3):
         #        for i2 in range(15,16):
-                    if func(opens[i2-10:i2+1],highs[i2-10:i2+1],lows[i2-10:i2+1],closes[i2-10:i2+1]):
-                        if closes[i2+1]>=closes[i2]:
-                            Re.append(closes[i2+2]/opens[i2+1]-1.003)
-#                            Re.append(opens[i2+2]/opens[i2+1]-1)
-                            if fig>0:
-                                figx=[-5,-4]
-                                figy=[opens[i2+1],closes[i2+2]]
-                        else:#elif closes[i2+2]<=closes[i2+1]:
-                            Re.append(opens[i2+2]/opens[i2+1]-1.003)
-#                            Re.append(closes[i2+2]/opens[i2+1]-1)
-                            if fig>0:
-                                figx=[-5,-4]
-                                figy=[opens[i2+1],opens[i2+2]]
+                    if func(opens[i2-10:i2+1],highs[i2-10:i2+1],lows[i2-10:i2+1],closes[i2-10:i2+1]):                        
+                        reTem=closes[i2+2]/opens[i2+1]-1.003
+                        if closes[i2+1]<opens[i2+1] and closes[i2+1]<closes[i2]:
+                            reTem=opens[i2+2]/opens[i2+1]-1.003
+                        Re.append(reTem)
+                        if reTem<-0.2:
+                            figx=[-5,-4]
+                            figy=[opens[i2+1],closes[i2+2]]
+
 #                        elif closes[i2+3]<=closes[i2+2] :
 #                            Re.append(closes[i2+3]/closes[i2]-1)
 ##                            Re.append(closes[i2+2]/opens[i2+1]-1)
@@ -115,7 +111,6 @@ class TrainModel():
 #                                figx=[-6,-1]
 #                                figy=[closes[i2],closes[i2+5]]
                                 
-                            
                         dateAll.append(dates[i2+1])
                         max5near=max(closes[i2-4:i2+1]);max5far=max(closes[i2-9:i2-4]);
                         min5near=min(closes[i2-4:i2+1]);min5far=min(closes[i2-9:i2-4]);
@@ -170,7 +165,7 @@ class TrainModel():
                         labelMarket.append(int(stocks[i][0][0]))
                         ratioOpen.append(opens[i2+1]/closes[i2]-1)
                         Matrix.append(tem)
-                        if fig>0:
+                        if reTem<-0.2:
                             fig=fig-1
                             plt.figure()
                             candleData=[]
@@ -181,12 +176,12 @@ class TrainModel():
                             ax.xaxis_date()
                             plt.xticks(rotation=45)
                             plt.yticks()
-                            plt.title(stocks[i][0])
+                            plt.title(stocks[i][0]+':'+dates[i2].strftime('%Y-%m-%d'))
                             plt.xlabel('Date')
                             plt.ylabel('Price')
                             mpf.candlestick_ohlc(ax,candleData,width=0.8,colorup='r',colordown='g')
                             plt.plot([candleData[figx[0]][0],candleData[figx[1]][0]],figy,color='b',linewidth='2')
-                            plt.grid()      
+                            plt.grid()     
             
             conn.select_db(self.nameDB)
             Matrix=np.row_stack(Matrix)

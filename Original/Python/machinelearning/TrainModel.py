@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-import joblib, warnings,pymysql,time
+import joblib, warnings,pymysql,datetime,pdb
 
 warnings.filterwarnings("ignore")
 
@@ -95,6 +95,14 @@ class TrainModel():
                             if fig>0:
                                 figx=[-5,-4]
                                 figy=[opens[i2+1],opens[i2+2]]
+                        
+#                        reTem=closes[i2+2]/opens[i2+1]-1.003
+#                        if closes[i2+1]<opens[i2+1]:
+#                            reTem=opens[i2+2]/opens[i2+1]-1.003
+#                        Re.append(reTem)
+#                        if reTem<-0.2:
+#                            figx=[-5,-4]
+#                            figy=[opens[i2+1],closes[i2+2]]
                                 
 #                        if min(lows[i2+1:i2+3])>=lows[i2]:
 #                            Re.append(closes[i2+2]/opens[i2+1]-1.003)
@@ -181,7 +189,7 @@ class TrainModel():
                             Re.pop()
                             dateAll.pop()
                             continue
-                        labelMarket.append(int(stocks[i][0][0]))
+                        labelMarket.append(stocks[i][0][:6])
                         ratioOpen.append(opens[i2+1]/closes[i2]-1)
                         Matrix.append(tem)
                         if fig>0:
@@ -205,14 +213,15 @@ class TrainModel():
             conn.select_db(self.nameDB)
             Matrix=np.row_stack(Matrix)
             Matrix=np.column_stack((dateAll,Re,labelMarket,ratioOpen,Matrix))
-            cur.execute('create table indicators(date date,Re float,ind1 float,ind2 float,ind3 float,ind4 float,ind5 float,ind6 float,ind7 float,ind8 float,\
+            cur.execute('create table indicators(date date,Re float,ind1 char(6),ind2 float,ind3 float,ind4 float,ind5 float,ind6 float,ind7 float,ind8 float,\
             ind9 float,ind10 float,ind11 float,ind12 float,ind13 float,ind14 float,ind15 float,ind16 float,ind17 float,ind18 float,ind19 float,ind20 float,ind21 float,ind22 float,\
             ind23 float,ind24 float,ind25 float,ind26 float,ind27 float,ind28 float,ind29 float,ind30 float,ind31 float,ind32 float)')
             cur.executemany('insert into indicators values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', Matrix.tolist()) 
             
             dateAll=Matrix[:,0]
             Re=Matrix[:,1]
-            labelMarket=Matrix[:,2]
+            labelMarket=np.array([int(item[0]) for item in Matrix[:,2]])
+            stocksR=Matrix[:,2]
             ratioOpen=Matrix[:,3]
             Matrix=Matrix[:,4:]
             dispersity,profitP=self.kmeanTestAll(Matrix,Re,0)  
@@ -235,7 +244,8 @@ class TrainModel():
             Matrix=np.row_stack(cur.fetchall())
             dateAll=Matrix[:,0]
             Re=Matrix[:,1]
-            labelMarket=Matrix[:,2]
+            labelMarket=np.array([int(item[0]) for item in Matrix[:,2]])
+            stocksR=Matrix[:,2]
             ratioOpen=Matrix[:,3]
             Matrix=Matrix[:,4:]
             if self.shufflePoints:
@@ -260,7 +270,6 @@ class TrainModel():
                 cur.execute('select * from profitP')
                 profitP=np.row_stack(cur.fetchall())
 
-                
         dispersity=dispersity[:-1]
         colSelect=np.array(list(range(len(dispersity))))[dispersity>self.dispersityX] # -1 delete the last one wich is not for single but for all;
         tem=input('please select which colume(1,2,3 like this) for OkNot:')
@@ -326,7 +335,15 @@ class TrainModel():
         pointSelect=(ReSelectOk>0)*(ReSelectNot>0) # draw final select figure;
         if sum(pointSelect)>0:
             plt.figure(figsize=(15,8))
-            self.ReFig([Re,Re[pointSelect]],['RawRe','SelectOkNot']) 
+            tem=datetime.date(2000,1,1)
+            dateT=[(item-tem).days for item in dateAll]
+            indT=np.argsort(dateT)
+            ReS1=Re[indT]
+            tem=datetime.date(2000,1,1)
+            dateT=[(item-tem).days for item in dateAll[pointSelect]]
+            indT=np.argsort(dateT)
+            ReS2=Re[pointSelect][indT]
+            self.ReFig([ReS1,ReS2],['RawRe','SelectOkNot']) 
         # sort all by time;
         #    dateSort=dateAll[pointSelect]
         #    ReSort=Re[pointSelect]
@@ -377,29 +394,37 @@ class TrainModel():
                 y_pre=self.xgbPredict(x_)
                 y_pre1=y_pre
                 flags=np.unique(y_pre)
-                Rex=[];labelx=[]
+                Rex=[];labelx=[];datex=[];datexBase=datetime.date(2000,1,1)
                 for i in range(len(flags)):
                     tem=y_pre==flags[i]
                     Rex.append(y_[tem].tolist())
+                    datex.append([(item-datexBase).days for item in date_[tem]])
                     labelx.append(labeli[0]+str(flags[i]))
                 plt.subplot(4,2,i2+1)
+                for i in range(len(Rex)):
+                    Rex[i]=np.array(Rex[i])[np.argsort(datex[i])].tolist()              
                 self.ReFig(Rex,labelx)  
                 
                 tem=y_pre1==1
                 y_pre=labelMarket_[tem]
                 y_tem=y_[tem]
+                date_tem=date_[tem]
                 flags=np.unique(y_pre)
-                Rex=[];labelx=[]
+                Rex=[];labelx=[];datex=[]
                 for i in range(len(flags)):
                     tem=y_pre==flags[i]
                     Rex.append(y_tem[tem].tolist())
+                    datex.append([(item-datexBase).days for item in date_tem[tem]])
                     labelx.append(labeli[2]+str(flags[i]))
                 plt.subplot(4,2,i2+3)
+                for i in range(len(Rex)):
+                    Rex[i]=np.array(Rex[i])[np.argsort(datex[i])].tolist()  
                 self.ReFig(Rex,labelx)  
                 
                 tem=y_pre1==1
                 y_pre=ratioOpen_[tem]
                 y_tem=y_[tem]
+                date_tem=date_[tem]
                 if i2==0:
                     kmean=KMeans(n_clusters=5).fit(np.row_stack(y_pre))
                     joblib.dump(kmean,self.saveData+'ratioOpen_kmean')
@@ -408,26 +433,36 @@ class TrainModel():
                     kmean=joblib.load(self.saveData+'ratioOpen_kmean')
                     y_pre=kmean.predict(np.row_stack(y_pre))
                 flags=np.unique(y_pre)
-                Rex=[];labelx=[]
+                Rex=[];labelx=[];datex=[]
                 for i in range(len(flags)):
                     tem=y_pre==flags[i]
                     Rex.append(y_tem[tem].tolist())
+                    datex.append([(item-datexBase).days for item in date_tem[tem]])
                     labelx.append(labeli[3]+str(flags[i]))
                 plt.subplot(4,2,i2+5)
+                for i in range(len(Rex)):
+                    Rex[i]=np.array(Rex[i])[np.argsort(datex[i])].tolist() 
                 self.ReFig(Rex,labelx)    
                 
                 y_pre=self.gaussianNBpredict(x_)
                 flags=np.unique(y_pre)
-                Rex=[];labelx=[]
+                Rex=[];labelx=[];datex=[]
                 for i in range(len(flags)):
                     tem=y_pre==flags[i]
                     Rex.append(y_[tem].tolist())
+                    datex.append([(item-datexBase).days for item in date_[tem]])
                     labelx.append(labeli[1]+str(flags[i]))
                 plt.subplot(4,2,i2+7)
+                for i in range(len(Rex)):
+                    Rex[i]=np.array(Rex[i])[np.argsort(datex[i])].tolist()     
                 self.ReFig(Rex,labelx)  
             tem=y_pre1==1
             dateSort=date_test[tem] # sort by time;
             ReSort=y_test[tem]
+            tem=datetime.date(2000,1,1)
+            tem=np.argsort([(item-tem).days for item in dateSort])
+            dateSort=dateSort[tem]
+            ReSort=ReSort[tem]
             Lt=len(dateSort)
             month=[]
             day=[]
@@ -441,7 +476,12 @@ class TrainModel():
             self.sortStatastic(weekday,ReSort,'selectNotOk--weekday')
             self.sortStatastic(month,ReSort,'selectNotOk--month')
             self.sortStatastic(day,ReSort,'selectNotOk--day')
-            self.sortStatastic(week,ReSort,'selectNotOk--week')           
+            self.sortStatastic(week,ReSort,'selectNotOk--week')    
+        
+        indT=np.argsort(Re)[-100:]
+        for i in range(len(indT)):
+            print(stocksR[indT[i]],end=' ')
+            print(dateAll[indT[i]],end=',')        
         return flagNot,flagOk,Matrix,Re
     
     def kmeanTestAll(self,Xraw,Reraw,figStart): # figStart: how many figs to show 0 means show all and Xcol mean show one (in all)
@@ -695,7 +735,7 @@ class TrainModel():
         data_test=xgb.DMatrix(data=x_test,label=y_test)
         watch_list={(data_test,'eval'),(data_train,'train')}
         param={'max_depth':3,'eta':0.03,'early_stopping_rounds':3,'silent':1,'objective':'multi:softmax','num_class':2}
-        XGB=xgb.train(param,data_train,num_boost_round=5000,evals=watch_list) #modeify 20000
+        XGB=xgb.train(param,data_train,num_boost_round=2000,evals=watch_list) #modeify 20000
         joblib.dump(XGB,self.saveData+'_xgb')
     
     def xgbPredict(self,x_):
