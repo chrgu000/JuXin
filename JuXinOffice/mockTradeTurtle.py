@@ -11,10 +11,10 @@ import numpy as np
 import time,datetime,pdb,pickle
 
 mainMonth=1 # mainMonth switch or not
-objTrade=['RB1801.SHF','I1801.DCE']
-contractMulti=[10,100]
-minTick=[1,0.5]
-setTime='23:30:00' # such as '01:10:25' and so on
+objTrade=['RB1801.SHF','I1801.DCE','J1801.DCE']
+contractMulti=[10,100,100]
+minTick=[1,0.5,0.5]
+setTime='23:35:00' # such as '01:10:25' and so on
 
 w.start()
 tem=[]

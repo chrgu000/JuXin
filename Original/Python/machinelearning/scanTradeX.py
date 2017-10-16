@@ -85,12 +85,12 @@ if tradeFlag:
                 tem=min(tem,informOpen.iloc[i,4])
         informOpen.iloc[i,4]=tem
         if tem>3.0:
-            informOpen.iloc[i,1]=informOpen.iloc[i,1]*2
-            informOpen.iloc[i,2]=informOpen.iloc[i,1]*2
+            informOpen.iloc[i,1]=informOpen.iloc[i,1]*1
+            informOpen.iloc[i,2]=informOpen.iloc[i,2]*1
 #    pdb.set_trace()
     
     informOpen=informOpen.sort_index(by=[4],ascending=False).reset_index(drop=True)   
-    informOpen=informOpen.loc[informOpen[4]>1.3]
+    informOpen=informOpen.loc[informOpen[4]>1.0]
     moneyCS=informOpen[2].cumsum()
     time.sleep(5)
     dataTem=w.tquery('Capital', 'LogonId='+str(logId))
@@ -136,20 +136,21 @@ else:
     Vols=w.wsd(stocks,'volume','ED-'+TradeDays+'TD',dateEnd,'Fill=Previous','PriceAdj=F').Data
     
     dataTem=w.tquery('Position', 'LogonId='+str(logId))
-    sharesHold=np.array(dataTem.Data[7]);
-    tem=sharesHold>0;sharesHold=sharesHold[tem];
-    priceHold=np.array(dataTem.Data[11])[tem];stocksHold=np.array(dataTem.Data[0])[tem]
-    Lt=len(stocksHold)
-    if Lt>0:
-        fileTem=open('scanTrade','rb')
-        dataPKL=pickle.load(fileTem)
-        fileTem.close()
-        dateStart=dataPKL['dateStart']
-        for i in range(Lt):
-            datei=dateStart[stocksHold[i]]
-            indi=stocks.index(stocksHold[i])
-            if len(w.tdays(datei,dateEnd).Data[0])>=2 or Closes[indi][-1]<Closes[indi][-2]:
-                informTrade.append([stocksHold[i],-sharesHold[i],priceHold[i]*sharesHold[i],'close',10])
+    if len(dataTem.Data)>3:
+        sharesHold=np.array(dataTem.Data[7]);
+        tem=sharesHold>0;sharesHold=sharesHold[tem];
+        priceHold=np.array(dataTem.Data[11])[tem];stocksHold=np.array(dataTem.Data[0])[tem]
+        Lt=len(stocksHold)
+        if Lt>0:
+            fileTem=open('scanTrade','rb')
+            dataPKL=pickle.load(fileTem)
+            fileTem.close()
+            dateStart=dataPKL['dateStart']
+            for i in range(Lt):
+                datei=dateStart[stocksHold[i]]
+                indi=stocks.index(stocksHold[i])
+                if len(w.tdays(datei,dateEnd).Data[0])>=2 or Closes[indi][-1]<Closes[indi][-2]:
+                    informTrade.append([stocksHold[i],-sharesHold[i],priceHold[i]*sharesHold[i],'close',10])
     
     Lstocks=len(stocks)
     stocksi=[] # name of stocks;

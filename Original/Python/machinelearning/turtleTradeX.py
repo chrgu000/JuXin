@@ -23,7 +23,7 @@ capital=10000000
 fig=0 # show figure to check or not
 dataAllDay=0
 
-loadData=0
+loadData=1
 
 minTick=1
 contractMulti=10
