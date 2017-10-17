@@ -9,15 +9,15 @@ from WindPy import *
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
-import datetime,pickle,pdb
-
+import datetime,pickle,pdb,time
+t1=time.clock()
 
 timeStart='2014-01-01'
 timeEnd=(datetime.date.today()-timedelta(days=1)).strftime('%Y-%m-%d')
 
 stopAbsList=np.linspace(0.001,0.015,10)
 stopMovList=np.linspace(0.001,0.020,20)
-ratioVList=[0.5,0.6,0.7,0.75,0.8,0.85,0.9,1.0]
+ratioVList=np.linspace(0.7,3,10)
 fig=2
 
 try:
@@ -47,10 +47,13 @@ loops=len(opens)//241
 ReAll=[]
 stop=[]
 maxOrder=5
-
+dayMean=15
+allLoop=len(stopAbsList)*len(stopMovList)*len(ratioVList)
+nowLoop=1
 for j1 in stopAbsList:
     for j2 in stopMovList:
         for j3 in ratioVList:
+            ti=time.clock()
             stopAbs=j1
             stopMov=j2
             ratioV=j3
@@ -61,57 +64,75 @@ for j1 in stopAbsList:
                 High=highs[i*241:(i+1)*241]
                 Low=lows[i*241:(i+1)*241]
                 Vol=vols[i*241:(i+1)*241]
-                i2=5
+                i2=dayMean
                 xi1=[]
                 xi2=[]
                 yi1=[]    
                 yi2=[]
                 colori=[]
                 while i2<236:
-                    maxV=np.mean(Vol[i2-5:i2])
+                    maxV=np.mean(Vol[i2-dayMean:i2])
                     if Vol[i2]>maxV*ratioV and Vol[i2+1]>maxV*ratioV:
                         priceOpen=[Open[i2+3]]
                         barOpen=[i2+3]
+                        priceClose=[]
                         if round(Close[i2+2],3)>=round(Open[i2+2],3):
                             Hold=1
                         else:
                             Hold=-1
                         for i3 in range(i2+3,241):
                             if Hold>0:
-                                for i4 in range(abs(Hold)):
-                                    if Low[i3]<=priceOpen[i4]-stopAbs:
-                                        Re.append(-stopAbs/priceOpen[i4]-0.0004)
-                                        priceClose=priceOpen-stopAbs
-                                        break
-                                    elif max(High[barOpen:i3+1])-Low[i3]>=stopMov:
-                                        priceClose=max(High[barOpen:i3+1])-stopMov
-                                        Re.append(priceClose/priceOpen[i4]-1.0004)
-                                        break
-                                    else:
-                                        pass
-                                    
-                                
+                                closeTem=-1
+                                if Low[i3]<=priceOpen[-1]-stopAbs:
+                                    closeTem=priceOpen[-1]-stopAbs
+                                elif max(High[barOpen[0]:i3+1])-Low[i3]>=stopMov:
+                                    closeTem=max(High[barOpen[0]:i3+1])-stopMov
+                                if closeTem>0:
+                                    for i4 in range(Hold):
+                                        Re.append(closeTem/priceOpen[i4]-1.0004)
+                                        priceClose.append(closeTem)
+                                    break
+                                elif abs(Hold)<maxOrder:
+                                    maxVtem=np.mean(Vol[i3-dayMean:i3])
+                                    if i3+3<=240 and Vol[i3]>maxVtem*ratioV and Vol[i3+1]>maxVtem*ratioV \
+                                    and round(Close[i3+2],3)>=round(Open[i3+2],3) :
+                                        Hold=Hold+1
+                                        priceOpen.append(Open[i3+3])
+                                        barOpen.append(i3+3)                                    
                             elif Hold<0:
-                                if High[i3]>=priceOpen+stopAbs:
-                                    Re.append(-stopAbs/priceOpen-0.0004)
-                                    priceClose=priceOpen+stopAbs
+                                closeTem=-1
+                                if High[i3]>=priceOpen[-1]+stopAbs:
+                                    closeTem=priceOpen[-1]+stopAbs
+                                elif High[i3]-min(Low[barOpen[0]:i3+1])>=stopMov:
+                                    closeTem=min(Low[barOpen[0]:i3+1])+stopMov
+                                if closeTem>0:
+                                    for i4 in range(-Hold):
+                                        Re.append(1-closeTem/priceOpen[i4]-0.0004)
+                                        priceClose.append(closeTem)
                                     break
-                                if High[i3]-min(Low[barOpen:i3+1])>=stopMov:
-                                    priceClose=min(Low[barOpen:i3+1])+stopMov
-                                    Re.append(1-priceClose/priceOpen-0.0004)
-                                    break
+                                elif abs(Hold)<maxOrder:
+                                    maxVtem=np.mean(Vol[i3-dayMean:i3])
+                                    if i3+3<=240 and Vol[i3]>maxVtem*ratioV and Vol[i3+1]>maxVtem*ratioV \
+                                    and round(Close[i3+2],3)<round(Open[i3+2],3) :
+                                        Hold=Hold-1
+                                        priceOpen.append(Open[i3+3])
+                                        barOpen.append(i3+3)              
+                                
                             if i3==240:
-                                Re.append((Close[i3]-priceOpen)*Hold/priceOpen-0.0004)  
-                                priceClose=Close[i3]
+                                for i4 in range(abs(Hold)):
+                                    Re.append((Close[i3]-priceOpen[i4])*(Hold>0)/priceOpen[i4]-0.0004)  
+                                    priceClose.append(Close[i3])
                         i2=i3
-                        xi1.append(barOpen)
-                        xi2.append(i3)
-                        yi1.append(priceOpen)
-                        yi2.append(priceClose)
-                        if Re[-1]>0:
-                            colori.append('purple')
-                        else:
-                            colori.append('cyan')
+                        Lorder=len(barOpen)
+                        for i4 in range(Lorder):
+                            xi1.append(barOpen[i4])
+                            xi2.append(i3)
+                            yi1.append(priceOpen[i4])
+                            yi2.append(priceClose[i4])
+                            if Re[-Lorder+i4]>0:
+                                colori.append('purple')
+                            else:
+                                colori.append('cyan')
                     else:
                         i2=i2+1
                     
@@ -133,6 +154,8 @@ for j1 in stopAbsList:
             
             ReAll.append(Re)
             stop.append([stopAbs,stopMov,ratioV])
+            print('process %d/%d; time left:%.1f minutes.' %(nowLoop,allLoop,(ti-t1)*(allLoop/nowLoop-1)/60))
+            nowLoop=nowLoop+1
             #plt.figure()
             #plt.plot(np.cumsum(Re))
 indMax=np.argsort(list(map(sum,ReAll)))[-1]
@@ -140,7 +163,8 @@ plt.figure(figsize=(25,8))
 plt.plot(np.cumsum(ReAll[indMax]))
 plt.title('stopAbs:'+str(stop[indMax][0])+';stopMove:'+str(stop[indMax][1])+';ratioV:'+str(stop[indMax][2]) )
 
-
+t2=time.clock()
+print('time lapse:%.1f minutes' % ((t2-t1)/60))
 
 
 

@@ -43,7 +43,7 @@ class TrainModel():
             conn.close()
             self.firstTime=1
         if self.firstTime:
-            fig=5 # how many figures ploted to show the confirmed model;
+            fig=125 # how many figures ploted to show the confirmed model;
             conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
             cur=conn.cursor()
             cur.execute('drop database if exists '+self.nameDB) # create database;   
@@ -73,11 +73,19 @@ class TrainModel():
                     continue
                 for i2 in range(15,Lt-45):
                     if func(opens[i2-15:i2+1],highs[i2-15:i2+1],lows[i2-15:i2+1],closes[i2-15:i2+1]):
-                        if 1:#closes[i2+1]>=closes[i2]:
-                            Re.append(closes[i2+45]/opens[i2+1]-1.003)
+                        dayDelta=5
+                        if min(lows[i2+1:i2+dayDelta+1])>=opens[i2+1]*0.5:#closes[i2+1]>=closes[i2]:
+                            Re.append(closes[i2+dayDelta]/opens[i2+1]-1.003)
                             if fig>0:
-                                figx=[5,49]
-                                figy=[opens[i2+1],closes[i2+45]]
+                                figx=[4,4+dayDelta-1]
+                                figy=[opens[i2+1],closes[i2+dayDelta]]
+                        else:
+                            Re.append(-0.053)
+                            if fig>0:
+                                tem=np.where((lows[i2+1:i2+dayDelta+1]<opens[i2+1]*0.95)==1)[0][0]
+                                figx=[4,4+tem]
+                                figy=[opens[i2+1],opens[i2+1]*0.95]
+                        
 #                        else:#elif closes[i2+2]<=closes[i2+1]:
 #                            Re.append(opens[i2+2]/opens[i2+1]-1.003)
 #                            if fig>0:
@@ -87,7 +95,7 @@ class TrainModel():
                             fig=fig-1
                             plt.figure()
                             candleData=[]
-                            for i3 in range(i2-4,i2+45):
+                            for i3 in range(i2-4,i2+10):
                                 tem=(date2num(dates[i3]),opens[i3],highs[i3],lows[i3],closes[i3])
                                 candleData.append(tem)
                             ax=plt.subplot()
@@ -104,6 +112,7 @@ class TrainModel():
             plt.figure(figsize=(15,8))
             plt.plot(np.cumsum(Re))
             plt.title(str(np.mean(Re)))
+            return Re
             
         
     
