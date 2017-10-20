@@ -14,7 +14,7 @@ mainMonth=1 # mainMonth switch or not
 objTrade=['RB1801.SHF','I1801.DCE','J1801.DCE']
 contractMulti=[10,100,100]
 minTick=[1,0.5,0.5]
-setTime='23:30:00' # such as '01:10:25' and so on
+setTime=['23:29:58','23:29:59','23:30:00','23:30:01'] # such as '01:10:25' and so on
 
 w.start()
 tem=[]
@@ -52,7 +52,14 @@ except:
     
 #define the callback function
 def myCallback(indata):
-    global objTrade,hands,stopLoss,up20,down20,up10,down10,openPrice,ATR,holds,logId,today,timex  
+    print('-'*50)
+    print(time.strftime('%H:%M:%S'))
+    tem=int(time.strftime('%H'))
+    if (tem>=9 and tem<=15) or (tem>=21 and tem<=23):
+        pass
+    else:
+        return    
+    global objTrade,hands,stopLoss,up20,down20,up10,down10,openPrice,ATR,holds,logId,today,setTime 
     if indata.ErrorCode!=0:
         print('error code:'+str(indata.ErrorCode)+'\n')
         return()
@@ -133,8 +140,7 @@ def myCallback(indata):
                 stopLoss[obji]=0
                 holds[obji]=0     
                 print('Close Orders:'+objTrade[obji])
-    
-    if time.strftime('%H:%M:%S')==setTime and sum(holds):
+    if time.strftime('%H:%M:%S') in setTime and sum(holds):
         datatem={'holds':holds,'stopLoss':stopLoss,'openPrice':openPrice,'ATR':ATR,'hands':hands}
         tem=open('mockTrade','wb')
         pickle.dump(datatem,tem)
