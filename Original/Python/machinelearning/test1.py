@@ -1,39 +1,85 @@
-import matplotlib.pyplot as plt
+import random,string
 import numpy as np
 import tensorflow as tf
-import requests
 sess=tf.Session()
 
-housing_url='https://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data'
-housing_header = ['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 'DIS', 'RAD', 'TAX', 'PTRATIO', 'B', 'LSTAT', 'MEDV']
-cols_used = ['CRIM', 'INDUS', 'NOX', 'RM', 'AGE', 'DIS', 'TAX', 'PTRATIO', 'B', 'LSTAT']
-num_features=len(cols_used)
-housing_file=requests.get(housing_url)
-housing_data=[[float(x) for x in y.split(' ') if len(x)>=1] \
-               for y in housing_file.text.split('\n') if len(y)>=1]
+n=10
+street_names=['abbey','baker','canal','donner','elm']
+street_types=['rd','st','ln','pass','ave']
+rand_zips=[random.randint(65000,65999) for i in range(n)]
+numbers=[random.randint(1,9999) for i in range(n)]
+streets=[random.choice(street_names) for i in range(n)]
+street_suffs=[random.choice(street_types) for i in range(n)]
+zips=[random.choice(rand_zips) for i in range(n)]
+full_streets=[str(x)+' '+y+' '+z for x,y,z in zip(numbers,streets,street_suffs)]
+reference_data=[list(x) for x in zip(full_streets,zips)]
 
-y_vals=np.transpose([np.array([y[13] for y in housing_data])])
-x_vals=np.array([[x for i,x in enumerate(y) if housing_header[i] \
-                  in cols_used] for y in housing_data])
+def create_typo(s,prob=0.75):
+    if random.uniform(0,1)<prob:
+        rand_ind=random.choice(range(len(s)))
+        s_list=list(s)
+        s_list[rand_ind]=random.choice(string.ascii_lowercase)
+        s=''.join(s_list)
+    return(s)
 
-train_indices=np.random.choice(len(x_vals),round(len(x_vals)*0.8),replace=False)
-test_indices=np.array(list(set(range(len(x_vals)))-set(train_indices)))
-x_vals_train=x_vals[train_indices]
-x_vals_test=x_vals[test_indices]
-y_vals_train=y_vals[train_indices]
-y_vals_test=y_vals[test_indices]
-k=4
-batch_size=len(x_vals_test)
-x_data_train=tf.placeholder(shape=[None,num_features],dtype=tf.float32)
-x_data_test=tf.placeholder(shape=[None,num_features],dtype=tf.float32)
-y_target_train=tf.placeholder(shape=[None,1],dtype=tf.float32)
-y_target_test=tf.placeholder(shape=[None,1],dtype=tf.float32)
+typo_streets=[create_typo(x) for x in streets]
+typo_full_streets=[str(x)+' '+y+' '+z for x,y,z in zip(numbers,typo_streets,street_suffs)]
+test_data=[list(x) for x in zip(typo_full_streets,zips)]
 
-distance=tf.reduce_sum(tf.abs(tf.subtract(x_data_train,\
-                tf.expand_dims(x_data_test,1))),reduction_indices=2)
-top_k_xvals,top_k_indices=tf.nn.top_k(tf.negative(distance),k=k)
-x_sums=tf.expand_dims(tf.reduce_sum(top_k_xvals,1),1)
-x_sums_repeated=
+test_address=tf.sparse_placeholder(dtype=tf.string)
+test_zip=tf.placeholder(shape=[None,1],dtype=tf.float32)
+ref_address=tf.sparse_placeholder(dtype=tf.string)
+ref_zip=tf.placeholder(shape=[None,n],dtype=tf.float32)
+
+zip_dist=tf.square(tf.subtract(ref_zip,test_zip))
+address_dist=tf.edit_distance(test_address,ref_address,normalize=True)
+zip_max=tf.gather(tf.squeeze(zip_dist),tf.argmax(zip_dist,1))
+zip_min=tf.gather(tf.squeeze(zip_dist),tf.argmax(zip_dist,1))
+zip_sim=tf.div(tf.subtract(zip_max,zip_dist),tf.subtract(zip_max,zip_min))
+address_sim=tf.subtract(1.,address_dist)
+address_weight=0.5
+zip_weight=1.-address_weight
+weighted_sim=tf.add(tf.transpose(tf.multiply(address_weight,address_sim)),tf.multiply(zip_weight,zip_sim))
+top_match_index=tf.argmax(weighted_sim,1)
+
+def sparse_from_word_vec(word_vec):
+    num_words=len(word_vec)
+    indices=[[xi,0,yi] for xi,x in enumerate(word_vec) for yi,y in enumerate(x)]
+    chars=list(''.join(word_vec))
+    return (tf.SparseTensorValue(indices,chars,[num_words,1,1]))
+
+reference_addresses=[x[0] for x in reference_data]
+reference_zips=np.array([[x[1] for x in reference_data]])
+sparse_ref_set=sparse_from_word_vec(reference)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
