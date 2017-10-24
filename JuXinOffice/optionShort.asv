@@ -719,7 +719,7 @@
 
 
 % loop for final version-absolute short one time ;
-stepShortS=[1,2,3]; % gas between current value and void value;
+stepShortS=[12]; % gas between current value and void value;
 holdDaysS=[21]; % trading days from "short" to expire date;
 stopRatioS=[1.1,1.3,1.5,1.7,2.0];
 dateFrom='2014/5/1';
