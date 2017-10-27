@@ -927,8 +927,8 @@
 
 % loop for use next open short;
 stepShortS=[1,2,3]; % gas between current value and void value;
-holdDaysS=[10,13,15,18,20,23,25,28,30,35]; % trading days from "short" to expire date;
-stopRatioS=[1.1,1.3,1.5,1.7,2.0];
+holdDaysS=[15,18,20,23,25,28,30,35]; % trading days from "short" to expire date;
+stopRatioS=[1.5,1.7,2.0,2.5,2.8,3.2,3.8];
 dateFrom='2014/5/1';
 dateFrom=year(datenum(dateFrom))*100+month(datenum(dateFrom));
 w=windmatlab;
@@ -1046,31 +1046,35 @@ for j1=1:length(stepShortS)
                     priceStop=priceTem(end);
                     hands1=floor(0.1/(priceTem(1)*(stopRatio-1)));
                     hands2=floor(10000/commission(pricei,tem_1,etf50_1));
-                    ReTem=((priceTem(1)-priceStop)*10000-7.2)*min(hands1,hands2);
+                    minHands=min(hands1,hands2);
+                    if minHands<1
+                        ;%minHands=1;
+                    end
+                    ReTem=((priceTem(1)-priceStop)*10000-7.2)*minHands;
                     Re=[Re;ReTem];
                     tem=w.wsd(optioni,'open,high,low',tradeDay{1},endi,'priceAdj=U');
                     openTem=tem(:,1);highTem=tem(:,2);lowTem=tem(:,3);closeTem=priceTem;
                     for i2=2:length(priceTem)
                         if highTem(i2)>=priceTem(1)*stopRatio
                             priceStop=max(openTem(i2),priceTem(1)*stopRatio);
-                            ReTem=((priceTem(1)-priceStop)*10000-7.2)*min(hands1,hands2);
-                            tem=(monthsB==UniMonth(i))&(pricesB==pricei-2*stepShort*0.05);
+                            ReTem=((priceTem(1)-priceStop)*10000-7.2)*minHands;
+                            tem=(monthsB==UniMonth(i))&(pricesB==pricei+2*stepShort*0.05);
                             optionNew=optionsB(tem);
                             if ~isempty(optionNew)
                                 tem=w.wsd(optionNew,'close,open,high',datestr(dayTem(i2),'yyyy/mm/dd'),endi,'priceAdj=U');
-                                if  max(tem(:,3))/tem(1,1)>=stopRatio
-                                    indT=find(tem(:,3)>=tem(1,1)*stopRatio,1);
-                                    if tem(indT,2)>tem(1,1)*stopRatio
-                                        stopT=tem(indT,2);
+                                if  max(tem(:,1))/tem(1,1)>=stopRatio
+                                    indT=find(tem(:,1)>=tem(1,1)*stopRatio,1);
+                                    if 1%tem(indT+1,2)>tem(1,1)*stopRatio
+                                        stopT=tem(indT+1,2);
                                     else
                                         stopT=tem(1,1)*stopRatio;
                                     end
-                                    Re(end)=ReTem+((tem(1,1)-stopT)*10000-7.2)*min(hands1,hands2); 
+                                    Re(end)=ReTem+((tem(1,1)-stopT)*10000-7.2)*minHands; 
                                 else
-                                    Re(end)=ReTem+((tem(1,1)-tem(end,1))*10000-7.2)*min(hands1,hands2);     
+                                    Re(end)=ReTem+((tem(1,1)-tem(end,1))*10000-7.2)*minHands;     
                                 end
                             else
-                                tem=(monthsB==UniMonth(i))&(pricesB<pricei-stepShort*0.05);
+                                tem=(monthsB==UniMonth(i))&(pricesB>pricei+stepShort*0.05);
                                 pricesBtem=pricesB(tem);optionsBtem=optionsB(tem);
                                 [~,tem]=sort(pricesBtem);
                                 if isempty(tem)
@@ -1079,16 +1083,16 @@ for j1=1:length(stepShortS)
                                 else
                                     optionNew=optionsBtem(tem(1));
                                     tem=w.wsd(optionNew,'close,open,high',datestr(dayTem(i2),'yyyy/mm/dd'),endi,'priceAdj=U');
-                                    if max(max(tem))/tem(1,1)>=stopRatio
-                                        indT=find(tem(:,3)>=tem(1,1)*stopRatio,1);
-                                        if tem(indT,2)>tem(1,1)*stopRatio
-                                            stopT=tem(indT,2);
+                                    if max(tem(:,1))/tem(1,1)>=stopRatio
+                                        indT=find(tem(:,1)>=tem(1,1)*stopRatio,1);
+                                        if 1%tem(indT+1,2)>tem(1,1)*stopRatio
+                                            stopT=tem(indT+1,2);
                                         else
                                             stopT=tem(1,1)*stopRatio;
                                         end
-                                        Re(end)=ReTem+((tem(1,1)-stopT)*10000-7.2)*min(hands1,hands2); 
+                                        Re(end)=ReTem+((tem(1,1)-stopT)*10000-7.2)*minHands; 
                                     else
-                                        Re(end)=ReTem+((tem(1,1)-tem(end,1))*10000-7.2)*min(hands1,hands2);     
+                                        Re(end)=ReTem+((tem(1,1)-tem(end,1))*10000-7.2)*minHands;     
                                     end
                                     display('use reverse options');
                                 end
@@ -1130,7 +1134,7 @@ for i=2:Lre
         maxDown=tem;
     end
 end
-title(sprintf('Step:%d,holdDays:%d,stopRatio:%.2f;\n 年化收益估算：%.2f%%;最大回撤：%.2f%%;胜率：%.2f%%.',stepShortS(para(1)),holdDaysS(para(2)),stopRatioS(para(3)),100*((ReCS(end)/10000)^(1/((datenum(etfMonth(end))-datenum(etfMonth(1)))/360))-1), maxDown/100,winRatio*100));
+title(sprintf('ordersAll:%d,Step:%d,holdDays:%d,stopRatio:%.2f;\n 年化收益估算：%.2f%%;最大回撤：%.2f%%;胜率：%.2f%%.',length(Re),stepShortS(para(1)),holdDaysS(para(2)),stopRatioS(para(3)),100*((ReCS(end)/10000)^(1/((datenum(etfMonth(end))-datenum(etfMonth(1)))/360))-1), maxDown/100,winRatio*100));
     
     
     
