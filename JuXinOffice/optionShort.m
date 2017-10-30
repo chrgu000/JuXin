@@ -926,9 +926,9 @@
 % title(sprintf('Step:%d,holdDays:%d,stopRatio:%.2f;\n 年化收益估算：%.2f%%;最大回撤：%.2f%%;胜率：%.2f%%.',stepShortS(para(1)),holdDaysS(para(2)),stopRatioS(para(3)),100*((ReCS(end)/10000)^(1/((datenum(etfMonth(end))-datenum(etfMonth(1)))/360))-1), maxDown/100,winRatio*100));
 
 % loop for use next open short;
-stepShortS=[1,2,3]; % gas between current value and void value;
-holdDaysS=[15,18,20,23,25,28,30,35]; % trading days from "short" to expire date;
-stopRatioS=[1.5,1.7,2.0,2.5,2.8,3.2,3.8];
+stepShortS=[1];%[1,2,3]; % gas between current value and void value;
+holdDaysS=[23];%[13,15,18,20,23,25,28,30,35]; % trading days from "short" to expire date;
+stopRatioS=[2.5];%[1.5,1.7,2.0,2.5,2.8,3.2,3.8];
 dateFrom='2014/5/1';
 dateFrom=year(datenum(dateFrom))*100+month(datenum(dateFrom));
 w=windmatlab;
@@ -1064,7 +1064,7 @@ for j1=1:length(stepShortS)
                                 tem=w.wsd(optionNew,'close,open,high',datestr(dayTem(i2),'yyyy/mm/dd'),endi,'priceAdj=U');
                                 if  max(tem(:,1))/tem(1,1)>=stopRatio
                                     indT=find(tem(:,1)>=tem(1,1)*stopRatio,1);
-                                    if 1%tem(indT+1,2)>tem(1,1)*stopRatio
+                                    if tem(indT+1,2)>tem(1,1)*stopRatio
                                         stopT=tem(indT+1,2);
                                     else
                                         stopT=tem(1,1)*stopRatio;
@@ -1085,7 +1085,7 @@ for j1=1:length(stepShortS)
                                     tem=w.wsd(optionNew,'close,open,high',datestr(dayTem(i2),'yyyy/mm/dd'),endi,'priceAdj=U');
                                     if max(tem(:,1))/tem(1,1)>=stopRatio
                                         indT=find(tem(:,1)>=tem(1,1)*stopRatio,1);
-                                        if 1%tem(indT+1,2)>tem(1,1)*stopRatio
+                                        if tem(indT+1,2)>tem(1,1)*stopRatio
                                             stopT=tem(indT+1,2);
                                         else
                                             stopT=tem(1,1)*stopRatio;
