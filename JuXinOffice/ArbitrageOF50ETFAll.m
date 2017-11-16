@@ -3,7 +3,7 @@ tic;
 sw0=0;% show two trading targets' difference for history price;50etf-50index
 sw1=0;% show all options-future K lines which are trading in the "date";
 sw2=0;% get all options-future data in history; 
-sw3=0;% show Pictures;
+sw3=1;% show Pictures;
 sw4=0;% code for draw principle figures;
 sw5=1;% Bald eagle Strategy;sw5x
 sw6=0;% short absolutely near expire date;

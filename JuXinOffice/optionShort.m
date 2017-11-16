@@ -1138,7 +1138,7 @@
 % end
 % title(sprintf('ordersAll:%d,Step:%d,holdDays:%d,stopRatio:%.2f;\n 年化收益估算：%.2f%%;最大回撤：%.2f%%;胜率：%.2f%%.',length(Re),stepShortS(para(1)),holdDaysS(para(2)),stopRatioS(para(3)),100*((ReCS(end)/capitalAll)^(1/((datenum(etfMonth(end))-datenum(etfMonth(1)))/360))-1), maxDown*100/capitalAll,winRatio*100));
 
-try 
+try
     load optionShort;
 catch
     dateFrom='2014/5/1';
@@ -1173,7 +1173,7 @@ for j=1:loops
     Data=[Data;data];
     if Date==today
         break;
-    end       
+    end      
 end
 options=Data(:,1);
 [options,indTem]=unique(options);
@@ -1218,7 +1218,7 @@ for i=1:length(optionsB)
         priceAllB=[priceAllB,[0]];
     end
 end
-save optionShort priceAll priceAllB prices pricesB months monthsB;
+save optionShort priceAll priceAllB prices pricesB months monthsB udAll;
 end
 
 % priceAll=priceAllB;
@@ -1228,7 +1228,9 @@ pointShorts=[0.0050:0.005:0.04];
 stopRatios=[1.3:0.2:2.6];
 ReAll={};
 ReStd=[];
+ReLabel={};
 etfMonths={};
+dayAll={};
 paras={};
 loop=0;
 loopAll=string(length(pointShorts)*length(stopRatios));
@@ -1239,9 +1241,11 @@ for l1=1:length(pointShorts)
         pointShort=pointShorts(l1);
         stopRatio=stopRatios(l2);
         Re=[];
+        ReLi=[];
         etfMonth={};
         capitalAll=3000;
         Ltem=length(priceAll);
+        dayTem=[];
         for i=1:Ltem
             Price=priceAll{i};
             indTem=find(Price<=pointShort,1);
@@ -1250,10 +1254,13 @@ for l1=1:length(pointShorts)
                 indTem=find(Price>Price(1)*stopRatio,1);
                 if isempty(indTem)
                     Re=[Re,(Price(1)-Price(end))*10000-7.2];
+                    dayTem=[dayTem,length(Price)];
                 else
                     Re=[Re,(Price(1)-Price(indTem))*10000-7.2];
+                    dayTem=[dayTem,length(Price)];
                 end
                 etfMonth=[etfMonth,months(i)];
+               
 %                 figure;
 %                 plot(Price);
 %                 ;
@@ -1262,8 +1269,10 @@ for l1=1:length(pointShorts)
         if length(Re)>50
             ReStd=[ReStd,mean(Re)/std(Re)];
             ReAll=[ReAll,Re];
+            ReLabel=[ReLabel,ReLi];
             etfMonths=[etfMonths,{etfMonth}];
             paras=[paras,[pointShorts(l1),stopRatios(l2)]];
+            dayAll=[dayAll,dayTem];
         end
     end
 end
@@ -1271,6 +1280,9 @@ end
 Re=ReAll{indTem(end)};
 etfMonth=etfMonths{indTem(end)};
 para=paras{indTem(end)};
+dayS=dayAll{indTem(end)};
+dayS=sum(dayS);
+
 figure;
 winRatio=sum(Re>0)/length(Re);
 ReCS=cumsum(Re)+capitalAll;
@@ -1282,18 +1294,23 @@ set(gca,'xtick',1:step:Lre);
 set(gca,'xticklabel',etfMonth(1:step:Lre),'XTickLabelRotation',60);
 maxDown=0;
 ReCS=[0,ReCS];
+xMD=1;
+yMD=ReCS(1);
 for i=2:Lre
     tem=max(ReCS(1:i))-ReCS(i);
     if tem>maxDown
         maxDown=tem;
+        xMD=i;
+        yMD=ReCS(i);
     end
 end
+hold on;
+plot(xMD,yMD,'r*');
 tem=string(etfMonth{1});
 tem=tem{1};
 monthStart=[tem(1:4),'-',tem(5:6),'-01'];
 title(sprintf('pointShort:%.4f;stopRatio:%.2f;\n年化收益估算：%.2f%%;最大回撤：%.2f%%;胜率：%.2f%%.',...
-    para(1),para(2),100*((ReCS(end)/capitalAll)^(1/((today-datenum(monthStart))/360))-1), maxDown*100/capitalAll,winRatio*100));
-
+    para(1),para(2),sum(Re)*25200/(dayS*3000), maxDown*100/capitalAll,winRatio*100));
 
 
 
