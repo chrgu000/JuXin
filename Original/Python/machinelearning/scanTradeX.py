@@ -201,7 +201,7 @@ else:
                 modelSelect.append('Spring')
             if closes[i2-1]<lows[i2-2] and closes[i2]>highs[i2-1] and closes[i2-1]>=lows[i2-1]+(highs[i2-1]-lows[i2-1])/4 and\
             highs[i2-3]>lows[i2-3] and highs[i2-2]>lows[i2-2]and highs[i2-1]>lows[i2-1]and highs[i2]>lows[i2]: #vols[i2-2:i
-                 modelSelect.append('SpringBig')
+                modelSelect.append('SpringBig')
                  
             if 0: #next model
                 pass
