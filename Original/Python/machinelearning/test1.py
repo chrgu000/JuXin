@@ -1,1 +1,0 @@
-np.random.rand(3,4)
