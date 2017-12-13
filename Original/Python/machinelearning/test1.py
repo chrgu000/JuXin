@@ -1,47 +1,37 @@
-from pylab import *  
-import matplotlib.pyplot as plt
-import matplotlib.finance as mpf
-import tushare as ts
+#import math
 import numpy as np
-import datetime
+import pdb
+#from matplotlib import pyplot
+#from collections import Counter
+#import warnings
 
-#data=ts.get_k_data('600000',ktype='D',autype='qfq',start='2017-10-12',end='2017-12-11')
-#candleData=data[['open','high','low','close']]
-#candleData=np.column_stack([list(range(candleData.shape[0])),candleData])
-#
-#plt.figure(figsize=(12,8))
-#ax=plt.subplot()
-#mpf.candlestick_ohlc(ax,candleData,width=0.5,colorup='r',colordown='g')
-#ax.grid()
-
-
-
-
-data=ts.get_k_data('600000',ktype='D',autype='qfq',start='2017-10-12',end='2017-12-11')
-prices=data[['open','high','low','close']]
-dates=data['date']
-dates=[datetime.datetime.strptime(x, '%Y-%m-%d').date() for x in dates]
-candleData=np.column_stack([dates,prices])
-plt.figure(figsize=(12,8))
-ax=plt.subplot()
-mpf.candlestick_ohlc(ax,candleData,width=0.5,colorup='r',colordown='g')
-ax.grid()
+class knnDIY():
+    def __init__(self,kneighbor):
+        self.kneighbor=kneighbor
+    def fit(self,trainX,Y):
+        self.trainX=np.array(trainX)
+        self.Y=np.array(Y)
+    def predict(self,testX):
+        labels=[]
+        for i in range(len(testX)):
+            euclidean_distance=np.linalg.norm(np.array(self.trainX)-np.array(testX[i]),axis=1)
+            topN=np.argsort(euclidean_distance)[:self.kneighbor]
+            labels.append(int(np.mean(self.Y[topN])>0))
+        return labels
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if __name__=='__main__':
+ 
+    X=[[1,2],[2,3],[3,1],[6,5],[7,7],[8,6]]
+    Y=[1,1,1,0,0,0]
+    newSample = [[3.5,5.2],[1,0],[7,9]]  
+    knn=knnDIY(2)
+    knn.fit(X,Y)
+    label=knn.predict(newSample)
+    print(label)
+ 
+ 
+    
 
 
 
