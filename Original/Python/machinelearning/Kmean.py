@@ -9,6 +9,8 @@ from sklearn.cluster import KMeans
 import tushare as ts
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn import preprocessing
+from sklearn.decomposition import PCA
 
 objectTrade='000001'
 
@@ -114,14 +116,20 @@ class kmeanDIY():
             labels.append(np.argmin(tmp))
         return labels
                 
-X,ReY=GetXY('2008-01-01','2015-01-01')
+X,ReY=GetXY('2000-01-01','2013-01-01')
+#scaler=preprocessing.StandardScaler()
+#X=scaler.fit_transform(X)
+#pca=PCA(0.9)
+#X=pca.fit_transform(X)
 kmean=KMeans(n_clusters=3)
 kmean.fit(X)
 labels=kmean.labels_
 labelsU=np.unique(labels)
 Fig(labels,labelsU,ReY)
 
-X,ReY=GetXY('2015-01-01','2017-12-01')
+X,ReY=GetXY('2013-01-01','2017-12-01')
+#X=scaler.transform(X)
+#X=pca.transform(X)
 labels=kmean.predict(X)
 Fig(labels,labelsU,ReY)
 

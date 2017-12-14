@@ -6,6 +6,8 @@ Created on Wed Dec 13 14:34:40 2017
 """
 
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn import preprocessing
+from sklearn.decomposition import PCA
 import tushare as ts
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,7 +15,7 @@ import matplotlib.pyplot as plt
 objectTrade='000001'
 
 def Get_XY(startDate,endDate):
-    global objectTrade    
+#    global objectTrade    
     data=ts.get_k_data(objectTrade,start=startDate,end=endDate,index=True)
     closes=np.array(data['close'])
     vols=np.array(data['volume'])
@@ -49,7 +51,7 @@ def Fig(labels,labelsU,ReY):
     plt.figure(figsize=(15,8))    
     for i in range(len(titles)):
         plt.plot(Rlist[i].cumsum(),label=titles[i])
-    plt.title(objectTrade)
+    plt.title('stock:'+objectTrade+'; year:'+str(years))
     plt.legend()
     plt.grid()
 
@@ -77,12 +79,18 @@ class knnDIY():
 #labels=knn.predict(X)
 #labelsU=[0,1]
 #Fig(labels,labelsU,ReY)
-
-X,ReY=Get_XY('2014-01-01','2017-01-01')
+years=2013
+X,ReY=Get_XY(str(years-3)+'-01-01',str(years)+'-01-01')
+#scalar=preprocessing.StandardScaler()
+#X=scalar.fit_transform(X)
+#pca=PCA(0.9)
+#X=pca.fit_transform(X)
 knn=knnDIY(5)
 knn.fit(X,ReY>0)
 
-X,ReY=Get_XY('2017-01-01','2017-12-01')
+X,ReY=Get_XY(str(years)+'-01-01',str(years)+'-12-01')
+#X=scalar.transform(X)
+#X=pca.transform(X)
 labels=knn.predict(X)
 labelsU=np.unique(labels)
 Fig(labels,labelsU,ReY)
