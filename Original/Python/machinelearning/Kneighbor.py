@@ -11,6 +11,7 @@ from sklearn.decomposition import PCA
 import tushare as ts
 import numpy as np
 import matplotlib.pyplot as plt
+import pdb
 
 objectTrade='000001'
 
@@ -46,14 +47,16 @@ def Fig(labels,labelsU,ReY):
     Rlist=[];titles=[];
     for i in range(len(labelsU)):
         tem=labels==labelsU[i]
-        Rlist.append(ReY[tem])
+        ReTem=ReY[tem]
+        Rlist.append(ReTem)
         titles.append('Label:'+str(i))
     plt.figure(figsize=(15,8))    
     for i in range(len(titles)):
         plt.plot(Rlist[i].cumsum(),label=titles[i])
-    plt.title('stock:'+objectTrade+'; year:'+str(years))
+    plt.title('SZIndex:'+objectTrade+'; year:'+str(years))
     plt.legend()
     plt.grid()
+    plt.show()
 
 class knnDIY():
     def __init__(self,kneighbor):
@@ -79,7 +82,7 @@ class knnDIY():
 #labels=knn.predict(X)
 #labelsU=[0,1]
 #Fig(labels,labelsU,ReY)
-years=2013
+years=2016
 X,ReY=Get_XY(str(years-3)+'-01-01',str(years)+'-01-01')
 #scalar=preprocessing.StandardScaler()
 #X=scalar.fit_transform(X)

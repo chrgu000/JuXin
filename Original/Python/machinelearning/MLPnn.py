@@ -11,11 +11,11 @@ import matplotlib.pyplot as plt
 from sklearn.neural_network import MLPClassifier
 from sklearn import preprocessing
 from sklearn.decomposition import PCA
+import pdb
 
 objectTrade='000001'
 
 def GetXY(startDate,endDate):
-    global objectTrade    
     data=ts.get_k_data(objectTrade,start=startDate,end=endDate,index=True)
     closes=np.array(data['close'])
     vols=np.array(data['volume'])
@@ -23,16 +23,6 @@ def GetXY(startDate,endDate):
     highs=np.array(data['high'])
     lows=np.array(data['low'])
 
-#    ReX=[];ReY=[]
-#    for i in range(1,len(closes)-1):
-#        tmp=closes[i-1]
-#        ReX.append([opens[i]/tmp,closes[i]/tmp,highs[i]/tmp,lows[i]/tmp])
-#        ReY.append(closes[i+1]/closes[i]-1)
-#    ReX=np.array(ReX)
-#    ReMa5=np.array(ReMa5)
-#    ratioV=np.array(ratioV)
-#    ReY=np.array(ReY)
-#    X = np.column_stack([ReX])    
     tmp=closes[:-2]
     openNew=opens[1:-1]/tmp
     closeNew=closes[1:-1]/tmp
@@ -47,31 +37,34 @@ def Fig(labels,labelsU,ReY):
     for i in range(len(labelsU)):
         tem=labels==labelsU[i]
         Rlist.append(ReY[tem])
-        titles.append('Label:'+str(i))
+        titles.append('Label:'+str(labelsU[i]))
     plt.figure(figsize=(15,8))    
     for i in range(len(titles)):
         plt.plot(Rlist[i].cumsum(),label=titles[i])
     plt.title(objectTrade)
     plt.legend()
     plt.grid()
+    plt.show()
 
-                
-X,ReY=GetXY('2000-01-01','2013-01-01')
+X,ReY=GetXY('2000-01-01','2012-01-01')
 scaler=preprocessing.StandardScaler()
 X=scaler.fit_transform(X)
-pca=PCA(0.85)
+pca=PCA(3)
 X=pca.fit_transform(X)
-clf=MLPClassifier(solver='adam',max_iter=2000,early_stopping=True,hidden_layer_sizes=(12,8),activation='tanh')
+clf=MLPClassifier(solver='adam',max_iter=2000,hidden_layer_sizes=(10,5),activation='tanh')
 tmp=np.ones(len(ReY))
 tmp[ReY>0.005]=2
 tmp[ReY<-0.005]=0
+#print((tmp==0).sum())
+#print((tmp==1).sum())
+#print((tmp==2).sum())
 kk=clf.fit(X,tmp)
 
 labels=clf.predict(X)
 labelsU=np.unique(labels)
 Fig(labels,labelsU,ReY)
 
-X,ReY=GetXY('2013-01-01','2017-12-01')
+X,ReY=GetXY('2012-01-01','2017-12-01')
 X=scaler.transform(X)
 X=pca.transform(X)
 labels=clf.predict(X)
