@@ -54,18 +54,19 @@ scaler=preprocessing.StandardScaler()
 X=scaler.fit_transform(X)
 pca=PCA(0.8)
 X=pca.fit_transform(X)
-kmean=KMeans(n_clusters=6)
+kmean=KMeans(n_clusters=4)
 kmean.fit(X)
 labels=kmean.labels_
 labelsU=np.unique(labels)
 Fig(labels,labelsU,ReY)
 
 # loss=[] #通过肘型图测试K值选取问题；
-# for i in range(2,25):
+# for i in range(2,12):
 #     kmean=KMeans(n_clusters=i)
 #     kmean.fit(X)
 #     loss.append(kmean.inertia_)
-# plt.plot(loss)
+# plt.plot(list(range(2,12)),loss)
+# plt.grid()
 # plt.show()
 
 X,ReY=GetXY('2013-01-01','2017-12-01')

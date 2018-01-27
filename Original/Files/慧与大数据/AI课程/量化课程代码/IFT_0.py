@@ -32,6 +32,8 @@ Re=np.array(Re)
 plt.plot(Re.cumsum(),label='Strategy')
 reRaw=closes[47::48]/closes[::48]-1
 plt.plot(reRaw.cumsum(),label='HS300')
+plt.plot([0,500],[0,0],c='r')
+plt.grid()
 plt.legend()
 plt.show()
 
