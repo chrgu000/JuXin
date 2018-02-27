@@ -87,11 +87,3 @@ print('the predict accuracy:{}%'.format((y_predict==(y>0)).sum()/len(y[0])*100))
 
 
 
-
-
-
-
-
-
-
-
