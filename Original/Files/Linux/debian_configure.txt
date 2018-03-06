@@ -129,7 +129,26 @@ apt-get install gcc automake autoconf libtool make
 (Name:WebPlugin;Location:http://pydev.org/updates);
 6'.2 选择最后一个点开;一路next，安装成功;
 
+7.hadoop(single node setup)
+see "How to install Hadoop 2.6.0 in Ubuntu (Single node setup).html"
+8.spark
+8.1 $tar xzf spark-1.6.1-bin-hadoop2.6.tgz
+8.2 Edit ".bashrc": cd (回到家目录)，caofa@debian:~$ sudo nano .bashrc
+添加：
+export JAVA_HOME=<path-to-the-root-of-your-Java-installation> (eg: /usr/lib/jvm/java-7-oracle/)
+export SPARK_HOME=<path-to-the-root-of-your-spark-installation> (eg: /home/dataflair/spark-1.6.1-bin-hadoop2.6/)
+export PATH=$PATH:$SPARK_HOME/bin
+export PYTHONPATH=$SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-0.10.6-src.zip:$PYTHONPATH
 
+8.3 启动：pyspark
+8.4 Spark UI
+This is the GUI for Spark Application, in local mode spark shell runs as an application. The GUI provide details about stages, storage (cached RDDs), Environment Variables and executors
 
+http://localhost:4040 
+8.5 启动ipython/jupyter
+jupyter notebook --ip=127.0.0.1
 
+9 安装calibre阅览器（阅读epub等电子书）
+$:su root
+$:sudo -v && wget -nv -O- https://download.calibre-ebook.com/linux-installer.py | python -c "import sys; main=lambda:sys.stderr.write('Download failed\n'); exec(sys.stdin.read()); main()"
 
