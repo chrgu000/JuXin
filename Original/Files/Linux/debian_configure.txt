@@ -1,0 +1,135 @@
+﻿0.# add-apt-repository ppa:ubuntu-wine/ppa 相当于Debian,打开 /etc/apt/sources.list ：
+deb http://ppa.launchpad.net/ubuntu-wine/ppa/ubuntu trusty main 
+deb-src http://ppa.launchpad.net/ubuntu-wine/ppa/ubuntu trusty main
+1. 更改apt源：nano /etc/apt/sources.list
+改为：
+
+deb http://dl.google.com/linux/deb/ stable main
+
+deb http://mirrors.163.com/debian/ jessie main non-free contrib
+deb http://mirrors.163.com/debian/ jessie-updates main non-free contrib
+deb http://mirrors.163.com/debian/ jessie-backports main non-free contrib
+deb-src http://mirrors.163.com/debian/ jessie main non-free contrib
+deb-src http://mirrors.163.com/debian/ jessie-updates main non-free contrib
+deb-src http://mirrors.163.com/debian/ jessie-backports main non-free contrib
+deb http://mirrors.163.com/debian-security/ jessie/updates main non-free contrib
+deb-src http://mirrors.163.com/debian-security/ jessie/updates main non-free contrib
+
+deb http://<favourite-cran-mirror>/bin/linux/debian jessie-cran3/
+
+1.1 安装丢失的无线固件：
+sudo apt update
+sudo apt install firmware-brcm80211 firmware-realtek
+1.2 安装 谷歌chromsudo
+apt-get update
+sudo apt-get install google-chrome-stable
+
+2 安装中文输入法
+2.1 sudo apt-get install fcitx fcitx-config-gtk fcitx-sunpinyin fcitx-googlepinyin fcitx-module-cloudpinyin
+2.2 sudo apt-get install fcitx-table-all
+2.3 重启Debian，打开fcitx，选择Pinyin，并添加;
+
+3. 配置JDK：
+1)下载JDK :
+
+      点击链接在Oracle官网下载JDK7u55:JDKu55 下载JDK1.8/1.9 最新版
+
+    2)把jdk压缩文件放到/usr/local文件夹下
+
+       mv 存放jdk压缩文件的文件夹绝对路径/jdk-7u55-linux-i586.tar.gz /usr/local
+
+    3)解压jdk压缩文件到/usr/local
+
+      cd /usr/local
+
+      tar -zxvf jdk-7u55-linux-i586.tar.gz
+
+    4)修改解压后文件夹的名字
+
+      mv jdk1.7.0_55 jdk
+
+    5)给/usr/local/jdk文件夹授权
+
+     cd /usr/local
+
+     chown -R currentAccount:currentAccountGroup jdk/
+
+    6)配置环境变量(需要root权限)
+
+     vim /etc/profile
+
+      在文件的最后追加
+
+JAVA_HOME=/usr/jdk
+CLASSPATH=$JAVA_HOME/lib/
+PATH=$PATH:$JAVA_HOME/bin
+export PATH JAVA_HOME CLASSPATH
+      配置完成后 执行source /etc/profile使配置文件生效
+
+
+   7)把已经安装好的jdk设置成默认jdk(需要root权限)
+      update-alternatives --install /usr/bin/java java /usr/local/jdk/bin/java 300 
+      update-alternatives --install /usr/bin/jar jar /usr/local/jdk/bin/jar 300 
+      update-alternatives --install /usr/bin/javah javah /usr/local/jdk/bin/javah 300 
+      update-alternatives --install /usr/bin/javap javap /usr/local/jdk/bin/javap 300 
+      update-alternatives --config java  选择jdk路径为/usr/local/jdk/bin/java为默认jdk 
+   8)验证jdk是否安装成功
+
+    java -version
+
+   得到以下信息表示安装成功
+
+   java version "1.7.0_55"
+   Java(TM) SE Runtime Environment (build 1.7.0_55-b13)
+   Java HotSpot(TM) Client VM (build 24.55-b03, mixed mode)
+4. 安装gcc和make
+apt-get install gcc automake autoconf libtool make
+5. 更新python：
+5.1 下载python最新安装包：python官网tgz/tat.gz
+5.2、解压安装包
+# tar -zxvf Python-3.3.0.tgz 
+
+5.3、进入解压后目录
+
+# cd Python-3.3.0 
+
+5.4、创建安装目录
+# mkdir /usr/local/python3.3 
+
+5.5、编译安装
+# ./configure --prefix=/usr/local/python3.3  
+
+5.6、执行
+# make
+# make install 
+5.7、此时已完成新版本的安装，但由于老版本还在系统中，所以需要将原来/usr/bin/python链接改为新的连接：
+
+先修改老的连接，执行
+
+# mv /usr/bin/python /usr/bin/python_bak
+
+再建立新连接
+# ln -s /usr/local/python3.3/bin/python3.3 /usr/bin/python 
+
+其中：ln是L的小写不要写成I
+
+5.8、查询python版本，执行：
+
+# python 
+
+6. 安装eclipse 和 PyDev
+6.1 登陆eclipse官网，下载eclipse*.tar.gz，解压：tar -zxvf *.tar.gz; 
+6.2 进入解压文件，双击eclipse-inst;选择安装环境(java/others);
+6.3 运行eclipse；help--install new software--add--
+6.4 安装完成Pydev；windows--Preferences--Pydev--Interpreters--Python Interpreter;
+6.5 Main Menu给eclipse添加new item;
+
+6'安装html,javascript,xml,ajax等插件
+6'.1 运行eclipse；help--install new software--add- 
+(Name:WebPlugin;Location:http://pydev.org/updates);
+6'.2 选择最后一个点开;一路next，安装成功;
+
+
+
+
+
