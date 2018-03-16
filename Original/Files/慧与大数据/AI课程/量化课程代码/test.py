@@ -1,6 +1,6 @@
 import numpy as np
 
-def getEnt(dataSet): # 计算熵值
+def getEnt(dataSet): # 计算entropy
     L=len(dataSet)
     labels=dataSet[:,-1]
     Ent=0
@@ -8,11 +8,9 @@ def getEnt(dataSet): # 计算熵值
         prob=sum(labels==label)/L
         Ent-=prob*np.log(prob)
     return Ent
-
 def splitDataSet(dataSet,axis,value): # 按某个特征分类后的数据
     newData=dataSet[dataSet[:,axis]==value]
     return np.column_stack([newData[:,:axis],newData[:,axis+1:]])
-
 def chooseBestFeatureToSplit(dataSet):  # 选择最优的分类特征
     numFeatures = len(dataSet[0])-1
     baseEntropy = getEnt(dataSet)  # 原始的熵
