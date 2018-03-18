@@ -1,0 +1,5 @@
+安装/启动tensorframes
+pyspark --packages databricks:tensorframes:0.2.9-s_2.11
+安装/启动graphframes
+pyspark --packages graphframes:graphframes:0.5.0-spark2.1-s_2.11
+
