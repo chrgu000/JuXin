@@ -289,7 +289,7 @@ class TrainModel():
         conn.commit()
         cur.close()
         conn.close()
-            
+
         flagNot=[]
         for i in range(len(colSelect)):
             flagi=profitP[colSelect[i]]

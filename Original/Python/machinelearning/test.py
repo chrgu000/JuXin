@@ -6,7 +6,7 @@ Created on Tue Sep 19 13:52:46 2017
 """
 
 import matplotlib.pyplot as plt
-import time,TrainModel,TrainModelFuture
+import time,TrainModel#,TrainModelFuture
 
 x1=time.clock()
 nameDB='test' # should be set for create a new mode test; if future should be 'futuretest'
