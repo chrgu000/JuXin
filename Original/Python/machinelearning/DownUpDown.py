@@ -13,7 +13,7 @@ import numpy as np
 import xgboost as xgb
 
 t0=time.time()
-reGetFeature=True
+reGetFeature=False
 
 conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
 cur=conn.cursor()
@@ -34,12 +34,12 @@ if reGetFeature:
         cur.execute('select * from dataDay')
         dataAll=np.c_[cur.fetchall()]
     else:
-        Lstocks=10
+        Lstocks=101
     t01=time.time()
     t1=t01
     for stockI in range(Lstocks):
         if fetchAll:
-            date=dataAll[0][Number[stockI]:Number[stockI+1]]
+            dates=dataAll[0][Number[stockI]:Number[stockI+1]]
             opens=dataAll[1][Number[stockI]:Number[stockI+1]]
             closes=dataAll[2][Number[stockI]:Number[stockI+1]]
             highs=dataAll[3][Number[stockI]:Number[stockI+1]]
@@ -51,7 +51,7 @@ if reGetFeature:
             endRow=str(Number[stockI+1]-Number[stockI])
             cur.execute('select * from dataDay limit '+startRow+','+endRow)
             dataS=np.c_[cur.fetchall()]
-            date=dataS[0]
+            dates=dataS[0]
             ochl=dataS[1:5]#.astype('float64')
             opens=dataS[1]
             closes=dataS[2]
@@ -91,12 +91,16 @@ if reGetFeature:
                                 continue
                         except:
                             continue                            
-                        features.append([(highs[baseI+P3]-lows[baseI+P2])/baseL,(highs[baseI+P3]-lows[baseI+P4])/baseL,\
+                        features.append([dates[i],(highs[baseI+P3]-lows[baseI+P2])/baseL,(highs[baseI+P3]-lows[baseI+P4])/baseL,\
                                          sum(exchs[baseI+P1+1:baseI+P2+1])/baseE,sum(exchs[baseI+P2+1:baseI+P3+1])/baseE,\
                                          sum(exchs[baseI+P3+1:baseI+P4+1])/baseE])
                         stopL=lows[i]
                         if min(lows[i+1:i+i2+1])<stopL:
-                            tmp=stopL/closes[i]-1.004
+                            tmpI=np.where(lows[i+1:i+i2+1]<stopL)[0][0]+i+1
+                            if opens[tmpI]<stopL:
+                                tmp=opens[tmpI]/closes[i]-1.004
+                            else:
+                                tmp=stopL/closes[i]-1.004
                         else:
                             tmp=closes[i+i2]/closes[i]-1.004
                         profits.append(tmp)
@@ -113,19 +117,22 @@ if reGetFeature:
         t2=time.time()
         ratioStocks=(stockI+1)/Lstocks    
         print(stocks[stockI][0]+':'+str(round(100*ratioStocks,2))+'%,and need more time:{} minutes'.format(round((t2-t1)*(1/ratioStocks-1)/60,2)))
-    
-    cur.execute('drop table if exists DownUpDown')
-    cur.execute('create table DownUpDown(ind0 float,ind1 float,ind2 float,ind3 float,ind4 float,ind5 float)')
-    tmp=np.column_stack([profits,features])
-    cur.executemany('insert into DownUpDown values(%s,%s,%s,%s,%s,%s)', tmp.tolist())
-    conn.commit()
+    if fetchAll:
+        cur.execute('drop table if exists DownUpDown')
+        cur.execute('create table DownUpDown(profit float,date date,ind1 float,ind2 float,ind3 float,ind4 float,ind5 float)')
+        tmp=np.column_stack([profits,features])
+        cur.executemany('insert into DownUpDown values(%s,%s,%s,%s,%s,%s,%s)', tmp.tolist())
+        conn.commit()
     features=np.array(features)
+    dates=features[:,0]
+    features=features[:,1:]
     profits=np.array(profits)
 else:
     cur.execute('select * from DownUpDown')
     tmp=np.c_[cur.fetchall()]
     profits=tmp[0]
-    features=tmp[1:,:].T
+    dates=tmp[1]
+    features=tmp[2:,:].T
 
 cur.close()
 conn.close()
@@ -135,13 +142,14 @@ Lprofits=len(profits)
 tmp=np.random.choice(Lprofits,Lprofits,replace=True)
 features=features[tmp,:]
 profits=profits[tmp]
-Ls=Lprofits*3//5
+Ls=Lprofits*4//5
 Ftrain=features[:Ls];Ptrain=profits[:Ls]
-Ftest=features[Ls:];Ptest=profits[Ls:]
+Ftest=features[Ls:];Ptest=profits[Ls:];Dtest=dates[Ls:]
+tmp=Dtest.argsort();Ftest=Ftest[tmp];Ptest=Ptest[tmp]
 
-#tmp=Ptrain>0
-#Ftrain=np.r_[Ftrain,Ftrain[tmp],Ftrain[tmp],Ftrain[tmp]]
-#Ptrain=np.r_[Ptrain,Ptrain[tmp],Ptrain[tmp],Ptrain[tmp]]
+#tmp=Ptrain>0.1
+#Ftrain=np.r_[Ftrain,Ftrain[tmp],Ftrain[tmp],Ftrain[tmp],Ftrain[tmp],Ftrain[tmp]]
+#Ptrain=np.r_[Ptrain,Ptrain[tmp],Ptrain[tmp],Ptrain[tmp],Ptrain[tmp],Ptrain[tmp]]
 
 tmp=len(Ptrain)
 tmp=np.random.choice(tmp,tmp,replace=False)
@@ -151,9 +159,9 @@ tmp=len(Ptrain)//8
 data_test=xgb.DMatrix(data=Ftrain[:tmp,:],label=Ptrain[:tmp]>0)
 data_train=xgb.DMatrix(data=Ftrain[tmp:,:],label=Ptrain[tmp:]>0)
 watch_list={(data_test,'eval'),(data_train,'train')}
-param={'max_depth':3,'eta':0.03,'early_stopping_rounds':3,'silent':0,'objective':'multi:softmax','num_class':2}
-XGB=xgb.train(param,data_train,num_boost_round=20000,evals=watch_list)
-#XGB=xgb.train(param,data_train,num_boost_round=20000)
+param={'max_depth':12,'eta':0.03,'objective':'multi:softmax','num_class':2} #binary:logistic
+#XGB=xgb.train(param,data_train,num_boost_round=1700,evals=watch_list)
+XGB=xgb.train(param,data_train,num_boost_round=1700)
 ProfitP=XGB.predict(xgb.DMatrix(data=Ftest))
 Pselect=Ptest[ProfitP>0]
 winRatio=sum(Pselect>0)/len(Pselect)
@@ -165,7 +173,7 @@ for i in range(1,len(Pselect)):
     if tmp>maxDown:
         maxDown=tmp
 plt.plot(Pcumsum)
-plt.title('winRatio:{}%,IC:{},maxDown:{}%'.format(round(winRatio*100,2),round(IC,2),round(maxDown*100,2)))
+plt.title('winRatio:{}%,IC:{},maxDown:{}%,orders:{}'.format(round(winRatio*100,2),round(IC,2),round(maxDown*100,2),len(Pselect)))
 plt.grid()
 
 t3=time.time()
