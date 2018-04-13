@@ -5,21 +5,25 @@ Created on Wed Apr 11 15:28:14 2018
 @author: Administrator
 """
 
-#import tushare as ts
-import pymysql,time
+# if 3-3-3, it is too few for difference toleration: 1 bar;please modified sth for this or test 3;
+import pymysql,time,joblib
 import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
 import numpy as np
 import xgboost as xgb
+import lightgbm as lgb
 
 t0=time.time()
-reGetFeature=False
+reGetFeature=False #re-calculate each feature
+reTrain=True #whether train predict Model again;
+useXGB=1 #xgb is better than gbm much(select more good orders);if use gbm, copy more "good sample" works
+modelNow='DownUpDown' # name for saving predict model by joblib
 
 conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset='utf8')
 cur=conn.cursor()
 conn.select_db('pythonStocks') 
 if reGetFeature:
-    fig=0
+    fig=10
     features=[]
     profits=[]
     fetchAll=True
@@ -34,7 +38,7 @@ if reGetFeature:
         cur.execute('select * from dataDay')
         dataAll=np.c_[cur.fetchall()]
     else:
-        Lstocks=101
+        Lstocks=10
     t01=time.time()
     t1=t01
     for stockI in range(Lstocks):
@@ -65,8 +69,8 @@ if reGetFeature:
             for i2 in range(3,10):
                 if i-3*i2-5<0:
                     break
-    #            if closes[i]>opens[i]:
-    #                continue
+                if closes[i]/closes[i-1]>1.092:
+                    continue
                 
                 if abs(max(highs[i-3*i2-1:i-3*i2+2])-max(highs[i-3*i2-5:i+1]))<0.00000001 and \
                 abs(min(lows[i-3*i2:i-i2+2])-min(lows[i-2*i2-1:i-2*i2+2]))<0.00000001 and \
@@ -118,17 +122,17 @@ if reGetFeature:
         ratioStocks=(stockI+1)/Lstocks    
         print(stocks[stockI][0]+':'+str(round(100*ratioStocks,2))+'%,and need more time:{} minutes'.format(round((t2-t1)*(1/ratioStocks-1)/60,2)))
     if fetchAll:
-        cur.execute('drop table if exists DownUpDown')
-        cur.execute('create table DownUpDown(profit float,date date,ind1 float,ind2 float,ind3 float,ind4 float,ind5 float)')
+        cur.execute('drop table if exists '+modelNow)
+        cur.execute('create table '+modelNow+'(profit float,date date,ind1 float,ind2 float,ind3 float,ind4 float,ind5 float)')
         tmp=np.column_stack([profits,features])
-        cur.executemany('insert into DownUpDown values(%s,%s,%s,%s,%s,%s,%s)', tmp.tolist())
+        cur.executemany('insert into '+modelNow+' values(%s,%s,%s,%s,%s,%s,%s)', tmp.tolist())
         conn.commit()
     features=np.array(features)
     dates=features[:,0]
     features=features[:,1:]
     profits=np.array(profits)
 else:
-    cur.execute('select * from DownUpDown')
+    cur.execute('select * from '+modelNow)
     tmp=np.c_[cur.fetchall()]
     profits=tmp[0]
     dates=tmp[1]
@@ -147,7 +151,7 @@ Ftrain=features[:Ls];Ptrain=profits[:Ls]
 Ftest=features[Ls:];Ptest=profits[Ls:];Dtest=dates[Ls:]
 tmp=Dtest.argsort();Ftest=Ftest[tmp];Ptest=Ptest[tmp]
 
-#tmp=Ptrain>0.1
+#tmp=Ptrain>0.08
 #Ftrain=np.r_[Ftrain,Ftrain[tmp],Ftrain[tmp],Ftrain[tmp],Ftrain[tmp],Ftrain[tmp]]
 #Ptrain=np.r_[Ptrain,Ptrain[tmp],Ptrain[tmp],Ptrain[tmp],Ptrain[tmp],Ptrain[tmp]]
 
@@ -156,24 +160,48 @@ tmp=np.random.choice(tmp,tmp,replace=False)
 Ftrain=Ftrain[tmp]
 Ptrain=Ptrain[tmp]
 tmp=len(Ptrain)//8
-data_test=xgb.DMatrix(data=Ftrain[:tmp,:],label=Ptrain[:tmp]>0)
-data_train=xgb.DMatrix(data=Ftrain[tmp:,:],label=Ptrain[tmp:]>0)
-watch_list={(data_test,'eval'),(data_train,'train')}
-param={'max_depth':12,'eta':0.03,'objective':'multi:softmax','num_class':2} #binary:logistic
-#XGB=xgb.train(param,data_train,num_boost_round=1700,evals=watch_list)
-XGB=xgb.train(param,data_train,num_boost_round=1700)
-ProfitP=XGB.predict(xgb.DMatrix(data=Ftest))
-Pselect=Ptest[ProfitP>0]
-winRatio=sum(Pselect>0)/len(Pselect)
-IC=np.mean(Pselect)/np.std(Pselect)
-maxDown=0
-Pcumsum=Pselect.cumsum()
-for i in range(1,len(Pselect)):
-    tmp=max(Pcumsum[:i])-Pcumsum[i]
-    if tmp>maxDown:
-        maxDown=tmp
-plt.plot(Pcumsum)
-plt.title('winRatio:{}%,IC:{},maxDown:{}%,orders:{}'.format(round(winRatio*100,2),round(IC,2),round(maxDown*100,2),len(Pselect)))
+if useXGB:
+    data_test=xgb.DMatrix(data=Ftrain[:tmp,:],label=Ptrain[:tmp]>0)
+    data_train=xgb.DMatrix(data=Ftrain[tmp:,:],label=Ptrain[tmp:]>0)
+    watch_list={(data_test,'eval'),(data_train,'train')}
+    param={'max_depth':12,'eta':0.03,'objective':'binary:logistic'} #binary:logistic
+    
+    if reTrain:
+#        XGB=xgb.train(param,data_train,num_boost_round=1700,evals=watch_list)
+        XGB=xgb.train(param,data_train,num_boost_round=3000)
+        joblib.dump(XGB,modelNow)
+    else:
+        XGB=joblib.load(modelNow)
+    ProfitP=XGB.predict(xgb.DMatrix(data=Ftest))
+else:
+    lgb_train = lgb.Dataset(Ftrain[tmp:,:], Ptrain[tmp:]>0)
+    lgb_eval = lgb.Dataset(Ftrain[:tmp,:], Ptrain[:tmp]>0, reference=lgb_train)
+    params = {'max_depth':12,'objective': 'binary','learning_rate': 0.02}
+    if reTrain:
+        gbm = lgb.train(params,lgb_train,num_boost_round=20000,valid_sets=lgb_eval,early_stopping_rounds=15)
+        joblib.dump(gbm,modelNow)
+    else:
+        gbm=joblib.load(modelNow)
+    ProfitP=gbm.predict(Ftest, num_iteration=gbm.best_iteration)
+tmp=ProfitP>0.5
+Pselect=Ptest[tmp]
+Dselect=Dtest[tmp]
+
+def plotProfit(Pselect,legend):
+    winRatio=sum(Pselect>0)/len(Pselect)
+    IC=np.mean(Pselect)/np.std(Pselect)
+    maxDown=0
+    Pcumsum=Pselect.cumsum()
+    for i in range(1,len(Pselect)):
+        tmp=max(Pcumsum[:i])-Pcumsum[i]
+        if tmp>maxDown:
+            maxDown=tmp
+    tmp=legend+':'+'winRatio {}%,IC:{},maxDown {}%,orders {}'.format(round(winRatio*100,2),round(IC,2),round(maxDown*100,2),len(Pselect))
+    plt.plot(Pcumsum,label=tmp)
+    plt.legend()
+
+plt.figure(figsize=(10,6))
+plotProfit(Pselect,'Predict Result')
 plt.grid()
 
 t3=time.time()
@@ -183,6 +211,18 @@ if reGetFeature:
 else:
     print('Extracting features and profits consumes time {} minutes'.format(round((t2-t0)/60,2)))
 print('xgb training consumes all time {} minutes'.format(round((t3-t2)/60,2)))
+
+plt.figure(figsize=(10,6))
+wd=[i.weekday() for i in Dselect]
+wdUni=np.unique(wd)
+for i in wdUni:
+    tmp=wd==i
+    Proi=Pselect[tmp]
+    plotProfit(Proi,'week day '+str(i+1))
+plt.grid()
+    
+
+
 
 
 
