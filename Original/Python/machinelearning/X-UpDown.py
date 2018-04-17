@@ -11,9 +11,10 @@ import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
 import numpy as np
 import xgboost as xgb
+import lightgbm as lgb
 
 t0=time.time()
-reGetFeature=1 #re-calculate each feature
+reGetFeature=0 #re-calculate each feature
 reTrain=True #whether train predict Model again;
 useXGB=1 #xgb is better than gbm much(select more good orders);if use gbm, copy more "good sample" works
 modelNow='UpDown' # name for saving predict model by joblib
@@ -159,7 +160,7 @@ if useXGB:
     param={'max_depth':12,'eta':0.03,'objective':'binary:logistic'} #binary:logistic
     
     if reTrain:
-        XGB=xgb.train(param,data_train,num_boost_round=2700,evals=watch_list)
+        XGB=xgb.train(param,data_train,num_boost_round=50000,evals=watch_list)
 #        XGB=xgb.train(param,data_train,num_boost_round=3000)
         joblib.dump(XGB,modelNow)
     else:
@@ -171,9 +172,9 @@ else:
     params = {'max_depth':12,'objective': 'binary','learning_rate': 0.02}
     if reTrain:
         gbm = lgb.train(params,lgb_train,num_boost_round=20000,valid_sets=lgb_eval,early_stopping_rounds=15)
-        joblib.dump(gbm,modelNow)
+        joblib.dump(gbm,'e:\\big_joblib\\'+modelNow)
     else:
-        gbm=joblib.load(modelNow)
+        gbm=joblib.load('e:\\big_joblib\\'+modelNow)
     ProfitP=gbm.predict(Ftest, num_iteration=gbm.best_iteration)
 tmp=ProfitP>0.5
 Pselect=Ptest[tmp]
@@ -213,7 +214,24 @@ for i in wdUni:
     plotProfit(Proi,'week day '+str(i+1))
 plt.grid()
     
+P0=XGB.predict(xgb.DMatrix(data=Ftrain))
+tmp=P0>0.5
+F0=Ftrain[tmp]
+P0=Ptrain[tmp]
 
+P1=XGB.predict(xgb.DMatrix(data=Ftest))
+plotProfit(Ptest[P1>0.5],'direct')
+Px=[]
+tmp=P1>0.5
+F1=Ftest[tmp]
+P1=Ptest[tmp]
+for i in range(len(F1)):
+    tmp=np.sum(np.square(F0-F1[i]),axis=1).argsort()[:10]
+    if P0[tmp].mean()>0.03:
+        Px.append(P1[i])
+plt.figure(figsize=(10,6))
+plotProfit(np.array(Px),'knn')
+plt.grid()
 
 
 

@@ -14,8 +14,8 @@ import xgboost as xgb
 import lightgbm as lgb
 
 t0=time.time()
-reGetFeature=False #re-calculate each feature
-reTrain=True #whether train predict Model again;
+reGetFeature=0 #re-calculate each feature
+reTrain=0 #whether train predict Model again;
 useXGB=1 #xgb is better than gbm much(select more good orders);if use gbm, copy more "good sample" works
 modelNow='DownUpDown' # name for saving predict model by joblib
 
@@ -72,12 +72,12 @@ if reGetFeature:
                 if closes[i]/closes[i-1]>1.092:
                     continue
                 
-                if abs(max(highs[i-3*i2-1:i-3*i2+2])-max(highs[i-3*i2-5:i+1]))<0.00000001 and \
-                abs(min(lows[i-3*i2:i-i2+2])-min(lows[i-2*i2-1:i-2*i2+2]))<0.00000001 and \
+                if abs(max(highs[i-3*i2-1:i-3*i2+2])-max(highs[i-3*i2-5:i-2*i2+2]))<0.00000001 and \
+                abs(min(lows[i-3*i2:i-i2+1])-min(lows[i-2*i2-1:i-2*i2+2]))<0.00000001 and \
                 abs(max(highs[i-2*i2:i+1])-max(highs[i-i2-1:i-i2+2]))<0.00000001 and \
-                lows[i]<min(lows[i-i2-1:i]) and \
+                lows[i]<min(lows[i-i2:i]) and \
                 min(highs[i-3*i2-5:i+1]-lows[i-3*i2-5:i+1])>0.0000001:
-                    P1=np.argmax(highs[i-3*i2-5:i+1]) #index 0 is i-3*i2-5
+                    P1=np.argmax(highs[i-3*i2-5:i-2*i2+1]) #index 0 is i-3*i2-5
                     P2=np.argmin(lows[i-2*i2-1:i-2*i2+2])+i2+4
                     P3=np.argmax(highs[i-i2-1:i-i2+2])+2*i2+4
                     P4=3*i2+5
@@ -109,7 +109,7 @@ if reGetFeature:
                             tmp=closes[i+i2]/closes[i]-1.004
                         profits.append(tmp)
         
-                        if fig>0 and np.random.rand(1)>0.5:
+                        if fig>0 and np.random.rand(1)>0.95:
                             fig-=1
                             plt.figure(figsize=(10,6))
                             ax=plt.subplot()
@@ -212,15 +212,42 @@ else:
     print('Extracting features and profits consumes time {} minutes'.format(round((t2-t0)/60,2)))
 print('xgb training consumes all time {} minutes'.format(round((t3-t2)/60,2)))
 
-plt.figure(figsize=(10,6))
-wd=[i.weekday() for i in Dselect]
-wdUni=np.unique(wd)
-for i in wdUni:
-    tmp=wd==i
-    Proi=Pselect[tmp]
-    plotProfit(Proi,'week day '+str(i+1))
-plt.grid()
+#plt.figure(figsize=(10,6))
+#wd=[i.weekday() for i in Dselect]
+#wdUni=np.unique(wd)
+#for i in wdUni:
+#    tmp=wd==i
+#    Proi=Pselect[tmp]
+#    plotProfit(Proi,'week day '+str(i+1))
+#plt.grid()
     
+
+P0=XGB.predict(xgb.DMatrix(data=Ftrain))
+tmp=P0>0.5
+F0=Ftrain[tmp]
+P0=Ptrain[tmp]
+
+P1=XGB.predict(xgb.DMatrix(data=Ftest))
+plotProfit(Ptest[P1>0.5],'direct')
+Px=[]
+tmp=P1>0.5
+F1=Ftest[tmp]
+P1=Ptest[tmp]
+for i in range(len(F1)):
+    tmp=np.sum(np.square(F0-F1[i]),axis=1).argsort()[:10]
+    if P0[tmp].mean()>0.03:
+        Px.append(P1[i])
+plt.figure(figsize=(10,6))
+plotProfit(np.array(Px),'knn')
+plt.grid()
+
+
+
+
+
+
+
+
 
 
 
