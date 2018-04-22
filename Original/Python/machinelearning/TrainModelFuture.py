@@ -11,7 +11,7 @@ from sklearn.cross_validation import train_test_split
 from sklearn.naive_bayes import GaussianNB
 import matplotlib.finance as mpf
 from matplotlib.pylab import date2num
-from WindPy import *
+#from WindPy import *
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
