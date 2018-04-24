@@ -339,10 +339,12 @@ class TrainModel():
             dateT=[(item-tem).days for item in dateAll]
             indT=np.argsort(dateT)
             ReS1=Re[indT]
+      
             tem=datetime.date(2000,1,1)
             dateT=[(item-tem).days for item in dateAll[pointSelect]]
             indT=np.argsort(dateT)
             ReS2=Re[pointSelect][indT]
+            
             self.ReFig([ReS1,ReS2],['RawRe','SelectOkNot']) 
         # sort all by time;
         #    dateSort=dateAll[pointSelect]
@@ -402,7 +404,8 @@ class TrainModel():
                     labelx.append(labeli[0]+str(flags[i]))
                 plt.subplot(4,2,i2+1)
                 for i in range(len(Rex)):
-                    Rex[i]=np.array(Rex[i])[np.argsort(datex[i])].tolist()              
+#                    Rex[i]=np.array(Rex[i])[np.argsort(datex[i])].tolist()  
+                    Rex[i]=np.array(Rex[i]).tolist()                    
                 self.ReFig(Rex,labelx)  
                 
                 tem=y_pre1==1
@@ -418,7 +421,8 @@ class TrainModel():
                     labelx.append(labeli[2]+str(flags[i]))
                 plt.subplot(4,2,i2+3)
                 for i in range(len(Rex)):
-                    Rex[i]=np.array(Rex[i])[np.argsort(datex[i])].tolist()  
+#                    Rex[i]=np.array(Rex[i])[np.argsort(datex[i])].tolist()
+                    Rex[i]=np.array(Rex[i]).tolist() 
                 self.ReFig(Rex,labelx)  
                 
                 tem=y_pre1==1

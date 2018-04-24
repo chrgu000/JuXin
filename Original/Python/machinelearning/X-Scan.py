@@ -17,7 +17,7 @@ today=datetime.datetime.today()
 #    pklData={'dateSave':(today-datetime.timedelta(5)).date(),'profits':[],'stockTrade':[]}
 #    pickle.dump(pklData,tmp)
 #    tmp.close()    
-    
+tradeTime=14<=today.hour<15 and today.minute>50
 tmp=open('X-Scan.pkl','rb')
 pklData=pickle.load(tmp)
 tmp.close()
@@ -40,10 +40,9 @@ if (today.date()-pklData['dateSave']).days>0:
     tmp.close()
     t2=datetime.datetime.now()
     print('Updating data has been completed now! and time lapses {} minutes.'.format(round((t2-today).seconds/60,2)))
-elif 14<=today.hour<15 and today.minute>50 :
-#else:
+else:
     stocks=pklData['stocks'].tolist()
-    stockTrade=pklData['stockTrade']
+    stockTrade=pklData['stockTrade'].copy()
     dataCall=pklData['dataCall']
         
     dataNow=ts.get_today_all()
@@ -70,9 +69,10 @@ elif 14<=today.hour<15 and today.minute>50 :
                     pklData['profits'].append(stopReal/stockTmp[1]-1.004)
                     pklData['stockTrade'].remove(stocki)
                     del pklData[stocki]
-            tmp=open('X-Scan.pkl','wb')
-            pickle.dump(pklData,tmp)
-            tmp.close()
+            if tradeTime:
+                tmp=open('X-Scan.pkl','wb')
+                pickle.dump(pklData,tmp)
+                tmp.close()
                 
     features=[]
     stocksTarget=[]
@@ -118,7 +118,7 @@ elif 14<=today.hour<15 and today.minute>50 :
                         continue                            
                     features.append([(highs[baseI+P3]-lows[baseI+P2])/baseL,(highs[baseI+P3]-lows[baseI+P4])/baseL,\
                                      sum(vols[baseI+P1+1:baseI+P2+1])/baseE,sum(vols[baseI+P2+1:baseI+P3+1])/baseE,\
-                                     sum(vols[baseI+P3+1:baseI+P4+1])/baseE])
+                                     sum(vols[baseI+P3+1:baseI+P4])/baseE])
                     stocksTarget.append(stocks[i])
                     holds.append(i2)
                     openPrice.append(closes[-1])
@@ -154,10 +154,11 @@ elif 14<=today.hour<15 and today.minute>50 :
             print(stockS[i]+' win ratio:{}% and should be hold {} days'.format(round(probS[i]*100,2),holdS[i]))
             pklData[stockS[i]]=[today.date(),openPriceS[i],holdS[i],stopPriceS[i],probS[i]]
             stockTrade.append(stockS[i])
-        tmp=open('X-Scan.pkl','wb')
-        pklData['stockTrade']=stockTrade
-        pickle.dump(pklData,tmp)
-        tmp.close()
+        if tradeTime:
+            tmp=open('X-Scan.pkl','wb')
+            pklData['stockTrade'].extend(stockTrade)
+            pickle.dump(pklData,tmp)
+            tmp.close()
 
     t2=datetime.datetime.now()
     print('Time lapses {} minutes.'.format(round((t2-today).seconds/60,2)))

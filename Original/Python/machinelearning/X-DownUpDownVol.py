@@ -14,8 +14,8 @@ import xgboost as xgb
 import lightgbm as lgb
 
 t0=time.time()
-reGetFeature=0 #re-calculate each feature
-reTrain=0 #whether train predict Model again;
+reGetFeature=1 #re-calculate each feature
+reTrain=1 #whether train predict Model again;
 useXGB=1 #xgb is better than gbm much(select more good orders);if use gbm, copy more "good sample" works
 modelNow='DownUpDownVol' # name for saving predict model by joblib
 
@@ -97,7 +97,7 @@ if reGetFeature:
                             continue                            
                         features.append([dates[i],(highs[baseI+P3]-lows[baseI+P2])/baseL,(highs[baseI+P3]-lows[baseI+P4])/baseL,\
                                          sum(vols[baseI+P1+1:baseI+P2+1])/baseE,sum(vols[baseI+P2+1:baseI+P3+1])/baseE,\
-                                         sum(vols[baseI+P3+1:baseI+P4+1])/baseE])
+                                         sum(vols[baseI+P3+1:baseI+P4])/baseE])
                         stopL=lows[i]
                         if min(lows[i+1:i+i2+1])<stopL:
                             tmpI=np.where(lows[i+1:i+i2+1]<stopL)[0][0]+i+1
