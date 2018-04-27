@@ -15,8 +15,8 @@ import xgboost as xgb
 import lightgbm as lgb
 
 t0=time.time()
-reGetFeature=1 #re-calculate each feature
-reTrain=True #whether train predict Model again;
+reGetFeature=0 #re-calculate each feature
+reTrain=0 #whether train predict Model again;
 useXGB=1 #xgb is better than gbm much(select more good orders);if use gbm, copy more "good sample" works
 modelNow='UpDownVol' # name for saving predict model by joblib
 

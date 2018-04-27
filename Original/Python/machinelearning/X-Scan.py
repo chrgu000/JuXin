@@ -353,12 +353,12 @@ else:
             stopPriceS=stopPrice[indexT][tmp]
         indexT=np.where(typeM=='UpDownVol')[0]        
         if indexT.sum():
-            ModelP=joblib.load('e:\\big_joblib\\'+'UpDownVol')
+            ModelP=joblib.load('UpDownVol')
             tmpF=[]
             for i in indexT:
                 tmpF.append(features[i])
             prob=ModelP.predict(xgb.DMatrix(data=tmpF)) 
-            tmp=prob>0.5
+            tmp=prob>0.65
             probS=np.r_[probS,prob[tmp]]
             stockS=np.r_[stockS,stocksTarget[indexT][tmp]]
             holdS=np.r_[holdS,holds[indexT][tmp]]
@@ -373,7 +373,7 @@ else:
         stopPriceS=stopPriceS[tmp]
         stockTrade=[]
         for i in range(len(stockS)):
-            print(stockS[i]+' win ratio:{}% and should be hold {} days'.format(round(probS[i]*100,2),holdS[i]))
+            print(stockS[i]+' win ratio:{}% and should be hold {} days;Model'.format(round(probS[i]*100,2),holdS[i]))
             pklData[stockS[i]]=[today.date(),openPriceS[i],holdS[i],stopPriceS[i],probS[i]]
             stockTrade.append(stockS[i])
         if tradeTime:
