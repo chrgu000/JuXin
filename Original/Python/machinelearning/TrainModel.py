@@ -421,7 +421,7 @@ class TrainModel():
                     labelx.append(labeli[2]+str(flags[i]))
                 plt.subplot(4,2,i2+3)
                 for i in range(len(Rex)):
-#                    Rex[i]=np.array(Rex[i])[np.argsort(datex[i])].tolist()
+                    Rex[i]=np.array(Rex[i])[np.argsort(datex[i])].tolist()
                     Rex[i]=np.array(Rex[i]).tolist() 
                 self.ReFig(Rex,labelx)  
                 

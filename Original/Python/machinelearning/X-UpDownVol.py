@@ -16,7 +16,7 @@ import lightgbm as lgb
 
 t0=time.time()
 reGetFeature=0 #re-calculate each feature
-reTrain=0 #whether train predict Model again;
+reTrain=1 #whether train predict Model again;
 useXGB=1 #xgb is better than gbm much(select more good orders);if use gbm, copy more "good sample" works
 modelNow='UpDownVol' # name for saving predict model by joblib
 
@@ -24,11 +24,11 @@ conn = pymysql.connect(host ='localhost',user = 'caofa',passwd = 'caofa',charset
 cur=conn.cursor()
 conn.select_db('pythonStocks') 
 if reGetFeature:
-    fig=0
+    fig=10
     features=[]
     profits=[]
     fetchAll=1
-        
+
     Lstocks=cur.execute('select number from stocks') # select name from stocks: get stocks' name;
     Number=np.insert(np.cumsum(cur.fetchall()),0,0)
     cur.execute('select name from stocks') # select name from stocks: get stocks' name;
@@ -102,7 +102,7 @@ if reGetFeature:
                             tmp=closes[i+i2//2]/closes[i]-1.004
                         profits.append(tmp)
         
-                        if fig>0 and np.random.rand(1)>0.5:
+                        if fig>0 and np.random.rand(1)>0.75:
                             fig-=1
                             plt.figure(figsize=(10,6))
                             ax=plt.subplot()
@@ -137,26 +137,27 @@ conn.close()
 t2=time.time()
 
 Lprofits=len(profits)
-tmp=np.random.choice(Lprofits,Lprofits,replace=True)
-features=features[tmp,:]
-profits=profits[tmp]
+tmp=dates.argsort()
+features=features[tmp];profits=profits[tmp];dates=dates[tmp]
 Ls=Lprofits*4//5
 Ftrain=features[:Ls];Ptrain=profits[:Ls]
+#tmp=np.random.choice(Ls,Ls,replace=False)
+#Ftrain=Ftrain[tmp,:]
+#Ptrain=Ptrain[tmp]
 Ftest=features[Ls:];Ptest=profits[Ls:];Dtest=dates[Ls:]
-tmp=Dtest.argsort();Ftest=Ftest[tmp];Ptest=Ptest[tmp]
 
 #tmp=Ptrain>0.08
 #Ftrain=np.r_[Ftrain,Ftrain[tmp],Ftrain[tmp],Ftrain[tmp],Ftrain[tmp],Ftrain[tmp]]
 #Ptrain=np.r_[Ptrain,Ptrain[tmp],Ptrain[tmp],Ptrain[tmp],Ptrain[tmp],Ptrain[tmp]]
-
-tmp=len(Ptrain)
-tmp=np.random.choice(tmp,tmp,replace=False)
-Ftrain=Ftrain[tmp]
-Ptrain=Ptrain[tmp]
-tmp=len(Ptrain)//8
+#
+#tmp=len(Ptrain)
+#tmp=np.random.choice(tmp,tmp,replace=False)
+#Ftrain=Ftrain[tmp]
+#Ptrain=Ptrain[tmp]
+tmp=len(Ptrain)*7//8
 if useXGB:
-    data_test=xgb.DMatrix(data=Ftrain[:tmp,:],label=Ptrain[:tmp]>0)
-    data_train=xgb.DMatrix(data=Ftrain[tmp:,:],label=Ptrain[tmp:]>0)
+    data_train=xgb.DMatrix(data=Ftrain[:tmp,:],label=Ptrain[:tmp]>0)
+    data_test=xgb.DMatrix(data=Ftrain[tmp:,:],label=Ptrain[tmp:]>0)
     watch_list={(data_test,'eval'),(data_train,'train')}
     param={'max_depth':12,'eta':0.03,'objective':'binary:logistic'} #binary:logistic
     
@@ -215,24 +216,24 @@ for i in wdUni:
     plotProfit(Proi,'week day '+str(i+1))
 plt.grid()
 
-#P0=XGB.predict(xgb.DMatrix(data=Ftrain))
-#tmp=P0>0.5
-#F0=Ftrain[tmp]
-#P0=Ptrain[tmp]
-#
-#P1=XGB.predict(xgb.DMatrix(data=Ftest))
-#plotProfit(Ptest[P1>0.5],'direct')
-#Px=[]
-#tmp=P1>0.5
-#F1=Ftest[tmp]
-#P1=Ptest[tmp]
-#for i in range(len(F1)):
-#    tmp=np.sum(np.square(F0-F1[i]),axis=1).argsort()[:10]
-#    if P0[tmp].mean()>0.03:
-#        Px.append(P1[i])
-#plt.figure(figsize=(10,6))
-#plotProfit(np.array(Px),'knn')
-#plt.grid()
+P0=XGB.predict(xgb.DMatrix(data=Ftrain))
+tmp=P0>0.5
+F0=Ftrain[tmp]
+P0=Ptrain[tmp]
+
+P1=XGB.predict(xgb.DMatrix(data=Ftest))
+plotProfit(Ptest[P1>0.5],'direct')
+Px=[]
+tmp=P1>0.5
+F1=Ftest[tmp]
+P1=Ptest[tmp]
+for i in range(len(F1)):
+    tmp=np.sum(np.square(F0-F1[i]),axis=1).argsort()[:10]
+    if P0[tmp].mean()>0.045:
+        Px.append(P1[i])
+plt.figure(figsize=(10,6))
+plotProfit(np.array(Px),'knn')
+plt.grid()
 
 
 

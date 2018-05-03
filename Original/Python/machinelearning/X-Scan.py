@@ -184,6 +184,7 @@ today=datetime.datetime.today()
 #    pickle.dump(pklData,tmp)
 #    tmp.close()    
 tradeTime=14<=today.hour<15 and today.minute>50
+tradeDay=0
 tmp=open('X-Scan.pkl','rb')
 pklData=pickle.load(tmp)
 tmp.close()
@@ -211,37 +212,38 @@ else:
     stockTrade=pklData['stockTrade'].copy()
     dataCall=pklData['dataCall']
 
-    dataNow=ts.get_today_all()
-    dataNow=dataNow.set_index('code')
-    Lst=len(stockTrade) #close orders
-    if Lst:
-        todayT=today.date()
-        for i in range(Lst):
-            stocki=stockTrade[i]
-            stockTmp=pklData[stocki]
-            if dataNow.loc[stocki].low<=stockTmp[3]: #if touch stop loss
-                if dataNow.loc[stocki].open<=stockTmp[3]:
-                    stopReal=dataNow.loc[stocki].open
-                else:
-                    stopReal=stockTmp[3]
-                pklData['profits'].append(stopReal/stockTmp[1]-1.004)
-                pklData['stockTrade'].remove(stocki)
-                del pklData[stocki]
-                print('close '+stocki)
-            else:
-                datei=dataCall[stocks.index(stockTrade[i])].date.tolist()
-                tmp=datei.index(datetime.datetime.strftime(stockTmp[0],'%Y-%m-%d'))
-                holdDay=len(datei)-tmp+1
-                if holdDay>=stockTmp[2]+1:
-                    stopReal=dataNow.loc[stocki].trade
+    if tradeDay:
+        dataNow=ts.get_today_all()
+        dataNow=dataNow.set_index('code')
+        Lst=len(stockTrade) #close orders
+        if Lst:
+            todayT=today.date()
+            for i in range(Lst):
+                stocki=stockTrade[i]
+                stockTmp=pklData[stocki]
+                if dataNow.loc[stocki].low<=stockTmp[3]: #if touch stop loss
+                    if dataNow.loc[stocki].open<=stockTmp[3]:
+                        stopReal=dataNow.loc[stocki].open
+                    else:
+                        stopReal=stockTmp[3]
                     pklData['profits'].append(stopReal/stockTmp[1]-1.004)
                     pklData['stockTrade'].remove(stocki)
                     del pklData[stocki]
                     print('close '+stocki)
-            if tradeTime:
-                tmp=open('X-Scan.pkl','wb')
-                pickle.dump(pklData,tmp)
-                tmp.close()                
+                else:
+                    datei=dataCall[stocks.index(stockTrade[i])].date.tolist()
+                    tmp=datei.index(datetime.datetime.strftime(stockTmp[0],'%Y-%m-%d'))
+                    holdDay=len(datei)-tmp+1
+                    if holdDay>=stockTmp[2]+1:
+                        stopReal=dataNow.loc[stocki].trade
+                        pklData['profits'].append(stopReal/stockTmp[1]-1.004)
+                        pklData['stockTrade'].remove(stocki)
+                        del pklData[stocki]
+                        print('close '+stocki)
+                if tradeTime and tradeDay:
+                    tmp=open('X-Scan.pkl','wb')
+                    pickle.dump(pklData,tmp)
+                    tmp.close()                
     features=[]
     stocksTarget=[]
     holds=[]
@@ -250,12 +252,19 @@ else:
     typeM=[] # label which type the model belongs to; 
     for i in range(len(stocks)):
         try:
-            tmpNow=dataNow.loc[stocks[i]]
-            opens=np.r_[dataCall[i].open, tmpNow.open]
-            closes=np.r_[dataCall[i].close, tmpNow.trade]
-            highs=np.r_[dataCall[i].high, tmpNow.high]
-            lows=np.r_[dataCall[i].low, tmpNow.low]
-            vols=np.r_[dataCall[i].volume, tmpNow.volume]
+            if tradeDay:
+                tmpNow=dataNow.loc[stocks[i]]
+                opens=np.r_[dataCall[i].open, tmpNow.open]
+                closes=np.r_[dataCall[i].close, tmpNow.trade]
+                highs=np.r_[dataCall[i].high, tmpNow.high]
+                lows=np.r_[dataCall[i].low, tmpNow.low]
+                vols=np.r_[dataCall[i].volume, tmpNow.volume]
+            else:
+                opens=dataCall[i].open.values
+                closes=dataCall[i].close.values
+                highs=dataCall[i].high.values
+                lows=dataCall[i].low.values
+                vols=dataCall[i].volume.values
         except:
             continue
         Li=len(opens)-1        
@@ -351,6 +360,7 @@ else:
             holdS=holds[indexT][tmp]
             openPriceS=openPrice[indexT][tmp]
             stopPriceS=stopPrice[indexT][tmp]
+            typeS=['DownUpDownVol']*len(stopPriceS)
         indexT=np.where(typeM=='UpDownVol')[0]        
         if indexT.sum():
             ModelP=joblib.load('UpDownVol')
@@ -364,6 +374,7 @@ else:
             holdS=np.r_[holdS,holds[indexT][tmp]]
             openPriceS=np.r_[openPriceS,openPrice[indexT][tmp]]
             stopPriceS=np.r_[stopPriceS,stopPrice[indexT][tmp]]
+            typeS=np.r_[typeS,['UpDownVol']*len(prob[tmp])]
             
         tmp=(probS).argsort()
         probS=probS[tmp]
@@ -371,18 +382,20 @@ else:
         holdS=holdS[tmp]
         openPriceS=openPriceS[tmp]
         stopPriceS=stopPriceS[tmp]
+        typeS=typeS[tmp]
         stockTrade=[]
         for i in range(len(stockS)):
-            print(stockS[i]+' win ratio:{}% and should be hold {} days;Model'.format(round(probS[i]*100,2),holdS[i]))
+            print(stockS[i]+' win ratio:{}% and should be hold {} days;Model is {}'.format(round(probS[i]*100,2),holdS[i],typeS[i]))
             pklData[stockS[i]]=[today.date(),openPriceS[i],holdS[i],stopPriceS[i],probS[i]]
             stockTrade.append(stockS[i])
-        if tradeTime:
+        if tradeTime and tradeDay:
             tmp=open('X-Scan.pkl','wb')
             pklData['stockTrade'].extend(stockTrade)
             pickle.dump(pklData,tmp)
             tmp.close()
     t2=datetime.datetime.now()
     print('Time lapses {} minutes.'.format(round((t2-today).seconds/60,2)))
+
 
 
 
