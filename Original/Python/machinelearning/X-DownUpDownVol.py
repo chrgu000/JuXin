@@ -12,7 +12,7 @@ import xgboost as xgb
 import lightgbm as lgb
 
 t0=time.time()
-reGetFeature=1 #re-calculate each feature
+reGetFeature=0 #re-calculate each feature
 reTrain=1 #whether train predict Model again;
 useXGB=0 #xgb is better than gbm much(select more good orders);if use gbm, copy more "good sample" works
 modelNow='DownUpDownVol' + '5'# name for saving predict model by joblib
@@ -26,17 +26,17 @@ if reGetFeature:
     profits=[]
     fetchAll=True
         
-#    Lstocks=cur.execute('select number from stocks') # select name from stocks: get stocks' name;
-#    Number=np.insert(np.cumsum(cur.fetchall()),0,0)
-#    cur.execute('select name from stocks') # select name from stocks: get stocks' name;
-#    stocks=cur.fetchall()
-#    #cur.execute('select * from dataDay') #'select * from dataDay limit '
-#    #dataAll=np.column_stack(cur.fetchall())
-#    if fetchAll:
-#        cur.execute('select * from dataDay')
-#        dataAll=np.c_[cur.fetchall()]
-#    else:
-#        Lstocks=10
+    Lstocks=cur.execute('select number from stocks') # select name from stocks: get stocks' name;
+    Number=np.insert(np.cumsum(cur.fetchall()),0,0)
+    cur.execute('select name from stocks') # select name from stocks: get stocks' name;
+    stocks=cur.fetchall()
+    cur.execute('select * from dataDay') #'select * from dataDay limit '
+    dataAll=np.column_stack(cur.fetchall())
+    if fetchAll:
+        cur.execute('select * from dataDay')
+        dataAll=np.c_[cur.fetchall()]
+    else:
+        Lstocks=10
     t01=time.time()
     t1=t01
     for stockI in range(Lstocks):
@@ -102,7 +102,7 @@ if reGetFeature:
                     tmp=closes[i+5]/closes[i]-1.004
                 profits.append(tmp)
 
-                if fig>0 and np.random.rand(1)>0.95:
+                if fig>0 and np.random.rand(1)>0.05:
                     fig-=1
                     plt.figure(figsize=(10,6))
                     ax=plt.subplot()
@@ -135,10 +135,11 @@ cur.close()
 conn.close()
 t2=time.time()
 
+dataAll=0
 Lprofits=len(profits)
 tmp=dates.argsort()
 features=features[tmp];profits=profits[tmp];dates=dates[tmp]
-Ls=Lprofits*4//5
+Ls=Lprofits*3//4
 Ftrain=features[:Ls];Ptrain=profits[:Ls]
 #tmp=np.random.choice(Ls,Ls,replace=False)
 #Ftrain=Ftrain[tmp,:]
@@ -153,15 +154,16 @@ Ftest=features[Ls:];Ptest=profits[Ls:];Dtest=dates[Ls:]
 #tmp=np.random.choice(tmp,tmp,replace=False)
 #Ftrain=Ftrain[tmp]
 #Ptrain=Ptrain[tmp]
-tmp=len(Ptrain)*7//8
+tmp=len(Ptrain)*3//4
 if useXGB:
     data_train=xgb.DMatrix(data=Ftrain[:tmp,:],label=Ptrain[:tmp]>0)
     data_test=xgb.DMatrix(data=Ftrain[tmp:,:],label=Ptrain[tmp:]>0)
     watch_list={(data_test,'eval'),(data_train,'train')}
-    param={'max_depth':12,'eta':0.03,'objective':'binary:logistic'} #binary:logistic
+    param={'max_depth':4,'eta':0.08,'objective':'binary:logistic'} #binary:logistic
     
     if reTrain:
         XGB=xgb.train(param,data_train,num_boost_round=3000,evals=watch_list)
+#        XGB=xgb.train(param,data_train,early_stopping_rounds=10,num_boost_round=3000,evals=watch_list)
 #        XGB=xgb.train(param,data_train,num_boost_round=3000)
         joblib.dump(XGB,modelNow)
     else:
@@ -170,9 +172,10 @@ if useXGB:
 else:
     lgb_train = lgb.Dataset(Ftrain[tmp:,:], Ptrain[tmp:]>0)
     lgb_eval = lgb.Dataset(Ftrain[:tmp,:], Ptrain[:tmp]>0, reference=lgb_train)
-    params = {'max_depth':12,'objective': 'binary','learning_rate': 0.02}
+    params = {'max_depth':12,'objective': 'binary','learning_rate': 0.03}
     if reTrain:
-        gbm = lgb.train(params,lgb_train,num_boost_round=10000,valid_sets=lgb_eval,early_stopping_rounds=15)
+#        gbm = lgb.train(params,lgb_train,num_boost_round=10000,valid_sets=lgb_eval,early_stopping_rounds=15)
+        gbm = lgb.train(params,lgb_train,num_boost_round=10000,valid_sets=lgb_eval)
         joblib.dump(gbm,'e:\\big_joblib\\'+modelNow)
     else:
         gbm=joblib.load('e:\\big_joblib\\'+modelNow)
@@ -372,6 +375,7 @@ plt.grid()
 #conn.close()
 #t2=time.time()
 #
+#dataAll=0
 #Lprofits=len(profits)
 #tmp=dates.argsort()
 #features=features[tmp];profits=profits[tmp];dates=dates[tmp]
