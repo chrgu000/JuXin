@@ -541,10 +541,11 @@ import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
 import datetime,time,shutil,os,pickle,pdb
 
-backDay=0
+backDay=1
 showHere=0
-reload=0
+diffBars=1
 
+reload=0
 todayTime=datetime.datetime.today()
 today=todayTime.date()
 saveFolder='e:\stockSelect' #save stocks' pictures which were selected.
@@ -630,8 +631,12 @@ for i in range(len(stocks)):
             baseI=Li-3*i2-addDays-backDay
             down1=P2-P1
             up=P3-P2
-            down2=P4-P3      
-            if max([down1,up,down2])-min([down1,up,down2])<2:# and fig>0:
+            down2=P4-P3
+            if i2>8:
+                DBtmp=diffBars+1
+            else:
+                DBtmp=diffBars
+            if max([down1,up,down2])-min([down1,up,down2])<=DBtmp:# and fig>0:
                 periodBoll=i2*3
                 upLine=[]
                 middleLine=[]
@@ -684,8 +689,8 @@ for i in range(len(stocks)):
         ax1.set_xticks(range(0,bars,3))
         ax1.grid()
         plt.savefig(saveFolder+'\\'+stocks[i])
-        if showHere:
-            plt.show()
+        if not showHere:
+            plt.clf()
         stockSelect.append(stocks[i])
                 
 print('Stocks which are past: '+','.join(stockPass))
