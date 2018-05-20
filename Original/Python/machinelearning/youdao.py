@@ -15,7 +15,7 @@ plt.rcParams['font.sans-serif']=['SimHei']
 plt.rcParams['axes.unicode_minus']=False
 
 saveFolder='E:\\youdao\\'
-today=datetime.datetime.today().date()
+today=datetime.date.today()
 try:
     tmp=open('E:\\youdao.pkl','rb')
     pklData=pickle.load(tmp)
@@ -43,7 +43,7 @@ if reload:
         ratioStocks=(i+1)/L
         t2=time.time()
         print('loaded '+stocks[i]+':'+str(round(100*ratioStocks,2))+'%,and need more time:{} minutes'.format(round((t2-t1)*(1/ratioStocks-1)/60,2)))
-    pklData={'dataCall':dataCall,'stocks':stocks,'daySave':today}
+    pklData={'dataCall':dataCall,'stocks':stocks,'today':today}
     tmp=open('E:\\youdao.pkl','wb')
     pickle.dump(pklData,tmp)
     tmp.close()
@@ -104,3 +104,31 @@ for i in range(L):
     t2=time.time()
     ratioStocks=(i+1)/L
     print('Draw figures--'+stocks[i]+':'+str(round(100*ratioStocks,2))+'%,and need more time:{} minutes'.format(round((t2-t1)*(1/ratioStocks-1)/60,2)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
