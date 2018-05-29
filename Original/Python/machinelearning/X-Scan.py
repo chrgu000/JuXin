@@ -541,8 +541,8 @@ import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
 import datetime,time,shutil,os,pickle,pdb
 
-backDay=0
-showHere=0
+backDay=1
+showHere=1
 diffBars=1
 
 reload=0
@@ -595,12 +595,16 @@ for i in range(len(stocks)):
         stockPass.append(stocks[i])
         continue
     if tradeDay:
-        tmpNow=dataNow.loc[stocks[i]]
-        opens=np.r_[dataCall[i].open, tmpNow.open]
-        closes=np.r_[dataCall[i].close, tmpNow.trade]
-        highs=np.r_[dataCall[i].high, tmpNow.high]
-        lows=np.r_[dataCall[i].low, tmpNow.low]
-        vols=np.r_[dataCall[i].volume, tmpNow.volume/100]
+        try:
+            tmpNow=dataNow.loc[stocks[i]]
+            opens=np.r_[dataCall[i].open, tmpNow.open]
+            closes=np.r_[dataCall[i].close, tmpNow.trade]
+            highs=np.r_[dataCall[i].high, tmpNow.high]
+            lows=np.r_[dataCall[i].low, tmpNow.low]
+            vols=np.r_[dataCall[i].volume, tmpNow.volume/100]
+        except:
+            print('cant download current data for '+stocks[i])
+            continue
     else:
         opens=dataCall[i].open.values
         closes=dataCall[i].close.values
