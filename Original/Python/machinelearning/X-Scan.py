@@ -541,48 +541,57 @@ import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
 import datetime,time,shutil,os,pickle,pdb
 
-backDay=1
+backDay=3
 showHere=1
 diffBars=1
-
 reload=0
-todayTime=datetime.datetime.today()
-today=todayTime.date()
+
 saveFolder='e:\stockSelect' #save stocks' pictures which were selected.
-tradeDay= (not ts.is_holiday(datetime.datetime.strftime(today,'%Y-%m-%d'))) and todayTime.hour*100+todayTime.minute>930
-try:
+if reload:
+    todayTime=datetime.datetime.today()
+    today=todayTime.date()    
+    tradeDay= (not ts.is_holiday(datetime.datetime.strftime(today,'%Y-%m-%d'))) and todayTime.hour*100+todayTime.minute>930
+    try:
+        tmp=open('scan_trade.pkl','rb')
+        pklData=pickle.load(tmp)
+        tmp.close()
+        todayLast=pklData['today']
+        dataCall=pklData['dataCall']
+        stocks=pklData['stocks']
+    except:
+        todayLast=0
+    if today!=todayLast:
+        tmp=ts.get_stock_basics()
+        stocks=tmp.index
+        L=len(stocks)
+        nDays=260+int(1.5*backDay) #number of natural days;
+        dataCall=[]
+        t1=time.time()
+        for i in range(L):
+            tmp=ts.get_k_data(code = stocks[i],start = datetime.datetime.strftime(today-datetime.timedelta(nDays),'%Y-%m-%d'))
+            dataCall.append(tmp)
+            ratioStocks=(i+1)/L
+            t2=time.time()
+            print(stocks[i]+':'+str(round(100*ratioStocks,2))+'%,and need more time:{} minutes'.format(round((t2-t1)*(1/ratioStocks-1)/60,2)))
+        
+        t2=datetime.datetime.now()
+        print('Updating data has been completed now! and time lapses {} minutes.'.format(round((t2-todayTime).seconds/60,2)))
+        pklData={'today':today,'dataCall':dataCall,'stocks':stocks}
+        tmp=open('scan_trade.pkl','wb')
+        pickle.dump(pklData,tmp)
+        tmp.close()
+    
+    if tradeDay:
+        dataNow=ts.get_today_all()
+        dataNow=dataNow.set_index('code')
+else:
     tmp=open('scan_trade.pkl','rb')
     pklData=pickle.load(tmp)
     tmp.close()
-    todayLast=pklData['today']
+    today=pklData['today']
     dataCall=pklData['dataCall']
     stocks=pklData['stocks']
-except:
-    todayLast=0
-if today!=todayLast or reload:
-    tmp=ts.get_stock_basics()
-    stocks=tmp.index
-    L=len(stocks)
-    nDays=260+int(1.5*backDay) #number of natural days;
-    dataCall=[]
-    t1=time.time()
-    for i in range(L):
-        tmp=ts.get_k_data(code = stocks[i],start = datetime.datetime.strftime(today-datetime.timedelta(nDays),'%Y-%m-%d'))
-        dataCall.append(tmp)
-        ratioStocks=(i+1)/L
-        t2=time.time()
-        print(stocks[i]+':'+str(round(100*ratioStocks,2))+'%,and need more time:{} minutes'.format(round((t2-t1)*(1/ratioStocks-1)/60,2)))
-    
-    t2=datetime.datetime.now()
-    print('Updating data has been completed now! and time lapses {} minutes.'.format(round((t2-todayTime).seconds/60,2)))
-    pklData={'today':today,'dataCall':dataCall,'stocks':stocks}
-    tmp=open('scan_trade.pkl','wb')
-    pickle.dump(pklData,tmp)
-    tmp.close()
-
-if tradeDay:
-    dataNow=ts.get_today_all()
-    dataNow=dataNow.set_index('code')
+    tradeDay=0
 stockPass=[]
 stockSelect=[]
 try:
@@ -619,12 +628,12 @@ for i in range(len(stocks)):
         pointZero=Li-6*i2
         if pointZero-backDay-1<0:
             pointZero=backDay+1
-        if abs(max(highs[Li-3*i2-4-backDay:Li-3*i2+4-backDay])-max(highs[pointZero-backDay-1:Li-2*i2+1-backDay]))<0.00000001 and \
+        if abs(max(highs[Li-3*i2-4-backDay:Li-3*i2+4-backDay])-max(highs[pointZero-backDay-1:Li+1-backDay]))<0.00000001 and \
         abs(min(lows[Li-3*i2-backDay-1:Li-i2-backDay])-min(lows[Li-2*i2-3-backDay:Li-2*i2+3-backDay]))<0.00000001 and \
         abs(max(highs[Li-2*i2-backDay-1:Li-backDay])-max(highs[Li-i2-2-backDay:Li-i2+2-backDay]))<0.00000001 and \
-        lows[Li-backDay]<min(lows[Li-i2-backDay-2:Li-backDay]) and \
-        min(highs[Li-3*i2-6-backDay:Li-backDay]-lows[Li-3*i2-6-backDay:Li-backDay])>0.0000001 and \
-        highs[Li-backDay]<highs[Li-backDay-1]:
+        (lows[Li-backDay]<min(lows[Li-i2-backDay-2:Li-backDay]) or \
+        (highs[Li-backDay]<highs[Li-backDay-1] and lows[Li-1-backDay]<min(lows[Li-i2-backDay-2:Li-backDay]) )) and \
+        min(highs[Li-3*i2-6-backDay:Li-backDay]-lows[Li-3*i2-6-backDay:Li-backDay])>0.0000001 :
             addDays=9*i2
             if Li-3*i2-addDays-backDay<0:
                 addDays=Li-3*i2-backDay
@@ -640,8 +649,10 @@ for i in range(len(stocks)):
                 DBtmp=diffBars+1
             else:
                 DBtmp=diffBars
-            if max([down1,up,down2])-min([down1,up,down2])<=DBtmp:# and fig>0:
-                periodBoll=i2*3
+            startTmp=max(0,Li-backDay-int(3.5*(P4-P1))-4)
+            if max([down1,up,down2])-min([down1,up,down2])<=DBtmp:# \
+#            and min(lows[Li-3*i2-4-backDay:Li+1-backDay])>min(lows[startTmp:Li-backDay+1])+0.45*(max(highs[startTmp:Li-backDay+1])-min(lows[startTmp:Li-backDay+1])):# and fig>0:
+                periodBoll=20#i2*3  #################################
                 upLine=[]
                 middleLine=[]
                 downLine=[]
