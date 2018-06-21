@@ -541,7 +541,7 @@ import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
 import datetime,time,shutil,os,pickle,pdb
 
-backDay=3
+backDay=0
 showHere=1
 diffBars=1
 reload=0
