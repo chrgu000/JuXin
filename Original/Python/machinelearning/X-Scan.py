@@ -544,7 +544,7 @@ import datetime,time,shutil,os,pickle,pdb
 backDay=0
 showHere=1
 diffBars=1
-reload=0
+reload=1
 
 saveFolder='e:\stockSelect' #save stocks' pictures which were selected.
 if reload:
